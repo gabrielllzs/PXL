@@ -7,42 +7,33 @@ use Illuminate\Http\Request;
 use App\Models\Pixel;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\JsonResponse;
 
 class PixelController extends Controller
 {
-    // SPL token mint address
-    protected $tokenMint = 'DG1Sos2qR8Ut7c2JRsNGydt99NNV5VKuSjZNbjXepump';
+    private const TOKEN_MINT = '8badswKtVajg5L1nHKCabkCwoFXBwK1CfuEMbQ8Vpump';
+    private const GRID_MAX = 499;
 
-    public function index()
+    public function index(): JsonResponse
     {
-        $pixels = Pixel::all();
-        return response()->json($pixels);
+        return response()->json(Pixel::all());
     }
-    public function claim(Request $request)
+
+    public function claim(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'tx_signature' => 'required|string',
-            'x' => 'required|integer|min:0|max:499', // Changed from 999 to 499
-            'y' => 'required|integer|min:0|max:499', // Changed from 999 to 499
-            'color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'buyer' => 'required|string',
-        ]);
+        $data = $this->validateRequest($request);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+        $txSignature = $data['tx_signature'];
+        $x = (int)$data['x'];
+        $y = (int)$data['y'];
+        $color = $data['color'];
+        $buyer = strtolower($data['buyer']);
 
-        $txSignature = $request->input('tx_signature');
-        $x = (int)$request->input('x');
-        $y = (int)$request->input('y');
-        $color = $request->input('color');
-        $buyer = strtolower($request->input('buyer'));
-
-        if (Pixel::where('x', $x)->where('y', $y)->exists()) {
+        if ($this->isPixelTaken($x, $y)) {
             return response()->json(['message' => 'Pixel already taken'], 409);
         }
 
-        if (Pixel::where('tx_signature', $txSignature)->exists()) {
+        if ($this->isTxUsed($txSignature)) {
             return response()->json(['message' => 'Transaction already used'], 409);
         }
 
@@ -50,67 +41,105 @@ class PixelController extends Controller
             return response()->json(['message' => 'Transaction verification failed'], 400);
         }
 
-        $pixel = Pixel::create([
-            'x' => $x,
-            'y' => $y,
-            'color' => $color,
-            'tx_signature' => $txSignature,
-            'buyer_address' => $buyer,
-        ]);
+        $pixel = $this->createPixel($x, $y, $color, $txSignature, $buyer);
 
         broadcast(new PixelClaimed($pixel))->toOthers();
 
         return response()->json($pixel, 201);
     }
 
+    protected function validateRequest(Request $request): array
+    {
+        $rules = [
+            'tx_signature' => 'required|string',
+            'x' => 'required|integer|min:0|max:' . self::GRID_MAX,
+            'y' => 'required|integer|min:0|max:' . self::GRID_MAX,
+            'color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'buyer' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            abort(response()->json(['errors' => $validator->errors()], 422));
+        }
+
+        return $validator->validated();
+    }
+
+    protected function isPixelTaken(int $x, int $y): bool
+    {
+        return Pixel::where('x', $x)->where('y', $y)->exists();
+    }
+
+    protected function isTxUsed(string $signature): bool
+    {
+        return Pixel::where('tx_signature', $signature)->exists();
+    }
+
+    protected function createPixel(int $x, int $y, string $color, string $txSignature, string $buyer): Pixel
+    {
+        return Pixel::create([
+            'x' => $x,
+            'y' => $y,
+            'color' => $color,
+            'tx_signature' => $txSignature,
+            'buyer_address' => $buyer,
+        ]);
+    }
+
     protected function verifyTransaction(string $signature, string $buyer): bool
     {
         $rpcUrl = env('SOLANA_RPC_URL', 'https://api.mainnet-beta.solana.com');
 
-        // Post request to Solana RPC
-        $response = Http::post($rpcUrl, [
-            'jsonrpc' => '2.0',
-            'id' => 1,
-            'method' => 'getTransaction',
-            'params' => [
-                $signature,
-                [
-                    'encoding' => 'jsonParsed',
-                    'maxSupportedTransactionVersion' => 0
-                ]
-            ],
-        ]);
-
-
-        $data = $response->json();
-
-        // Log full response for debugging
-        \Log::info("Solana TX Response for {$signature}:", $data);
-
-        if (empty($data['result'])) {
-            \Log::warning("Transaction not found: {$signature}");
+        try {
+            $response = Http::post($rpcUrl, [
+                'jsonrpc' => '2.0',
+                'id' => 1,
+                'method' => 'getTransaction',
+                'params' => [
+                    $signature,
+                    [
+                        'encoding' => 'jsonParsed',
+                        'maxSupportedTransactionVersion' => 0
+                    ]
+                ],
+            ]);
+        } catch (\Throwable $e) {
             return false;
         }
 
-        $tx = $data['result'];
+        if (!$response->successful()) {
+            return false;
+        }
 
-        // Get post-transaction token balances
+        $data = $response->json();
+
+        $tx = $data['result'] ?? null;
+        if (empty($tx)) {
+            return false;
+        }
+
         $balances = $tx['meta']['postTokenBalances'] ?? [];
 
         foreach ($balances as $balance) {
             $mint = $balance['mint'] ?? null;
             $owner = strtolower($balance['owner'] ?? '');
-            $amount = (float)($balance['uiTokenAmount']['uiAmount'] ?? 0);
+            $uiToken = $balance['uiTokenAmount'] ?? [];
 
-            \Log::info("Checking token balance: mint={$mint}, owner={$owner}, amount={$amount}");
+            // Try uiAmount first, fallback to uiAmountString
+            $amount = 0.0;
+            if (isset($uiToken['uiAmount'])) {
+                $amount = (float)$uiToken['uiAmount'];
+            } elseif (!empty($uiToken['uiAmountString'])) {
+                $amount = (float)$uiToken['uiAmountString'];
+            }
 
-            if ($mint === $this->tokenMint && $owner === strtolower($buyer) && $amount >= 1) {
+            if ($mint === self::TOKEN_MINT && $owner === strtolower($buyer) && $amount >= 1.0) {
                 return true;
             }
         }
 
-        \Log::warning("Transaction verification failed for buyer {$buyer}, signature {$signature}");
         return false;
     }
-
 }
