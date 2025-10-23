@@ -84,7 +84,7 @@
 
         <div class="row">
             <div id="wallet" class="status">Wallet: {{ buyer ? shortAddr(buyer) : 'not connected' }}</div>
-            <div class="status">Token: TROLLOWEEN • mint DG1S…pump</div>
+            <div class="status">Token: NAUDA • mint 8bad…pump</div>
         </div>
 
         <div id="toasts">
