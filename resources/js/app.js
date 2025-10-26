@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
-import ExampleComponent from './components/App.vue'
+import PixelCanvas from './components/PixelCanvas.vue'
 
-const app = createApp()
-app.component('example-component', ExampleComponent)
-app.mount('#app');
+const app = createApp(PixelCanvas)
+
+app.mount('#app')
