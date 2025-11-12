@@ -12,16 +12,22 @@ import axios from 'axios'; // Ensure axios is installed
 onMounted(() => {
     const map = new maplibregl.Map({
         container: 'map',
-        style: 'https://tiles.openfreemap.org/styles/liberty',
-        center: [-500, 90],
-        zoom: 13,
+        style: {
+            version: 8,
+            name: 'blank',
+            sources: {},
+            layers: [
+                { id: 'background', type: 'background', paint: { 'background-color': 'rgba(132, 176, 245)' } }
+            ]
+        },        center: [0, 0],
+        zoom: 10,
         dragRotate: false,
         touchZoomRotate: false,
         pitchWithRotate: false
     });
 
     // --- configuration ---
-    const Zref = 12;          // reference zoom where grid indices are computed
+    const Zref = 8;          // reference zoom where grid indices are computed
     const cellPxAtZref = 1; // how many screen pixels a cell is at Zref
     // ----------------------
 
@@ -37,6 +43,9 @@ onMounted(() => {
         map.getContainer().appendChild(canvas);
 
         const ctx = canvas.getContext('2d');
+
+        /// map.getCanvas().style.opacity = '0'; later an option to disable background
+
 
         // stored pixels: { i, j, color } indices in the Zref world-pixel grid
         const stored = [];
