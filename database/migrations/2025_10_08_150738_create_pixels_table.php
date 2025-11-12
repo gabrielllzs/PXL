@@ -6,16 +6,15 @@ use Illuminate\Support\Facades\Schema;
 
 
 return new class extends Migration {
-    public function up() {
+    public function up()
+    {
         Schema::create('pixels', function (Blueprint $table) {
             $table->id();
-            $table->unsignedSmallInteger('x'); // This is fine for 0-499
-            $table->unsignedSmallInteger('y'); // This is fine for 0-499
-            $table->string('color', 7); // #RRGGBB
-            $table->string('tx_signature')->unique(); // Solana tx signature
-            $table->string('buyer_address');
+            $table->integer('i');
+            $table->integer('j');
+            $table->string('color')->default('red');
             $table->timestamps();
-            $table->unique(['x','y']);
+            $table->unique(['i', 'j']); // Prevent duplicates
         });
     }
     public function down() { Schema::dropIfExists('pixels'); }
