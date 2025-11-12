@@ -14,7 +14,10 @@ onMounted(() => {
         container: 'map',
         style: 'https://tiles.openfreemap.org/styles/liberty',
         center: [-500, 90],
-        zoom: 13
+        zoom: 13,
+        dragRotate: false,
+        touchZoomRotate: false,
+        pitchWithRotate: false
     });
 
     // --- configuration ---
