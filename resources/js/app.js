@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
-import PixelCanvas from './components/PixelCanvas.vue'
+import PixelInfo from './views/PixelMapView.vue'
 
-const app = createApp(PixelCanvas)
+const app = createApp(PixelInfo)
 
 app.mount('#app')
