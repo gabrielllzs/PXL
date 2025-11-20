@@ -1,28 +1,41 @@
 <template>
     <div id="cooldown" v-if="seconds > 0">
-        Cooldown active. Please wait {{ seconds }}s.
+        {{ formatted }}
     </div>
+
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props =  defineProps({
     seconds: {
         type: Number,
         required: true
     }
 })
+
+
+const formatted = computed(() => {
+    const minutes = Math.floor(props.seconds / 60)
+    const secs = props.seconds % 60
+    const mm = String(minutes).padStart(2, '0')
+    const ss = String(secs).padStart(2, '0')
+    return `${mm}:${ss}`
+})
 </script>
 
 <style scoped>
+
 #cooldown {
     position: absolute;
-    bottom: 10px;
-    left: 10px;
-    background: rgba(255, 255, 255, 0.95);
+    top: 10px;
+    left: 50%;
+    background: rgba(255,255,255,0.92);
     padding: 6px 10px;
     border-radius: 4px;
     border: 1px solid #ddd;
-    font-size: 12px;
+    font-size: 16px;
     color: #333;
 }
 </style>

@@ -20,11 +20,11 @@ function startCooldown(seconds) {
     const s = Number.isFinite(seconds) ? Math.max(0, Math.round(seconds)) : 60
     cooldown.active = s > 0
     cooldown.remaining = s
-    if (cooldownTimer) {
-        clearInterval(cooldownTimer)
-        cooldownTimer = null
-    }
+
+    if (cooldownTimer) clearInterval(cooldownTimer)
+
     if (!cooldown.active) return
+
     cooldownTimer = setInterval(() => {
         cooldown.remaining -= 1
         if (cooldown.remaining <= 0) {
@@ -40,37 +40,41 @@ export function usePixels() {
     async function load() {
         await initFingerprint()
         try {
-            const res = await axios.get('/api/pixels', { params: { visitorId } })
+            const res = await axios.get('/api/pixel', { params: { visitorId } })
             stored.splice(0, stored.length, ...res.data)
         } catch (err) {
             console.error('Failed to load pixels:', err)
         }
     }
 
-    // Returns true if saved, false otherwise
-    async function save(i, j, color) {
+    async function save(x, y, color) {
         await initFingerprint()
+
+        if (cooldown.active) return false
+
         try {
-            const existing = stored.find(p => p.i === i && p.j === j)
+            const existing = stored.find(p => p.x === x && p.y === y)
             if (existing) {
                 existing.color = color
                 if (existing.id) {
-                    await axios.put(`/api/pixels/${existing.id}`, { color, visitorId })
+                    await axios.put(`/api/pixel/${existing.id}`, { color, visitorId })
                 } else {
-                    const res = await axios.post('/api/pixels', { i, j, color, visitorId })
+                    const res = await axios.post('/api/pixel', { x, y, color, visitorId })
                     if (res.data?.id) existing.id = res.data.id
                 }
             } else {
-                const newCell = { i, j, color }
+                const newCell = { x, y, color }
                 stored.push(newCell)
-                const res = await axios.post('/api/pixels', { ...newCell, visitorId })
+                const res = await axios.post('/api/pixel', { ...newCell, visitorId })
                 if (res.data?.id) newCell.id = res.data.id
             }
+
+            startCooldown(60)
             return true
         } catch (err) {
             if (err.response?.status === 429) {
-                const remaining = err.response.data?.remaining
-                startCooldown(remaining ?? 60)
+                const remaining = err.response.data?.remaining ?? 60
+                startCooldown(remaining)
                 return false
             } else {
                 console.error('Unexpected error:', err)
@@ -78,5 +82,13 @@ export function usePixels() {
             }
         }
     }
-    return { stored, load, save, cooldown }
+
+    async function syncCooldown() {
+        await initFingerprint()
+        const res = await axios.get('/api/cooldown', { params: { visitorId } })
+        const remaining = res.data.remaining || 0
+        if (remaining > 0) startCooldown(remaining)
+    }
+
+    return { stored, load, save, cooldown, syncCooldown }
 }

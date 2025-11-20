@@ -20,13 +20,14 @@ const Zref = 8
 const cellPxAtZref = 1
 
 const { map, init, on, unproject, project } = useMap('map')
-const { stored, load, save } = usePixels()
+const { stored, load, save, syncCooldown } = usePixels()
 
 const canvas = ref(null)
 let ctx
 
 onMounted(async () => {
     const mapInstance = init()
+    await syncCooldown()
     await load()
     setupCanvas()
     setupEvents(mapInstance)
@@ -62,10 +63,10 @@ function resizeCanvas() {
 function drawAll() {
     ctx.clearRect(0, 0, canvas.value.width, canvas.value.height)
     stored.forEach(cell => {
-        const worldX1 = cell.i * cellPxAtZref
-        const worldY1 = cell.j * cellPxAtZref
-        const worldX2 = (cell.i + 1) * cellPxAtZref
-        const worldY2 = (cell.j + 1) * cellPxAtZref
+        const worldX1 = cell.x * cellPxAtZref
+        const worldY1 = cell.y * cellPxAtZref
+        const worldX2 = (cell.x + 1) * cellPxAtZref
+        const worldY2 = (cell.y + 1) * cellPxAtZref
         const topLeft = worldPxToLngLat({ x: worldX1, y: worldY1 }, Zref)
         const bottomRight = worldPxToLngLat({ x: worldX2, y: worldY2 }, Zref)
         const screenTL = project([topLeft.lng, topLeft.lat])
@@ -79,25 +80,29 @@ function drawAll() {
 
 async function handleClick(e) {
     const rect = map.value.getCanvas().getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    const lngLat = unproject([x, y])
+    const xPx = e.clientX - rect.left
+    const yPx = e.clientY - rect.top
+    const lngLat = unproject([xPx, yPx])
     const worldPx = lngLatToWorldPx(lngLat, Zref)
-    const i = Math.floor(worldPx.x / cellPxAtZref)
-    const j = Math.floor(worldPx.y / cellPxAtZref)
-    const ok = await save(i, j, props.selectedColor)
+
+    const x = Math.floor(worldPx.x / cellPxAtZref)
+    const y = Math.floor(worldPx.y / cellPxAtZref)
+
+    const ok = await save(x, y, props.selectedColor)
     if (ok) drawAll()
 }
 
 function handleHover(e) {
     const rect = map.value.getCanvas().getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    const lngLat = unproject([x, y])
+    const xPx = e.clientX - rect.left
+    const yPx = e.clientY - rect.top
+    const lngLat = unproject([xPx, yPx])
     const worldPx = lngLatToWorldPx(lngLat, Zref)
-    const i = Math.floor(worldPx.x / cellPxAtZref)
-    const j = Math.floor(worldPx.y / cellPxAtZref)
-    emit('pixelHover', `Pixel: (${i}, ${j})`)
+
+    const x = Math.floor(worldPx.x / cellPxAtZref)
+    const y = Math.floor(worldPx.y / cellPxAtZref)
+
+    emit('pixelHover', `(${x}, ${y})`)
 }
 </script>
 

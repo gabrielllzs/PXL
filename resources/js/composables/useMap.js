@@ -20,7 +20,6 @@ export function useMap(containerId = 'map') {
             dragRotate: false,
             touchZoomRotate: false,
             pitchWithRotate: false,
-            ...options
         })
         return map.value
     }
