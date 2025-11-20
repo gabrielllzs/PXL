@@ -10,9 +10,8 @@ return new class extends Migration {
     {
         Schema::create('pixels', function (Blueprint $table) {
             $table->id();
-            $table->string('ip', 45);
-            $table->integer('i');
-            $table->integer('j');
+            $table->integer('x');
+            $table->integer('y');
             $table->string('visitor_id');
             $table->string('color')->default('black');
             $table->timestamps();

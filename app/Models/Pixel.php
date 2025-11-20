@@ -8,5 +8,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class Pixel extends Model
 {
-    protected $fillable = ['i', 'j', 'color', 'ip', 'visitor_id'];
+    protected $fillable = ['x', 'y', 'color', 'visitor_id'];
 }
