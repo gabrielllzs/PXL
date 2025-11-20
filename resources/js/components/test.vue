@@ -22,10 +22,8 @@ import axios from 'axios';
 const selectedColor = ref('#ff0000');
 const palette = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff', '#000000'];
 
-// --- configuration ---
-const Zref = 8;          // reference zoom where grid indices are computed
-const cellPxAtZref = 1; // how many screen pixels a cell is at Zref
-// ----------------------
+const Zref = 8;
+const cellPxAtZref = 1;
 
 onMounted(() => {
     const map = new maplibregl.Map({
@@ -121,7 +119,7 @@ onMounted(() => {
                 const height = screenBR.y - screenTL.y;
 
                 // draw a rectangle
-                ctx.fillStyle = cell.color || '#ff0000';
+                ctx.fillStyle = cell.color || '#000000';
                 ctx.fillRect(
                     Math.floor(screenTL.x),
                     Math.floor(screenTL.y),

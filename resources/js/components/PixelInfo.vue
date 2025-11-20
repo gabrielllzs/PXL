@@ -22,6 +22,6 @@ defineProps({
     padding: 5px 8px;
     border-radius: 4px;
     border: 1px solid #ccc;
-    font-size: 12px;
+    font-size: 16px;
 }
 </style>
