@@ -1,7 +1,8 @@
 <template>
     <div id="mapContainer">
         <div id="map"></div>
-        <canvas ref="canvas" id="overlayCanvas"></canvas>
+        <canvas ref="canvas" id="overlayCanvas">
+        </canvas>
     </div>
 </template>
 
@@ -19,8 +20,8 @@ const emit = defineEmits(['pixelHover'])
 const Zref = 8
 const cellPxAtZref = 1
 
-const { map, init, on, unproject, project } = useMap('map')
-const { stored, load, save, syncCooldown } = usePixels()
+const { map, init, on, unproject, project,  zoomIn, zoomOut, centerMap  } = useMap('map')
+const { stored, load, save, syncCooldown , initRealtimePixels } = usePixels()
 
 const canvas = ref(null)
 let ctx
@@ -30,9 +31,13 @@ onMounted(async () => {
     await syncCooldown()
     await load()
     setupCanvas()
+    initRealtimePixels(drawAll)
     setupEvents(mapInstance)
     drawAll()
 })
+
+defineExpose({ zoomIn, zoomOut, centerMap })
+
 
 function setupCanvas() {
     const c = canvas.value
@@ -102,7 +107,7 @@ function handleHover(e) {
     const x = Math.floor(worldPx.x / cellPxAtZref)
     const y = Math.floor(worldPx.y / cellPxAtZref)
 
-    emit('pixelHover', `(${x}, ${y})`)
+    emit('pixelHover', `(${x},${y})`)
 }
 </script>
 

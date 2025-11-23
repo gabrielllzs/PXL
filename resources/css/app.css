@@ -7,12 +7,10 @@
 
 @font-face {
     font-family: 'pixel art';
-    src: url('../fonts/pixel.ttf') format('truetype'),
-    url('../fonts/pixel.otf') format('opentype'),
-    url('../fonts/pixel.woff') format('woff'),
-    url('../fonts/pixel.woff2') format('woff2');
+    src : url('../fonts/slkscr.ttf') format('truetype');
+
 }
 
-body { font-family: 'pixel art';
-    font-size: 16px;
+* {
+    font-family: 'pixel art', monospace;
 }

@@ -18,8 +18,7 @@ export function useMap(containerId = 'map') {
             center: [0, 0],
             zoom: 10,
             dragRotate: false,
-            touchZoomRotate: false,
-            pitchWithRotate: false,
+            attributionControl: false // <-- disable the control
         })
         return map.value
     }
@@ -45,5 +44,10 @@ export function useMap(containerId = 'map') {
         map.value = null
     })
 
-    return { map, init, on, off, project, unproject }
+    const zoomIn = () => map.value?.zoomIn();
+    const zoomOut = () => map.value?.zoomOut();
+    const centerMap = () => map.value?.flyTo({ center: [0, 0], zoom: 10 });
+
+
+    return { map, init, on, off, project, unproject,  zoomIn, zoomOut, centerMap  }
 }
