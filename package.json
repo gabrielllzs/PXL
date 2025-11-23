@@ -17,7 +17,10 @@
     "dependencies": {
         "@fingerprintjs/fingerprintjs": "^5.0.1",
         "@vitejs/plugin-vue": "^6.0.1",
+        "laravel-echo": "^2.2.6",
         "maplibre-gl": "^5.10.0",
+        "pusher-js": "^8.4.0",
+        "toastify": "^2.0.1",
         "uuid": "^13.0.0",
         "vue": "^3.5.22"
     }

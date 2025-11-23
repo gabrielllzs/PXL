@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\PixelPlaced;
 use App\Models\Pixel;
 use Illuminate\Http\Request;
 
@@ -50,6 +51,7 @@ class PixelController extends Controller
             ]
         );
 
+        event(new PixelPlaced($pixel->x, $pixel->y, $pixel->color));
         return response()->json($pixel);
     }
 
