@@ -10,19 +10,23 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class PixelClaimed implements ShouldBroadcast
+class PixelPlaced implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $pixel;
+    public $x;
+    public $y;
+    public $color;
 
-    public function __construct(Pixel $pixel)
+    public function __construct($x, $y, $color)
     {
-        $this->pixel = $pixel;
+        $this->x = $x;
+        $this->y = $y;
+        $this->color = $color;
     }
 
-    public function broadcastOn(): array
+    public function broadcastOn()
     {
-        return [new Channel('pixels')];
+        return new Channel('pixels');
     }
 }
