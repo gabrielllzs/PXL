@@ -35,14 +35,16 @@ watch(() => props.modelValue, v => (color.value = v))
 
 <style scoped>
 #colorPicker {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
+    position: absolute;
+    bottom: 1px;
+    left: 50%;
+    transform: translate(-50%, -50%);
     pointer-events: auto;
-
-    padding: 16px;
-    width: 300px;
-    max-width: calc(100% - 48px);
+    background: rgba(255, 255, 255);
+    border-radius: 5px;
+    padding: 5px;
+    margin: 0;
+    width: 260px;
 }
 
 .palette-grid {
@@ -54,8 +56,6 @@ watch(() => props.modelValue, v => (color.value = v))
     width: 100%;
     aspect-ratio: 1;
     cursor: pointer;
-    border: 2px solid rgba(0,0,0,0.1);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     box-sizing: border-box;
 }

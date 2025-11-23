@@ -19,8 +19,8 @@ const props =  defineProps({
 const formatted = computed(() => {
     const minutes = Math.floor(props.seconds / 60)
     const secs = props.seconds % 60
-    const mm = String(minutes).padStart(2, '0')
-    const ss = String(secs).padStart(2, '0')
+    const mm = String(minutes).padStart(2,'0')
+    const ss = String(secs).padStart(2,'0')
     return `${mm}:${ss}`
 })
 </script>
@@ -29,8 +29,10 @@ const formatted = computed(() => {
 
 #cooldown {
     position: absolute;
-    top: 10px;
+    top: 30px;
     left: 50%;
+    transform: translate(-50%, -50%);
+    text-align:center;
     background: rgba(255,255,255,0.92);
     padding: 6px 10px;
     border-radius: 4px;
