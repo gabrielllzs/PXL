@@ -37,7 +37,7 @@ class PixelController extends Controller
             return response()->json([
                 'error' => 'cooldown',
                 'remaining' => round($cooldownSeconds + $elapsed),
-            ], 429);
+            ], 412);
         }
 
         $pixel = Pixel::updateOrCreate(
