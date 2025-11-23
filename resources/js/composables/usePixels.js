@@ -4,7 +4,7 @@ import FingerprintJS from '@fingerprintjs/fingerprintjs'
 
 let visitorId = null
 
-const stored = reactive([])
+export const stored = reactive([])
 const cooldown = reactive({ active: false, remaining: 0 })
 let cooldownTimer = null
 
@@ -72,7 +72,7 @@ export function usePixels() {
             startCooldown(60)
             return true
         } catch (err) {
-            if (err.response?.status === 429) {
+            if (err.response?.status === 412) {
                 const remaining = err.response.data?.remaining ?? 60
                 startCooldown(remaining)
                 return false
