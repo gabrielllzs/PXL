@@ -10,6 +10,7 @@
 import { onMounted, ref } from 'vue'
 import { useMap } from '../composables/useMap'
 import { usePixels } from '../composables/usePixels'
+import { initRealtimePixels } from '../composables/realtimePixels'
 import { lngLatToWorldPx, worldPxToLngLat } from '../composables/useWorldConversion'
 
 const props = defineProps({
@@ -21,7 +22,7 @@ const Zref = 8
 const cellPxAtZref = 1
 
 const { map, init, on, unproject, project,  zoomIn, zoomOut, centerMap  } = useMap('map')
-const { stored, load, save, syncCooldown , initRealtimePixels } = usePixels()
+const { stored, load, save, syncCooldown} = usePixels()
 
 const canvas = ref(null)
 let ctx
@@ -31,8 +32,8 @@ onMounted(async () => {
     await syncCooldown()
     await load()
     setupCanvas()
-    initRealtimePixels(drawAll)
     setupEvents(mapInstance)
+    initRealtimePixels(drawAll) // Pass stored and drawAll
     drawAll()
 })
 

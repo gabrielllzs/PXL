@@ -27,6 +27,11 @@ class PixelPlaced implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        return new Channel('pixels');
+        return new Channel('pixel');
+    }
+
+    public function broadcastAs()
+    {
+        return 'PixelPlaced';
     }
 }
