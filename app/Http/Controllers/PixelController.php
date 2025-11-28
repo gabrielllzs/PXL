@@ -15,8 +15,6 @@ class PixelController extends Controller
 
     public function store(Request $request)
     {
-        $visitorId = $request->input('visitorId');
-        $cooldownSeconds = 60;
 
         $request->validate([
             'x' => 'required|integer',
@@ -25,18 +23,13 @@ class PixelController extends Controller
             'visitorId' => 'required|string'
         ]);
 
+        $visitorId = $request->input('visitorId');
 
-        // Check cooldown by visitorId
-        $lastPixel = Pixel::where('visitor_id', $visitorId)
-            ->where('created_at', '>', now()->subSeconds($cooldownSeconds))
-            ->latest()
-            ->first();
-
-        if ($lastPixel) {
-            $elapsed = now()->diffInSeconds($lastPixel->created_at);
+        $remaining = $this->cooldown($request)['remaining'];
+        if ($remaining > 0) {
             return response()->json([
                 'error' => 'cooldown',
-                'remaining' => round($cooldownSeconds + $elapsed),
+                'remaining' => $remaining,
             ], 412);
         }
 
