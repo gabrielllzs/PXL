@@ -1,0 +1,36 @@
+import { defineConfig } from 'vite';
+import laravel from 'laravel-vite-plugin';
+import vue from '@vitejs/plugin-vue';
+import fs from 'fs';
+import { homedir } from 'os';
+import { resolve } from 'path';
+
+
+const host = 'pxl.test';
+const certPath = resolve(homedir(), 'Library/Application Support/Herd/config/valet/Certificates'); // macOS
+
+
+export default defineConfig({
+    plugins: [
+        laravel({
+            input: ['resources/css/app.css', 'resources/js/app.js'],
+            refresh: true,
+        }),
+        vue(),
+    ],
+    resolve: {
+        alias: {
+            vue: 'vue/dist/vue.esm-bundler.js',
+        },
+    },
+    server: {
+        host: host,
+        https: {
+            key: fs.readFileSync(`${certPath}/${host}.key`),
+            cert: fs.readFileSync(`${certPath}/${host}.crt`),
+        },
+        hmr: {
+            host: host,
+        },
+    },
+})
