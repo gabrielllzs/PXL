@@ -7,7 +7,8 @@ import { resolve } from 'path';
 
 
 const host = 'pxl.test';
-const certPath = resolve(homedir(), 'Library/Application Support/Herd/config/valet/Certificates'); // macOS
+const macCertPath = resolve(homedir(), 'Library/Application Support/Herd/config/valet/Certificates'); // macOS
+const windowsCertPath = resolve(homedir(), '/Users/username/.config/Herd/config/valet/Certificates'); // Windows
 
 
 export default defineConfig({
