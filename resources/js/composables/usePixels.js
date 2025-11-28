@@ -56,12 +56,8 @@ export function usePixels() {
             const existing = stored.find(p => p.x === x && p.y === y)
             if (existing) {
                 existing.color = color
-                if (existing.id) {
-                    await axios.put(`/api/pixel/${existing.id}`, { color, visitorId })
-                } else {
-                    const res = await axios.post('/api/pixel', { x, y, color, visitorId })
-                    if (res.data?.id) existing.id = res.data.id
-                }
+                const res = await axios.post('/api/pixel', { x, y, color, visitorId });
+                if (res.data?.id) existing.id = res.data.id;
             } else {
                 const newCell = { x, y, color }
                 stored.push(newCell)
