@@ -26,6 +26,11 @@ const { stored, load, save, syncCooldown} = usePixels()
 
 const canvas = ref(null)
 let ctx
+let animationFrameId = null
+const animationPulse = ref(0)
+
+const hoverX = ref(null)
+const hoverY = ref(null)
 
 onMounted(async () => {
     const mapInstance = init()
@@ -33,8 +38,8 @@ onMounted(async () => {
     await load()
     setupCanvas()
     setupEvents(mapInstance)
-    initRealtimePixels(drawAll) // Pass stored and drawAll
-    drawAll()
+    initRealtimePixels(drawPixels)
+    drawPixels()
 })
 
 defineExpose({ zoomIn, zoomOut, centerMap })
@@ -48,6 +53,8 @@ function setupCanvas() {
     c.style.position = 'absolute'
     c.style.pointerEvents = 'none'
     ctx = c.getContext('2d')
+    ctx.lineWidth = 2
+    ctx.strokeStyle = '#ffffff'
 }
 
 function setupEvents(mapInstance) {
@@ -56,6 +63,7 @@ function setupEvents(mapInstance) {
     on('resize', resizeCanvas)
     mapInstance.getCanvas().addEventListener('click', handleClick)
     mapInstance.getCanvas().addEventListener('mousemove', handleHover)
+    mapInstance.getCanvas().addEventListener('mouseout', handleMouseOut)
 }
 
 function resizeCanvas() {
@@ -66,22 +74,65 @@ function resizeCanvas() {
     drawAll()
 }
 
-function drawAll() {
+function getCellScreenBounds(x, y) {
+    const worldX1 = x * cellPixelSizeAtZoom
+    const worldY1 = y * cellPixelSizeAtZoom
+    const worldX2 = (x + 1) * cellPixelSizeAtZoom
+    const worldY2 = (y + 1) * cellPixelSizeAtZoom
+
+    const topLeft = worldPxToLngLat({ x: worldX1, y: worldY1 }, Zoom)
+    const bottomRight = worldPxToLngLat({ x: worldX2, y: worldY2 }, Zoom)
+
+    const screenTL = project([topLeft.lng, topLeft.lat])
+    const screenBR = project([bottomRight.lng, bottomRight.lat])
+
+    const width = screenBR.x - screenTL.x
+    const height = screenBR.y - screenTL.y
+
+    return {
+        screenTL: screenTL,
+        width: Math.ceil(width),
+        height: Math.ceil(height),
+        screenX: Math.floor(screenTL.x),
+        screenY: Math.floor(screenTL.y)
+    }
+}
+
+function drawPixels(){
     ctx.clearRect(0, 0, canvas.value.width, canvas.value.height)
     stored.forEach(cell => {
-        const worldX1 = cell.x * cellPixelSizeAtZoom
-        const worldY1 = cell.y * cellPixelSizeAtZoom
-        const worldX2 = (cell.x + 1) * cellPixelSizeAtZoom
-        const worldY2 = (cell.y + 1) * cellPixelSizeAtZoom
-        const topLeft = worldPxToLngLat({ x: worldX1, y: worldY1 }, Zoom)
-        const bottomRight = worldPxToLngLat({ x: worldX2, y: worldY2 }, Zoom)
-        const screenTL = project([topLeft.lng, topLeft.lat])
-        const screenBR = project([bottomRight.lng, bottomRight.lat])
-        const width = screenBR.x - screenTL.x
-        const height = screenBR.y - screenTL.y
+        const bounds = getCellScreenBounds(cell.x, cell.y)
         ctx.fillStyle = cell.color
-        ctx.fillRect(Math.floor(screenTL.x), Math.floor(screenTL.y), Math.ceil(width), Math.ceil(height))
+        ctx.fillRect(bounds.screenX, bounds.screenY, bounds.width, bounds.height)
     })
+
+    drawHoverPreview(hoverX.value, hoverY.value)
+}
+
+function drawHoverPreview(x, y) {
+    if(x !== null && y !== null) {
+        const bounds = getCellScreenBounds(x, y)
+
+        const alpha = 0.6 + Math.sin(animationPulse.value) * 0.2;
+
+        ctx.fillStyle = props.selectedColor.slice(0, 7) + Math.round(alpha * 255).toString(16).padStart(2, '0');
+
+        ctx.fillRect(bounds.screenX, bounds.screenY, bounds.width, bounds.height)
+    }
+}
+
+function drawAll() {
+    drawPixels()
+}
+
+function animateHover(timestamp) {
+    if (hoverX.value !== null) {
+        animationPulse.value += 0.05;
+
+        updateHoverState(hoverX.value, hoverY.value, true);
+
+        animationFrameId = requestAnimationFrame(animateHover);
+    }
 }
 
 async function handleClick(mouseEvent) {
@@ -108,9 +159,62 @@ function handleHover(mouseEvent) {
     const x = Math.floor(worldPixel.x / cellPixelSizeAtZoom)
     const y = Math.floor(worldPixel.y / cellPixelSizeAtZoom)
 
+    if (hoverX.value !== x || hoverY.value !== y){
+        updateHoverState(x, y, false)
+    }
 
+    if (animationFrameId === null) {
+        animationFrameId = requestAnimationFrame(animateHover);
+    }
 
     emit('pixelHover', `(${x},${y})`)
+}
+
+function updateHoverState(newX, newY, isAnimationTick) {
+    if (!isAnimationTick && hoverX.value !== null) {
+        const bounds = getCellScreenBounds(hoverX.value, hoverY.value)
+
+        ctx.clearRect(bounds.screenX, bounds.screenY, bounds.width, bounds.height);
+
+        const oldPixel = stored.find(cell => cell.x === hoverX.value && cell.y === hoverY.value);
+        if (oldPixel) {
+            ctx.fillStyle = oldPixel.color;
+            ctx.fillRect(bounds.screenX, bounds.screenY, bounds.width, bounds.height);
+        }
+    }
+
+    if (!isAnimationTick) {
+        hoverX.value = newX
+        hoverY.value = newY
+    }
+
+    drawHoverPreview(hoverX.value, hoverY.value);
+
+    if (animationFrameId === null) {
+        animationFrameId = requestAnimationFrame(animateHover);
+    }
+}
+
+function handleMouseOut() {
+    if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+
+    if (hoverX.value !== null) {
+        const bounds = getCellScreenBounds(hoverX.value, hoverY.value);
+        ctx.clearRect(bounds.screenX, bounds.screenY, bounds.width, bounds.height);
+
+        const oldPixel = stored.find(cell => cell.x === hoverX.value && cell.y === hoverY.value);
+        if (oldPixel) {
+            ctx.fillStyle = oldPixel.color;
+            ctx.fillRect(bounds.screenX, bounds.screenY, bounds.width, bounds.height);
+        }
+    }
+
+    hoverX.value = null
+    hoverY.value = null
+    animationPulse.value = 0;
 }
 </script>
 
