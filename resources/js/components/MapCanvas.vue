@@ -6,9 +6,8 @@
 </template>
 
 <script setup>
-import {onBeforeUnmount, onMounted, ref} from 'vue'
+import { onMounted, ref} from 'vue'
 import { useMap } from '../composables/useMap'
-import CritterLayer from './Critter.vue'
 import { usePixels } from '../composables/usePixels'
 import { initRealtimePixels } from '../composables/realtimePixels'
 import { lngLatToWorldPx, worldPxToLngLat } from '../composables/useWorldConversion'
@@ -34,6 +33,14 @@ const animationPulse = ref(0)
 
 const hoverX = ref(null)
 const hoverY = ref(null)
+
+
+const cursorX = ref(null)
+const cursorY = ref(null)
+
+const displayX = ref(null)
+const displayY = ref(null)
+
 
 onMounted(async () => {
     const mapInstance = init()
@@ -61,8 +68,8 @@ function setupCanvas() {
 }
 
 function setupEvents(mapInstance) {
-    on('move', () => { drawAll(); mapUpdateTrigger.value++; })
-    on('zoom', () => { drawAll(); mapUpdateTrigger.value++; })
+    on('move', () => { drawAll()})
+    on('zoom', () => { drawAll()})
 
     on('resize', resizeCanvas)
     mapInstance.getCanvas().addEventListener('click', handleClick)
@@ -135,14 +142,27 @@ function drawAll() {
     drawPixels()
 }
 
-function animateHover(timestamp) {
-    if (hoverX.value !== null) {
-        animationPulse.value += 0.025;
-
-        drawPixels();
-
-        animationFrameId = requestAnimationFrame(animateHover);
+function animateHover() {
+    if (cursorX.value == null) {
+        animationFrameId = null
+        return
     }
+
+    const followSpeed = 0.1 // smaller = slower follow
+
+    displayX.value += (cursorX.value - displayX.value) * followSpeed
+    displayY.value += (cursorY.value - displayY.value) * followSpeed
+
+    // optional math.round because if not rounded cause hovered pixel to be off center and will reset after next animation render
+    // no round means smoother movement
+
+    hoverX.value = displayX.value
+    hoverY.value = displayY.value
+
+    animationPulse.value += 0.025
+    drawPixels()
+
+    animationFrameId = requestAnimationFrame(animateHover)
 }
 
 async function handleClick(mouseEvent) {
@@ -166,46 +186,31 @@ function handleHover(mouseEvent) {
     const lngLat = unproject([xPixel, yPixel])
     const worldPixel = lngLatToWorldPx(lngLat, Zoom)
 
-    const x = Math.floor(worldPixel.x / cellPixelSizeAtZoom)
-    const y = Math.floor(worldPixel.y / cellPixelSizeAtZoom)
+    cursorX.value = Math.floor(worldPixel.x / cellPixelSizeAtZoom)
+    cursorY.value = Math.floor(worldPixel.y / cellPixelSizeAtZoom)
 
-    if (hoverX.value !== x || hoverY.value !== y){
-        hoverX.value = x
-        hoverY.value = y
-
-        drawPixels()
-    }
+    emit('pixelHover', `(${cursorX.value},${cursorY.value})`)
 
     if (animationFrameId === null) {
-        animationFrameId = requestAnimationFrame(animateHover);
-    }
-
-    emit('pixelHover', `(${x},${y})`)
-}
-
-function updateHoverState(newX, newY, isAnimationTick) {
-    if (!isAnimationTick) {
-        hoverX.value = newX
-        hoverY.value = newY
-    }
-
-    drawPixels();
-
-    if (animationFrameId === null) {
-        animationFrameId = requestAnimationFrame(animateHover);
+        animationFrameId = requestAnimationFrame(animateHover)
     }
 }
 
 function handleMouseOut() {
-    if (animationFrameId !== null) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-    }
+    cancelAnimationFrame(animationFrameId)
+    animationFrameId = null
+
+    cursorX.value = null
+    cursorY.value = null
+
+    displayX.value = null
+    displayY.value = null
 
     hoverX.value = null
     hoverY.value = null
-    animationPulse.value = 0;
+    animationPulse.value = 0
 }
+
 </script>
 
 <style scoped>
@@ -215,6 +220,9 @@ function handleMouseOut() {
     height: 100vh;
 }
 #map, #overlayCanvas {
+    image-rendering: pixelated;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: -moz-crisp-edges;
     position: absolute;
     top: 0;
     left: 0;

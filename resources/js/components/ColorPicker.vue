@@ -2,19 +2,21 @@
     <div id="colorPicker" @click.stop>
         <div class="palette-grid">
             <div
-                v-for="c in palette"
-                :key="c"
+                v-for="color in palette"
+                :key="color"
                 class="swatch"
-                :class="{ selected: c === modelValue }"
-                :style="{ background: c }"
-                @click.stop="$emit('update:modelValue', c)"
+                :class="{ selected: color === modelValue }"
+                :style="{ background: color }"
+                @click.stop="$emit('update:modelValue', color)"
             ></div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+
+const STORAGE_KEY = 'colorPicker:selectedColor'
 
 const props = defineProps({
     modelValue: {
@@ -29,8 +31,30 @@ const palette = [
     '#fff1e8', '#ff004d', '#ffa300', '#ffec27', '#00e436', '#29adff', '#83769c', '#ff77a8', '#ffccaa'
 ]
 
-const color = ref(props.modelValue)
-watch(() => props.modelValue, v => (color.value = v))
+// loads color black
+let selectedColor = '#000000'
+try {
+    const storedColor = localStorage.getItem(STORAGE_KEY)
+    if (storedColor) selectedColor = storedColor
+} catch {}
+
+const color = ref(selectedColor)
+
+if (selectedColor !== props.modelValue) {
+    emit('update:modelValue', selectedColor)
+}
+
+watch(
+    () => props.modelValue,
+    v => {
+        color.value = v
+        try {
+            if (v) localStorage.setItem(STORAGE_KEY, v)
+        } catch (e) {
+            // ignore storage errors
+        }
+    }
+)
 </script>
 
 <style scoped>
