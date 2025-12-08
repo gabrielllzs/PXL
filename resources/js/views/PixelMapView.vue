@@ -1,6 +1,7 @@
 <template>
     <div id="overlayContainer">
         <ColorPicker v-model="selectedColor" />
+        <AppHamburger />
         <PixelInfo :info="pixelInfo" />
         <CooldownInfo v-if="cooldown.active" :seconds="cooldown.remaining" />
         <WalletConnect :connect="connectWallet" />
@@ -17,6 +18,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import AppHamburger from '@/components/AppHamburger.vue'
 import ColorPicker from '@/components/ColorPicker.vue'
 import PixelInfo from '@/components/PixelInfo.vue'
 import CooldownInfo from '@/components/CooldownInfo.vue'
@@ -26,7 +28,7 @@ import ToastContainer from '@/components/ToastContainer.vue'
 import { usePixels } from '@/composables/usePixels'
 import { connectWallet } from '@/composables/connectWallet'
 
-const selectedColor = ref('#000000')
+const selectedColor = ref('')
 const pixelInfo = ref('')
 
 const { cooldown } = usePixels()
