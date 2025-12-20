@@ -8,7 +8,7 @@
 </head>
 <body>
 <div id="app">
-    <canvas-view></canvas-view>
+    <login-view></login-view>
 </div>
 </body>
 @vite(['resources/js/app.js'])
