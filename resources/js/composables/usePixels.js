@@ -3,16 +3,18 @@ import axios from 'axios'
 import FingerprintJS from '@fingerprintjs/fingerprintjs'
 
 let visitorId = null
+let fpComponents = null
 
 export const stored = reactive([])
 const cooldown = reactive({ active: false, remaining: 0 })
 let cooldownTimer = null
 
 async function initFingerprint() {
-    if (!visitorId) {
+    if (!visitorId || !fpComponents) {
         const fp = await FingerprintJS.load()
         const result = await fp.get()
         visitorId = result.visitorId
+        fpComponents = result.components
     }
 }
 
@@ -40,8 +42,8 @@ export function usePixels() {
     async function load() {
         await initFingerprint()
         try {
-            const res = await axios.get('/api/pixel', { params: { visitorId } })
-            stored.splice(0, stored.length, ...res.data)
+            const response = await axios.get('/api/pixel', { params: { visitorId } })
+            stored.splice(0, stored.length, ...response.data)
         } catch (err) {
             console.error('Failed to load pixels:', err)
         }
@@ -53,16 +55,19 @@ export function usePixels() {
         if (cooldown.active) return false
 
         try {
+
+            const data = { x, y, color, visitorId, components: fpComponents }
+
             const existing = stored.find(p => p.x === x && p.y === y)
             if (existing) {
                 existing.color = color
-                const res = await axios.post('/api/pixel', { x, y, color, visitorId });
-                if (res.data?.id) existing.id = res.data.id;
+                const response = await axios.post('/api/pixel',  data );
+                if (response.data?.id) existing.id = response.data.id;
             } else {
                 const newCell = { x, y, color }
                 stored.push(newCell)
-                const res = await axios.post('/api/pixel', { ...newCell, visitorId })
-                if (res.data?.id) newCell.id = res.data.id
+                const response = await axios.post('/api/pixel',  data )
+                if (response.data?.id) newCell.id = response.data.id
             }
 
             startCooldown(60)
@@ -72,7 +77,10 @@ export function usePixels() {
                 const remaining = err.response.data?.remaining ?? 60
                 startCooldown(remaining)
                 return false
-            } else {
+            }else if (err.response?.status === 403) {
+                console.error('Security Block: Request rejected due to suspicious activity. Reason:', err.response.data.reason);
+                return false;
+            }else {
                 console.error('Unexpected error:', err)
                 return false
             }
@@ -81,9 +89,13 @@ export function usePixels() {
 
     async function syncCooldown() {
         await initFingerprint()
-        const res = await axios.get('/api/cooldown', { params: { visitorId } })
-        const remaining = res.data.remaining || 0
-        if (remaining > 0) startCooldown(remaining)
+        try {
+            const res = await axios.get('/api/cooldown', { params: { visitorId } })
+            const remaining = res.data.remaining || 0
+            if (remaining > 0) startCooldown(remaining)
+        } catch (err) {
+            console.error('Failed to sync cooldown (likely server or network issue):', err);
+        }
     }
 
     return { stored, load, save, cooldown, syncCooldown }

@@ -15,6 +15,9 @@ const toggleMenu = () => {
     </button>
 
     <div v-if="isMenuOpen" class="rules-menu" @click="toggleMenu">
+        <div class="content-menu-header">
+            <button @click=""></button>
+        </div>
         <div class="content-menu" @click.stop>
             <div class="header">
                 <h1>Welcome to Pixel Place</h1>
