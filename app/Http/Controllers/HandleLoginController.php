@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use http\Env\Response;
 use Illuminate\Http\Request;
 
 class HandleLoginController extends Controller
@@ -16,8 +15,7 @@ class HandleLoginController extends Controller
 
         if (auth()->attempt($credentials)) {
             $request->session()->regenerate();
-
-            return redirect()->intended('dashboard');
+            return redirect()->intended('admin/');
         }
 
         return response()->json(['error' => 'Invalid credentials'], 401);

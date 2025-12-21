@@ -9,7 +9,7 @@
 </head>
 <body>
 <div id="app">
-    <login-view></login-view>
+    <admin-panel></admin-panel>
 </div>
 </body>
 @vite(['resources/js/app.js'])
