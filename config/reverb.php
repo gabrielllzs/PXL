@@ -29,7 +29,7 @@ return [
     'servers' => [
 
         'reverb' => [
-            'host' => env('REVERB_SERVER_HOST', '127.0.0.1'),
+            'host' => env('REVERB_SERVER_HOST', 'localhost'),
             'port' => env('REVERB_SERVER_PORT', 8080),
             'path' => env('REVERB_SERVER_PATH', ''),
             'hostname' => env('REVERB_HOST'),
@@ -42,7 +42,7 @@ return [
                 'channel' => env('REVERB_SCALING_CHANNEL', 'reverb'),
                 'server' => [
                     'url' => env('REDIS_URL'),
-                    'host' => env('REDIS_HOST', '127.0.0.1'),
+                    'host' => env('REDIS_HOST', 'localhost'),
                     'port' => env('REDIS_PORT', '6379'),
                     'username' => env('REDIS_USERNAME'),
                     'password' => env('REDIS_PASSWORD'),
