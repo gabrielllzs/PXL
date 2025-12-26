@@ -12,7 +12,7 @@ export function initRealtimePixels(drawAll) {
         wsHost: import.meta.env.VITE_REVERB_HOST,
         wsPort: import.meta.env.VITE_REVERB_PORT ?? 443,
         wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-        forceTLS: true,
+        forceTLS: false,
         enabledTransports: ["ws", "wss"],
     });
 
