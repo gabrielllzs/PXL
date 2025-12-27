@@ -46,7 +46,6 @@ const displayY = ref(null)
 
 
 onMounted(async () => {
-    isLoading.value = true
     const [mapInstance] = await Promise.all([
         init(),
         load(),
