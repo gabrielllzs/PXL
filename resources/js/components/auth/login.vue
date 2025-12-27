@@ -21,7 +21,7 @@ const csrfToken = ref(document.querySelector('meta[name="csrf-token"]')?.content
                         </div>
                         <div class="user-box">
                             <label>Password</label>
-                            <input type="password" name="password" required="">
+                            <input type="password" name="current-password" required="">
                         </div>
                         <div id="login-button">
                             <button type="submit">Login</button>
