@@ -10,13 +10,9 @@ class HandleLoginController extends Controller
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
-            'current-password' => ['required'],
+            'password' => ['required'],
         ]);
-
-        $password = $credentials['current-password'];
-        unset($credentials['current-password']);
-        $credentials['password'] = $password;
-
+        
         if (auth()->attempt($credentials)) {
             $request->session()->regenerate();
             return redirect()->intended('admin/');

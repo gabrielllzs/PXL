@@ -17,11 +17,11 @@ const csrfToken = ref(document.querySelector('meta[name="csrf-token"]')?.content
                         <input type="hidden" name="_token" :value="csrfToken">
                         <div class="user-box">
                             <label>Email</label>
-                            <input type="text" name="email" required="">
+                            <input type="text" name="email" autocomplete="username" required="">
                         </div>
                         <div class="user-box">
                             <label>Password</label>
-                            <input type="password" name="current-password" required="">
+                            <input type="password" name="password" autocomplete="current-password" required>
                         </div>
                         <div id="login-button">
                             <button type="submit">Login</button>
