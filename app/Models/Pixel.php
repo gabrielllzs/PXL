@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Pixel extends Model
 {
-    protected $fillable = ['x', 'y', 'color', 'visitor_id', 'fingerprint_components' , 'risk_score'];
+    protected $fillable = ['x', 'y', 'color', 'visitor_id', 'fingerprint_components' , 'risk_score', 'ip_address'];
 
     protected $casts = [
         'fingerprint_components' => 'array',

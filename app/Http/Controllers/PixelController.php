@@ -11,7 +11,6 @@ class PixelController extends Controller
 {
     private const MAX_FINGERPRINT_RISK_SCORE = 5;
 
-
     public function index()
     {
         return Pixel::all();
@@ -59,6 +58,7 @@ class PixelController extends Controller
                 'visitor_id' => $visitorId,
                 'fingerprint_components' => json_encode($components),
                 'risk_score' => $riskData['risk_score'],
+                'ip_address' => $clientIp,
             ]
         );
 
