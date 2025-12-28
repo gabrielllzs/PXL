@@ -61,7 +61,13 @@ const toggleMenu = () => {
     </div>
 
     <a href="https://pump.fun" class="wallet-btn" target="_blank" rel="noopener noreferrer" aria-label="Open pump.fun">
-        <img src="../../images/pump-logomark-christmas.webp" alt="pump.fun logo in pixel art" />
+        <img
+            src="../../images/pump-logomark-christmas.webp"
+            alt="pump.fun logo in pixel art"
+            width="36"
+            height="36"
+            fetchpriority="high"
+        />
     </a>
 </template>
 

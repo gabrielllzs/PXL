@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>Admin</title>
     <style> body { margin: 0; padding: 0; }</style>

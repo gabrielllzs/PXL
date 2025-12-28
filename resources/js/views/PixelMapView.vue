@@ -17,16 +17,19 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, defineAsyncComponent } from 'vue'
 import AppHamburger from '@/components/AppHamburger.vue'
 import ColorPicker from '@/components/ColorPicker.vue'
 import PixelInfo from '@/components/PixelInfo.vue'
 import CooldownInfo from '@/components/CooldownInfo.vue'
 import WalletConnect from "@/components/WalletConnect.vue";
-import MapCanvas from '@/components/MapCanvas.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
 import { usePixels } from '@/composables/usePixels'
 import { connectWallet } from '@/composables/connectWallet'
+
+const MapCanvas = defineAsyncComponent(() =>
+    import('@/components/MapCanvas.vue')
+)
 
 const selectedColor = ref('')
 const pixelInfo = ref('')
