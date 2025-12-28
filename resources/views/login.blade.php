@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>Laravel</title>
-    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
     <style> body { margin: 0; padding: 0; }</style>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @vite(['resources/css/app.css'])

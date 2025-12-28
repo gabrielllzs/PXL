@@ -4,6 +4,7 @@ use App\Http\Controllers\PixelController;
 use App\Http\Controllers\HandleLoginController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Api\ServerMetricsController;
 
 
 Route::get('/', function () { return view('canvas'); });
@@ -32,4 +33,8 @@ Route::middleware('auth')->get('/api/me', function () {
 });
 
 
+Route::middleware('auth')->group(function () {
+    Route::get('/server/metrics', [ServerMetricsController::class, 'index']);
+    Route::get('/server/info', [ServerMetricsController::class, 'info']);
+});
 
