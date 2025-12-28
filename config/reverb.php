@@ -29,12 +29,13 @@ return [
     'servers' => [
 
         'reverb' => [
-            'host' => env('REVERB_SERVER_HOST', 'localhost'),
+            'host' => env('REVERB_SERVER_HOST', '0.0.0.0'),
             'port' => env('REVERB_SERVER_PORT', 8080),
             'path' => env('REVERB_SERVER_PATH', ''),
             'hostname' => env('REVERB_HOST'),
             'options' => [
-                'tls' => [],
+                'tls' => [
+		],
             ],
             'max_request_size' => env('REVERB_MAX_REQUEST_SIZE', 10_000),
             'scaling' => [
@@ -42,7 +43,7 @@ return [
                 'channel' => env('REVERB_SCALING_CHANNEL', 'reverb'),
                 'server' => [
                     'url' => env('REDIS_URL'),
-                    'host' => env('REDIS_HOST', 'localhost'),
+                    'host' => env('REDIS_HOST', '0.0.0.0'),
                     'port' => env('REDIS_PORT', '6379'),
                     'username' => env('REDIS_USERNAME'),
                     'password' => env('REDIS_PASSWORD'),
