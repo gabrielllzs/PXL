@@ -18,7 +18,11 @@ export function useMap(containerId = 'map') {
             center: [0, 0],
             zoom: 10,
             dragRotate: false,
-            attributionControl: false // <-- disable the control
+            attributionControl: false,
+            touchPitch: false,
+            bearing: 0,
+            pitch: 0,
+            maxPitch: 0,
         })
         return map.value
     }
