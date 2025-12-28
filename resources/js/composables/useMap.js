@@ -1,10 +1,10 @@
 import { ref, onUnmounted } from 'vue'
-import maplibregl from 'maplibre-gl'
 
 export function useMap(containerId = 'map') {
     const map = ref(null)
 
-    function init(options = {}) {
+    async function init(options = {}) {
+        const maplibregl = (await import('maplibre-gl')).default;
         map.value = new maplibregl.Map({
             container: containerId,
             style: {

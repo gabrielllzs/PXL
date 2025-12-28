@@ -2,6 +2,9 @@
     <div id="mapContainer">
         <div id="map"></div>
         <canvas ref="canvas" id="overlayCanvas"></canvas>
+        <div v-if="isLoading" class="loading-overlay">
+            Loading World...
+        </div>
     </div>
 </template>
 
@@ -12,7 +15,7 @@ import { usePixels } from '../composables/usePixels'
 import { initRealtimePixels } from '../composables/realtimePixels'
 import { lngLatToWorldPx, worldPxToLngLat } from '../composables/useWorldConversion'
 
-
+const isLoading = ref(true)
 
 const props = defineProps({
     selectedColor: String
@@ -43,15 +46,18 @@ const displayY = ref(null)
 
 
 onMounted(async () => {
-    const mapInstance = init()
-    await syncCooldown()
-    await load()
+    isLoading.value = true
+    const [mapInstance] = await Promise.all([
+        init(),
+        load(),
+        syncCooldown()
+    ]);
+    isLoading.value = false
     setupCanvas()
     setupEvents(mapInstance)
     initRealtimePixels(drawPixels)
     drawPixels()
 })
-
 defineExpose({ zoomIn, zoomOut, centerMap })
 
 
@@ -189,6 +195,11 @@ function handleHover(mouseEvent) {
     cursorX.value = Math.floor(worldPixel.x / cellPixelSizeAtZoom)
     cursorY.value = Math.floor(worldPixel.y / cellPixelSizeAtZoom)
 
+    if (displayX.value == null) {
+        displayX.value = cursorX.value
+        displayY.value = cursorY.value
+    }
+
     emit('pixelHover', `(${cursorX.value},${cursorY.value})`)
 
     if (animationFrameId === null) {
@@ -218,7 +229,9 @@ function handleMouseOut() {
     position: relative;
     width: 100vw;
     height: 100vh;
+    background-color: #1e1e1e; /* Dark background while loading */
 }
+
 #map, #overlayCanvas {
     image-rendering: pixelated;
     image-rendering: -webkit-crisp-edges;
@@ -228,5 +241,21 @@ function handleMouseOut() {
     left: 0;
     width: 100%;
     height: 100%;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 2rem;
+    pointer-events: none;
 }
 </style>
