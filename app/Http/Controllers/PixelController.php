@@ -68,12 +68,20 @@ class PixelController extends Controller
 
     public function cooldown(Request $request)
     {
-        $visitorId = $request->input('visitorId');
         $cooldownSeconds = 60;
+        $clientIp = $request->ip();
 
-        $last = Pixel::where('visitor_id', $visitorId)
-            ->latest()
-            ->first();
+
+        if (str_contains($clientIp, ':')) {
+            $query = Pixel::where('ip_address', $clientIp);
+        } else {
+            // IPv4: Fallback to visitorId.
+            // Using IP here would block the whole household (NAT), which we want to avoid.
+            $visitorId = $request->input('visitorId');
+            $query = Pixel::where('visitor_id', $visitorId);
+        }
+
+        $last = $query->latest()->first();
 
         if (!$last) {
             return ['cooldown' => 0, 'remaining' => 0];
