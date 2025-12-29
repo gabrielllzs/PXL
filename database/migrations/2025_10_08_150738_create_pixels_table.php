@@ -13,7 +13,6 @@ return new class extends Migration {
             $table->integer('x');
             $table->integer('y');
             $table->string('visitor_id');
-            $table->json('fingerprint_components');
             $table->unsignedTinyInteger('risk_score')->default(0);
             $table->string('ip_address');
             $table->string('color')->default('black');

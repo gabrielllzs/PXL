@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\PixelPlaced;
 use App\Models\Pixel;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class PixelController extends Controller
 {
@@ -56,7 +56,6 @@ class PixelController extends Controller
             [
                 'color' => $request->color ?? 'black',
                 'visitor_id' => $visitorId,
-                'fingerprint_components' => json_encode($components),
                 'risk_score' => $riskData['risk_score'],
                 'ip_address' => $clientIp,
             ]
