@@ -2,30 +2,38 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BannedUser;
 use Illuminate\Http\Request;
 use App\Models\Pixel;
 
 class BanUserController extends Controller
 {
-    public function ban(Request $request, $visitor_id, $userIp)
+    public function ban(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
+            'visitor_id' => 'required|string',
+            'ip_address' => 'required|string',
+            'reason' => 'required|string|max:500',
+            'hide_pixels' => 'boolean',
             'is_permanent' => 'boolean',
-            'reason' => 'required|string|max:255',
+            'banned_until' => 'nullable|date',
         ]);
 
-        // Find the user by ID
-        $user = Pixel::find($visitor_id, $userIp);
+        // Create banned user record
+        $bannedUser = BannedUser::create([
+            'visitor_id' => $validated['visitor_id'],
+            'ip_address' => $validated['ip_address'],
+            'reason' => $validated['reason'],
+            'banned' => true,
+            'hide_pixels' => $validated['hide_pixels'] ?? false,
+            'is_permanent' => $validated['is_permanent'] ?? false,
+            'banned_until' => $validated['is_permanent'] ? null : $validated['banned_until'],
+        ]);
 
-        if (!$user) {
-            return response()->json(['error' => 'User not found'], 404);
-        }
-
-        $user->banned = true;
-        $user->ban_reason = $request->input('reason');
-        $user->save();
-
-        return response()->json(['message' => 'User banned successfully'], 200);
+        return response()->json([
+            'message' => 'User banned successfully',
+            'banned_user' => $bannedUser
+        ]);
     }
 
     public function getBannedMetrics()
@@ -52,5 +60,17 @@ class BanUserController extends Controller
 
         return response()->json($metrics, 200);
 
+    }
+
+    public function getBannedVisitors()
+    {
+        $bannedVisitors = BannedUser::where('banned', true)->get();
+
+
+        if ($bannedVisitors->isNotEmpty()) {
+            return response()->json($bannedVisitors, 200);
+        } else {
+            return response()->json(['message' => 'No banned visitors found'], 200);
+        }
     }
 }

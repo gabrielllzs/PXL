@@ -10,12 +10,16 @@ class BannedUser extends Model
         'visitor_id',
         'ip_address',
         'reason',
+        'hide_pixels',
+        'is_permanent',
         'banned_until',
-        'is_permanent'
+        'banned',
     ];
 
     protected $casts = [
+        'hide_pixels' => 'boolean',
         'is_permanent' => 'boolean',
-        'banned_at' => 'datetime',
+        'banned_until' => 'datetime',
+        'banned' => 'boolean',
     ];
 }

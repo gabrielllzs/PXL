@@ -14,3 +14,22 @@
 html {
     font-family: 'pixel art', serif;
 }
+
+/* Scrollbar that matches your pixel-card style */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1e1e1e;
+    border-left: 1px solid #333;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #444, #333);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #555, #444);
+}

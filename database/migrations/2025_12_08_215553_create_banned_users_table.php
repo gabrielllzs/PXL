@@ -16,9 +16,10 @@ return new class extends Migration
             $table->string('visitor_id')->nullable();
             $table->string('ip_address')->nullable();
             $table->string('reason')->nullable();
+            $table->boolean('banned')->default(false);
+            $table->boolean('hide_pixels')->default(false);
             $table->timestamp('banned_until')->nullable();
             $table->boolean('is_permanent')->default(false);
-            $table->timestamp('banned_at')->useCurrent();
             $table->timestamps();
 
             $table->index('visitor_id');
