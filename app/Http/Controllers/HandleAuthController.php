@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-class HandleLoginController extends Controller
+class HandleAuthController extends Controller
 {
     public function handleLogin(Request $request)
     {
@@ -12,12 +12,22 @@ class HandleLoginController extends Controller
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
-        
+
         if (auth()->attempt($credentials)) {
             $request->session()->regenerate();
             return redirect()->intended('admin/');
         }
 
-        return response()->json(['error' => 'Invalid credentials'], 401);
+        return back()->withErrors([
+            'email' => 'The provided credentials do not match our records.',
+        ])->onlyInput('email');
+    }
+
+    public function handleLogout(Request $request)
+    {
+        auth()->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect('/login');
     }
 }
