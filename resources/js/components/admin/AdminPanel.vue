@@ -136,12 +136,13 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 24px;
+    padding: 24px;
     height: 64px;
 }
 
 #main-panel-header h2 {
-    font-size: 1rem;
+    font-size: 1.1rem;
+
 }
 
 .user-status {
