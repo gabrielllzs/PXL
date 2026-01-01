@@ -40,9 +40,8 @@ function startCooldown(seconds) {
 
 export function usePixels() {
     async function load() {
-        await initFingerprint()
         try {
-            const response = await axios.get('/api/pixel', { params: { visitorId } })
+            const response = await axios.get('/api/map-data')
             stored.splice(0, stored.length, ...response.data)
         } catch (err) {
             console.error('Failed to load pixels:', err)
