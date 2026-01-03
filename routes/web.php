@@ -9,6 +9,7 @@ use App\Http\Controllers\BanUserController;
 
 
 Route::get('/', function () { return view('canvas'); });
+Route::get('/support', function () { return view('support'); });
 
 
 Route::get('/api/map-data', [PixelController::class, 'index']);
@@ -19,6 +20,7 @@ Route::get('/api/cooldown', [PixelController::class, 'cooldown']);
 
 Route::get('/login', function () { return view('login'); })->middleware('guest')->name('login');
 Route::post('/login', [HandleAuthController::class, 'handleLogin']);
+
 
 
 Route::get('/admin/', function () { return view('admin'); })->middleware('auth');
