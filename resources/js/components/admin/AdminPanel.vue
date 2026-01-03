@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import Dashboard from './Dashboard.vue'
 import UserBans from './UserBans.vue';
+import SupportTickets from "./SupportTickets.vue";
 
 const user = ref(null)
 const activePage = ref('dashboard')
@@ -29,7 +30,7 @@ onMounted(async () => {
                     <li   :class="{ active: activePage === 'user bans' }"  @click="activePage = 'user bans'">
                         <span>> User Bans</span>
                     </li>
-                    <li>
+                    <li  :class="{ active: activePage === 'support tickets' }"  @click="activePage = 'support tickets'">
                         <span>> Support Tickets</span>
                     </li>
                     <li>
@@ -57,6 +58,7 @@ onMounted(async () => {
             <div id="main-panel-content">
                 <Dashboard v-if="activePage === 'dashboard'" />
                 <UserBans v-if="activePage === 'user bans'" />
+                <SupportTickets v-if="activePage === 'support tickets'" />
             </div>
         </div>
     </div>
