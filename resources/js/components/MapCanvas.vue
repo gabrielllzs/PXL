@@ -1,9 +1,14 @@
 <template>
     <div id="mapContainer">
         <div id="map"></div>
-        <canvas ref="canvas" id="overlayCanvas"></canvas>
+        <canvas ref="canvas" id="pixel-map"></canvas>
         <div v-if="isLoading" class="loading-overlay">
             Loading World...
+        </div>
+        <div class="custom-controls">
+            <button @click="zoomIn()">+</button>
+            <button @click="zoomOut()">-</button>
+            <button class="compass" @click="centerMap()"><img src="../../images/mccompass.png" alt="pixel art compass"></button>
         </div>
     </div>
 </template>
@@ -22,11 +27,12 @@ const props = defineProps({
 })
 const emit = defineEmits(['pixelHover'])
 
-const Zoom = 8
-const cellPixelSizeAtZoom = 1
-
-const { map, init, on, unproject, project,  zoomIn, zoomOut, centerMap  } = useMap('map')
+const { map, init, on, unproject, project,  zoomIn, zoomOut, centerMap, getBounds, getZoom } = useMap('map')
 const { stored, load, save, syncCooldown} = usePixels()
+
+const Zoom = 10;
+const min_zoom = 9;
+const cellPixelSizeAtZoom = 1
 
 
 const canvas = ref(null)
@@ -103,27 +109,47 @@ function getCellScreenBounds(x, y) {
     const screenTL = project([topLeft.lng, topLeft.lat])
     const screenBR = project([bottomRight.lng, bottomRight.lat])
 
-    const width = screenBR.x - screenTL.x
-    const height = screenBR.y - screenTL.y
-
     return {
-        screenTL: screenTL,
-        width: Math.ceil(width),
-        height: Math.ceil(height),
+        width: Math.ceil(screenBR.x - screenTL.x),
+        height: Math.ceil(screenBR.y - screenTL.y),
         screenX: Math.floor(screenTL.x),
         screenY: Math.floor(screenTL.y)
     }
 }
 
-function drawPixels(){
-    canvasRender.clearRect(0, 0, canvas.value.width, canvas.value.height)
-    stored.forEach(cell => {
-        const bounds = getCellScreenBounds(cell.x, cell.y)
-        canvasRender.fillStyle = cell.color
-        canvasRender.fillRect(bounds.screenX, bounds.screenY, bounds.width, bounds.height)
-    })
+function drawPixels() {
+    if (!canvasRender || !canvas.value) return;
 
-    drawHoverPreview(hoverX.value, hoverY.value)
+    canvasRender.clearRect(0, 0, canvas.value.width, canvas.value.height);
+
+    const currentZoom = getZoom()
+
+    if (currentZoom < min_zoom) {
+        return;
+    }
+
+    const bounds = getBounds();
+    if (!bounds) return;
+
+    const nw = lngLatToWorldPx(bounds.getNorthWest(), Zoom);
+    const se = lngLatToWorldPx(bounds.getSouthEast(), Zoom);
+
+
+    const minX = Math.floor(nw.x / cellPixelSizeAtZoom);
+    const maxX = Math.ceil(se.x / cellPixelSizeAtZoom);
+    const minY = Math.floor(nw.y / cellPixelSizeAtZoom);
+    const maxY = Math.ceil(se.y / cellPixelSizeAtZoom);
+
+    stored.forEach(cell => {
+        // FRUSTUM CULLING CHECK
+        if (cell.x >= minX && cell.x <= maxX && cell.y >= minY && cell.y <= maxY) {
+            const rectBounds = getCellScreenBounds(cell.x, cell.y);
+            canvasRender.fillStyle = cell.color;
+            canvasRender.fillRect(rectBounds.screenX, rectBounds.screenY, rectBounds.width, rectBounds.height);
+        }
+    });
+
+    drawHoverPreview(hoverX.value, hoverY.value);
 }
 
 function drawHoverPreview(x, y) {
@@ -172,9 +198,8 @@ function animateHover() {
 }
 
 async function handleClick(mouseEvent) {
-    const rect = map.value.getCanvas().getBoundingClientRect()
-    const xPixel = mouseEvent.clientX - rect.left
-    const yPixel = mouseEvent.clientY - rect.top
+    const xPixel = mouseEvent.clientX
+    const yPixel = mouseEvent.clientY
     const lngLat = unproject([xPixel, yPixel])
     const worldPixel = lngLatToWorldPx(lngLat, Zoom)
 
@@ -186,9 +211,8 @@ async function handleClick(mouseEvent) {
 }
 
 function handleHover(mouseEvent) {
-    const rect = map.value.getCanvas().getBoundingClientRect()
-    const xPixel = mouseEvent.clientX - rect.left
-    const yPixel = mouseEvent.clientY - rect.top
+    const xPixel = mouseEvent.clientX
+    const yPixel = mouseEvent.clientY
     const lngLat = unproject([xPixel, yPixel])
     const worldPixel = lngLatToWorldPx(lngLat, Zoom)
 
@@ -200,7 +224,7 @@ function handleHover(mouseEvent) {
         displayY.value = cursorY.value
     }
 
-    emit('pixelHover', `(${cursorX.value},${cursorY.value})`)
+    emit('pixelHover', `${cursorX.value}, ${cursorY.value}`)
 
     if (animationFrameId === null) {
         animationFrameId = requestAnimationFrame(animateHover)
@@ -232,9 +256,8 @@ function handleMouseOut() {
     background-color: #1e1e1e; /* Dark background while loading */
 }
 
-#map, #overlayCanvas {
+#map, #pixel-map {
     image-rendering: pixelated;
-    image-rendering: -webkit-crisp-edges;
     image-rendering: -moz-crisp-edges;
     position: absolute;
     top: 0;
@@ -257,5 +280,29 @@ function handleMouseOut() {
     color: white;
     font-size: 2rem;
     pointer-events: none;
+}
+
+.custom-controls {
+    position: absolute;
+    bottom: 50px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    pointer-events: auto;
+}
+
+.custom-controls button {
+    padding: 8px 12px;
+    font-size: 16px;
+    cursor: pointer;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.compass img{
+    width: 20px;
+    height: 20px;
 }
 </style>
