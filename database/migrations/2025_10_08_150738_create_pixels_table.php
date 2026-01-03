@@ -16,7 +16,12 @@ return new class extends Migration {
             $table->unsignedTinyInteger('risk_score')->default(0);
             $table->string('ip_address');
             $table->string('color')->default('black');
+            $table->boolean('hidden')->default(false);
             $table->timestamps();
+
+
+            $table->index(['visitor_id', 'id']);
+            $table->index('created_at');
         });
     }
     public function down() { Schema::dropIfExists('pixels'); }

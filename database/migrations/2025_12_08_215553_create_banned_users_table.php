@@ -22,8 +22,8 @@ return new class extends Migration
             $table->boolean('is_permanent')->default(false);
             $table->timestamps();
 
-            $table->index('visitor_id');
-            $table->index('ip_address');
+            $table->index(['visitor_id', 'banned']);
+            $table->index('created_at');
         });
     }
 
