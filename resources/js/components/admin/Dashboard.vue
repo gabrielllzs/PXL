@@ -4,31 +4,58 @@ import { ref, onMounted } from 'vue'
 const metrics = ref(null)
 const loading = ref(true)
 
-const formatBytes = (bytes) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+const CACHE_KEY = 'lightsail_metrics'
+const CACHE_TTL = 60000
+
+const formatBytes = bytes => {
+    if (!bytes) return '0 B'
+    const units = ['B', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(1024))
+    return `${(bytes / 1024 ** i).toFixed(2)} ${units[i]}`
+}
+
+const getCache = () => {
+    try {
+        const data = localStorage.getItem(CACHE_KEY)
+        const time = Number(localStorage.getItem(`${CACHE_KEY}_time`))
+
+        if (!data || !time) return null
+        if (Date.now() - time > CACHE_TTL) return null
+
+        return JSON.parse(data) // Parse the stored JSON string
+    } catch {
+        localStorage.removeItem(CACHE_KEY)
+        localStorage.removeItem(`${CACHE_KEY}_time`)
+        return null
+    }
+}
+
+const setCache = data => {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data)) // Store the metrics object
+    localStorage.setItem(`${CACHE_KEY}_time`, Date.now())
 }
 
 onMounted(async () => {
+    loading.value = true
+
+    const cached = getCache()
+    if (cached) {
+        metrics.value = cached
+        loading.value = false
+        return
+    }
+
     try {
-        const response = await fetch('/server/metrics')
-        if (response.ok) {
-            const json = await response.json()
-            if (json.success) {
-                metrics.value = json.data
-            }
-        } else {
-            console.error('Failed to fetch metrics:', response.statusText)
-        }
-    } catch (error) {
-        console.error('Error loading data:', error)
+        const metricsData = await fetch('/server/metrics')
+        if (!metricsData.ok) return
+
+        const { data } = await metricsData.json()
+        metrics.value = data
+        setCache(data)
     } finally {
         loading.value = false
     }
-})
+});
 </script>
 
 <template>
