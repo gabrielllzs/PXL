@@ -48,14 +48,14 @@ export function usePixels() {
         }
     }
 
-    async function save(x, y, color) {
+    async function save(x, y, color, walletData = null) {
         await initFingerprint()
 
         if (cooldown.active) return false
 
         try {
 
-            const data = { x, y, color, visitorId, components: fpComponents }
+            const data = { x, y, color, visitorId, wallet: walletData?.publicKey ?? null, signature: walletData?.signature ?? null, message: walletData?.message ?? null}
 
             const existing = stored.find(p => p.x === x && p.y === y)
             if (existing) {
@@ -69,15 +69,15 @@ export function usePixels() {
                 if (response.data?.id) newCell.id = response.data.id
             }
 
-            startCooldown(60)
+            startCooldown(walletData ? 60 : 180) // reduce cooldown if wallet
             return true
         } catch (err) {
             if (err.response?.status === 412) {
-                const remaining = err.response.data?.remaining ?? 60
+                const remaining = err.response.data?.remaining ?? 180
                 startCooldown(remaining)
                 return false
             }else if (err.response?.status === 403) {
-                console.error('Security Block: Request rejected due to suspicious activity. Reason:', err.response.data.reason);
+                console.error('Security Blocked');
                 return false;
             }else {
                 console.error('Unexpected error:', err)
