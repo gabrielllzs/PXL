@@ -16,7 +16,7 @@ export function useMap(containerId = 'map') {
                 ]
             },
             center: [0, 0],
-            zoom: 10,
+            zoom: 11,
             dragRotate: false,
             attributionControl: false,
             touchPitch: false,
@@ -43,6 +43,15 @@ export function useMap(containerId = 'map') {
         return map.value?.unproject(point)
     }
 
+    function getBounds() {
+        return map.value?.getBounds()
+    }
+
+    function getZoom(){
+
+       return map.value?.getZoom()
+    }
+
     onUnmounted(() => {
         map.value?.remove()
         map.value = null
@@ -53,5 +62,5 @@ export function useMap(containerId = 'map') {
     const centerMap = () => map.value?.flyTo({ center: [0, 0], zoom: 10 });
 
 
-    return { map, init, on, off, project, unproject,  zoomIn, zoomOut, centerMap  }
+    return { map, init, on, off, project, unproject,  zoomIn, zoomOut, centerMap, getBounds, getZoom }
 }
