@@ -17,7 +17,7 @@ const csrfToken = ref(document.querySelector('meta[name="csrf-token"]')?.content
                         <input type="hidden" name="_token" :value="csrfToken">
                         <div class="user-box">
                             <label>Email</label>
-                            <input type="text" name="email" autocomplete="username" required="">
+                            <input type="text" name="email" autocomplete="username" required>
                         </div>
                         <div class="user-box">
                             <label>Password</label>
