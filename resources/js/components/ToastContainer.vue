@@ -25,8 +25,7 @@ const { toasts, removeToast } = useToast()
 }
 .toast {
     pointer-events: auto;
-    min-width: 220px;
-    max-width: 420px;
+    width: 100%;
     padding: 10px 12px;
     border-radius: 8px;
     background: rgba(255,255,255,0.95);
@@ -35,10 +34,11 @@ const { toasts, removeToast } = useToast()
     align-items: center;
     gap: 12px;
     font-size: 16px;
+    color: #fff;
 }
-.toast.info { border-left: 4px solid #2b6cb0; }
-.toast.success { border-left: 4px solid #2f855a; }
-.toast.error { border-left: 4px solid #c53030; }
+.toast.info { background: #2b6cb0; }
+.toast.success { background: #1cbc00; }
+.toast.error { background: #ac0000; }
 
 .toast .close {
     background: transparent;
