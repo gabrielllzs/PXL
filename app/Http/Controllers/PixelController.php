@@ -67,7 +67,7 @@ class PixelController extends Controller
 
     public function cooldown(Request $request)
     {
-        $cooldownSeconds = 60;
+        $cooldownSeconds = 180;
         $clientIp = $request->ip();
 
 
@@ -144,5 +144,23 @@ class PixelController extends Controller
         }
 
         return ['risk_score' => $riskScore, 'action' => 'ALLOW', 'reason' => 'OK'];
+    }
+
+    public function getVisitors()
+    {
+        return Pixel::query()
+            ->select('visitor_id', 'ip_address', 'risk_score', 'created_at')
+            ->whereIn('id', function ($query) {
+                $query->selectRaw('MAX(id)')
+                    ->from('pixels')
+                    ->groupBy('visitor_id');
+            })
+            ->whereNotIn('visitor_id', function ($query) {
+                $query->select('visitor_id')
+                    ->from('banned_users')
+                    ->where('banned', true);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
     }
 }
