@@ -6,6 +6,9 @@ use App\Events\PixelPlaced;
 use App\Models\Pixel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Exception;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class PixelController extends Controller
 {
@@ -56,7 +59,7 @@ class PixelController extends Controller
             [
                 'color' => $request->color ?? 'black',
                 'visitor_id' => $visitorId,
-                'risk_score' => $riskData['risk_score'],
+                'risk_score' => 0,
                 'ip_address' => $clientIp,
             ]
         );
@@ -69,6 +72,7 @@ class PixelController extends Controller
     {
         $cooldownSeconds = 180;
         $clientIp = $request->ip();
+        $wallet = $request->input('wallet');
 
 
         if (str_contains($clientIp, ':')) {
@@ -81,6 +85,9 @@ class PixelController extends Controller
         }
 
         $last = $query->latest()->first();
+
+        Log::info('Checking remote balance for wallet: ' . $wallet);
+
 
         if (!$last) {
             return ['cooldown' => 0, 'remaining' => 0];
@@ -162,5 +169,40 @@ class PixelController extends Controller
             })
             ->orderBy('created_at', 'desc')
             ->get();
+    }
+
+    private function getRemoteBalance($wallet)
+    {
+        // Validate wallet address format (basic check)
+        if (!preg_match('/^[1-9A-HJ-NP-Za-km-z]{32,44}$/', $wallet)) {
+            return 0; // Invalid address → treat as low balance
+        }
+
+        $rpcUrl = 'https://mainnet.helius-rpc.com/?api-key=c6cba14f-6ef1-4fd4-8db6-cd718438f272';
+
+        try {
+            $response = Http::timeout(10)->post($rpcUrl, [
+                'jsonrpc' => '2.0',
+                'id' => 'pixel-cooldown-check',
+                'method' => 'getBalance',
+                'params' => [$wallet],
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if (isset($data['result']['value'])) {
+                    $lamports = $data['result']['value'];
+                    $sol = $lamports / 1000000000; // 1 SOL = 1_000_000_000 lamports
+                    return $sol;
+                }
+            }
+
+            // Log error if needed: \Log::warning('Solana balance check failed', ['response' => $response->body()]);
+        } catch (Exception $e) {
+            // Silent fail – don't break the endpoint if RPC is down
+            // \Log::error('Solana RPC error', ['exception' => $e]);
+        }
+
+        return 0; // On any error, default to low balance (longer cooldown)
     }
 }

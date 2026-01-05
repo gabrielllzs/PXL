@@ -22,9 +22,9 @@ import { lngLatToWorldPx, worldPxToLngLat } from '../composables/useWorldConvers
 
 const isLoading = ref(true)
 
-const props = defineProps({
-    selectedColor: String
-})
+const props = defineProps(
+    ['selectedColor', 'walletData']
+)
 const emit = defineEmits(['pixelHover'])
 
 const { map, init, on, unproject, project,  zoomIn, zoomOut, centerMap, getBounds, getZoom } = useMap('map')
@@ -206,7 +206,7 @@ async function handleClick(mouseEvent) {
     const x = Math.floor(worldPixel.x / cellPixelSizeAtZoom)
     const y = Math.floor(worldPixel.y / cellPixelSizeAtZoom)
 
-    const ok = await save(x, y, props.selectedColor)
+    const ok = await save(x, y, props.selectedColor, props.walletData)
     if (ok) drawAll()
 }
 

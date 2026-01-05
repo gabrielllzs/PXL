@@ -55,7 +55,7 @@ export function usePixels() {
 
         try {
 
-            const data = { x, y, color, visitorId, wallet: walletData?.publicKey ?? null, signature: walletData?.signature ?? null, message: walletData?.message ?? null}
+            const data = { x, y, color, visitorId, wallet: walletData?.publicKey ?? null, signature: walletData?.signature ?? null, message: walletData?.message ?? null, components: fpComponents }
 
             const existing = stored.find(p => p.x === x && p.y === y)
             if (existing) {
@@ -69,7 +69,7 @@ export function usePixels() {
                 if (response.data?.id) newCell.id = response.data.id
             }
 
-            startCooldown(walletData ? 60 : 180) // reduce cooldown if wallet
+            startCooldown(walletData?.hasReduction ? 60 : 180) // reduce cooldown if wallet
             return true
         } catch (err) {
             if (err.response?.status === 412) {

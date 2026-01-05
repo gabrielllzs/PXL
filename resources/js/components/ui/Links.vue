@@ -1,45 +1,20 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { connectWallet, loadCachedWallet } from '@/composables/connectWallet'
+import { useWallet } from '@/composables/connectWallet'
 
-const connecting = ref(false)
 const { showToast } = useToast()
 
-const buyer = ref(null)
 const walletSignature = ref(null)
 
+const { buyer, connecting, connect, loadCachedWallet } = useWallet()
+
 async function handleConnect() {
-    connecting.value = true
-    try {
-        // Connect wallet first
-        const wallet = await connectWallet({ showToast, setConnecting: v => connecting.value = v, setBuyer: v => buyer.value = v })
-        if (!wallet) return
-
-        // Prompt user to sign message
-        const provider = window.phantom?.solana || window.solana
-        const msg = `Cooldown confirmation for wallet ${wallet.publicKey} at ${Date.now()}`
-        const signed = await provider.signMessage(new TextEncoder().encode(msg), 'utf8')
-
-        // Save signed message
-        walletSignature.value = {
-            message: msg,
-            signature: Array.from(signed.signature)
-        }
-        localStorage.setItem('walletSignature', JSON.stringify(walletSignature.value))
-
-        localStorage.setItem('connectedWallet', wallet.publicKey)
-    } catch (err) {
-        console.error('Wallet signature failed:', err)
-        showToast('Wallet signature failed', 'error')
-    } finally {
-        connecting.value = false
-    }
+    await connect(showToast)
 }
 
-
 onMounted(() => {
-    loadCachedWallet(v => (buyer.value = v))
+    loadCachedWallet()
 })
 </script>
 
