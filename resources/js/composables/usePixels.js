@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 import axios from 'axios'
 import FingerprintJS from '@fingerprintjs/fingerprintjs'
+import { useWallet } from './connectWallet.js'
 
 let visitorId = null
 let fpComponents = null
@@ -48,14 +49,27 @@ export function usePixels() {
         }
     }
 
-    async function save(x, y, color, walletData = null) {
+    async function save(x, y, color){
         await initFingerprint()
+        const { buyer, walletSignature, hasReduction } = useWallet()
+
 
         if (cooldown.active) return false
 
         try {
 
-            const data = { x, y, color, visitorId, wallet: walletData?.publicKey ?? null, signature: walletData?.signature ?? null, message: walletData?.message ?? null, components: fpComponents }
+            const data = {
+                x,
+                y,
+                color,
+                visitorId,
+                components:  fpComponents,
+                wallet: buyer.value && walletSignature.value ? {
+                    publicKey: buyer.value,
+                    signature: walletSignature.value. signature,
+                    message: walletSignature.value.message,
+                } : null
+            }
 
             const existing = stored.find(p => p.x === x && p.y === y)
             if (existing) {
@@ -69,11 +83,18 @@ export function usePixels() {
                 if (response.data?.id) newCell.id = response.data.id
             }
 
-            startCooldown(walletData?.hasReduction ? 60 : 180) // reduce cooldown if wallet
+            const cooldownDuration = hasReduction.value ? 5 : 10
+
+            console.log('Pixel placed successfully', {
+                hasReduction: hasReduction.value,
+                cooldownDuration
+            })
+
+            startCooldown(cooldownDuration)
             return true
         } catch (err) {
             if (err.response?.status === 412) {
-                const remaining = err.response.data?.remaining ?? 180
+                const remaining = err.response.data?.remaining ?? 10
                 startCooldown(remaining)
                 return false
             }else if (err.response?.status === 403) {
