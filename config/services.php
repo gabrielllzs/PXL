@@ -45,4 +45,13 @@ return [
         'instance_name' => env('LIGHTSAIL_INSTANCE_NAME'),
     ],
 
+    'alchemy' => [
+        'solana_url' => env('ALCHEMY_SOLANA_URL'),
+    ],
+
+    'helius' => [
+        'rpc_url' => env('HELIUS_RPC_URL'),
+    ],
+
+
 ];
