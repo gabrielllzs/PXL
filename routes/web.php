@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\ServerMetricsController;
 use App\Http\Controllers\BanUserController;
+use App\Http\Controllers\WalletController;
 
 
 Route::get('/', function () { return view('canvas'); });
@@ -15,6 +16,7 @@ Route::get('/support', function () { return view('support'); });
 Route::get('/api/map-data', [PixelController::class, 'index']);
 Route::post('/api/pixel', [PixelController::class, 'store']);
 Route::get('/api/cooldown', [PixelController::class, 'cooldown']);
+Route::post('/api/wallet/check-balance', [WalletController::class, 'checkBalance']);
 
 /* Login Routes */
 
