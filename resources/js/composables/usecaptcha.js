@@ -8,6 +8,7 @@ export function executeHCaptcha() {
 
         const siteKey = import.meta.env.VITE_CAPTCHA_SITE
 
+        const onSuccess = token => resolve(token);
         const onError = err => reject(err);
 
         let widgetId = container.dataset.widgetId
