@@ -53,5 +53,7 @@ return [
         'rpc_url' => env('HELIUS_RPC_URL'),
     ],
 
-
+    'captcha' => [
+        'secret' => env('CAPTCHA_SECRET'),
+    ],
 ];

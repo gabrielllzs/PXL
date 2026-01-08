@@ -17,6 +17,7 @@
     },
     "dependencies": {
         "@fingerprintjs/fingerprintjs": "^5.0.1",
+        "@hcaptcha/vanilla-hcaptcha": "^1.1.4",
         "@solana/web3.js": "^1.98.4",
         "@vitejs/plugin-vue": "^6.0.1",
         "buffer": "^6.0.3",
