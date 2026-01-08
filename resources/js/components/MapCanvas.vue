@@ -10,6 +10,8 @@
             <button @click="zoomOut()">-</button>
             <button class="compass" @click="centerMap()"><img src="../../images/mccompass.png" alt="pixel art compass"></button>
         </div>
+
+        <div id="hcaptcha-container"></div>
     </div>
 </template>
 
@@ -19,6 +21,7 @@ import { useMap } from '../composables/useMap'
 import { usePixels } from '../composables/usePixels'
 import { initRealtimePixels } from '../composables/realtimePixels'
 import { lngLatToWorldPx, worldPxToLngLat } from '../composables/useWorldConversion'
+import { executeHCaptcha } from '../composables/usecaptcha.js'
 
 const isLoading = ref(true)
 
@@ -38,6 +41,7 @@ const cellPixelSizeAtZoom = 1
 const canvas = ref(null)
 let canvasRender = ref(null)
 let animationFrameId = null
+let captchaSessionVerified = false;
 const animationPulse = ref(0)
 
 const hoverX = ref(null)
@@ -185,8 +189,6 @@ function animateHover() {
     displayX.value += (cursorX.value - displayX.value) * followSpeed
     displayY.value += (cursorY.value - displayY.value) * followSpeed
 
-    // optional math.round because if not rounded cause hovered pixel to be off center and will reset after next animation render
-    // no round means smoother movement
 
     hoverX.value = displayX.value
     hoverY.value = displayY.value
@@ -198,16 +200,27 @@ function animateHover() {
 }
 
 async function handleClick(mouseEvent) {
-    const xPixel = mouseEvent.clientX
-    const yPixel = mouseEvent.clientY
-    const lngLat = unproject([xPixel, yPixel])
-    const worldPixel = lngLatToWorldPx(lngLat, Zoom)
+    let token = null;
 
-    const x = Math.floor(worldPixel.x / cellPixelSizeAtZoom)
-    const y = Math.floor(worldPixel.y / cellPixelSizeAtZoom)
+    if (!captchaSessionVerified) {
+        token = await executeHCaptcha();
+        if (!token) return;
+    }
 
-    const ok = await save(x, y, props.selectedColor, props.walletData)
-    if (ok) drawAll()
+    const xPixel = mouseEvent.clientX;
+    const yPixel = mouseEvent.clientY;
+    const lngLat = unproject([xPixel, yPixel]);
+    const worldPixel = lngLatToWorldPx(lngLat, Zoom);
+
+    const x = Math.floor(worldPixel.x / cellPixelSizeAtZoom);
+    const y = Math.floor(worldPixel.y / cellPixelSizeAtZoom);
+
+    const ok = await save(x, y, props.selectedColor, token);
+
+    if (ok) {
+        captchaSessionVerified = true;
+        drawAll();
+    }
 }
 
 function handleHover(mouseEvent) {
