@@ -6,6 +6,7 @@ use App\Events\PixelPlaced;
 use App\Models\Pixel;
 use App\Services\SolanaBalanceService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class PixelController extends Controller
@@ -24,21 +25,51 @@ class PixelController extends Controller
 
     public function store(Request $request)
     {
+        $clientIp = $request->ip();
+
         $request->validate([
             'x' => 'required|integer',
             'y' => 'required|integer',
             'color' => 'required|string',
             'visitorId' => 'required|string',
             'components' => 'required|array',
+            'captchaToken' => $request->session()->get('captcha_verified', false)
+                ? 'nullable|string'
+                : 'required|string',
             'wallet' => 'nullable|array',
             'wallet.publicKey' => 'nullable|string',
             'wallet.signature' => 'nullable|array',
             'wallet.message' => 'nullable|string',
         ]);
 
+        if (!$request->session()->get('captcha_verified', false)) {
+            $token = $request->input('captchaToken');
+
+            if (!$token) {
+                return response()->json([
+                    'error' => 'captcha_required',
+                ], 403);
+            }
+
+            $response = Http::asForm()->post('https://hcaptcha.com/siteverify', [
+                'secret'   => config('services.captcha.secret'),
+                'response' => $token,
+                'remoteip' => $request->ip(),
+            ]);
+
+            $result = $response->json();
+
+            if (!($result['success'] ?? false)) {
+                return response()->json([
+                    'error' => 'captcha_failed',
+                ], 403);
+            }
+
+            $request->session()->put('captcha_verified', true);
+        }
+
         $visitorId = $request->input('visitorId');
         $components = $request->input('components');
-        $clientIp = $request->ip();
 
         $riskData = $this->checkFingerprint($components, $clientIp);
 
@@ -103,7 +134,6 @@ class PixelController extends Controller
             }
         }
 
-        // Determine which identifier to use
         if (str_contains($clientIp, ':')) {
             $query = Pixel::where('ip_address', $clientIp);
         } else {
