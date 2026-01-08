@@ -49,7 +49,7 @@ export function usePixels() {
         }
     }
 
-    async function save(x, y, color){
+    async function save(x, y, color, captchaToken) {
         await initFingerprint()
         const { buyer, walletSignature, hasReduction } = useWallet()
 
@@ -63,12 +63,13 @@ export function usePixels() {
                 y,
                 color,
                 visitorId,
-                components:  fpComponents,
+                captchaToken,
                 wallet: buyer.value && walletSignature.value ? {
                     publicKey: buyer.value,
                     signature: walletSignature.value. signature,
                     message: walletSignature.value.message,
-                } : null
+                } : null,
+                components:  fpComponents,
             }
 
             const existing = stored.find(p => p.x === x && p.y === y)
