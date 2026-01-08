@@ -153,6 +153,7 @@ onMounted(() => {
     align-items: center;
     gap: 6px;
     white-space: nowrap;
+    font-family: 'pixel art', serif;
 }
 
 .loading-dot {
