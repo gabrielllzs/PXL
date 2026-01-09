@@ -72,24 +72,17 @@ export function usePixels() {
                 components:  fpComponents,
             }
 
+            const response = await axios.post('/api/pixel', data)
+
             const existing = stored.find(p => p.x === x && p.y === y)
             if (existing) {
                 existing.color = color
-                const response = await axios.post('/api/pixel',  data );
-                if (response.data?.id) existing.id = response.data.id;
+                if (response.data?.id) existing.id = response.data. id
             } else {
-                const newCell = { x, y, color }
-                stored.push(newCell)
-                const response = await axios.post('/api/pixel',  data )
-                if (response.data?.id) newCell.id = response.data.id
+                stored.push({ x, y, color, id: response.data?. id })
             }
 
             const cooldownDuration = hasReduction.value ? 5 : 10
-
-            console.log('Pixel placed successfully', {
-                hasReduction: hasReduction.value,
-                cooldownDuration
-            })
 
             startCooldown(cooldownDuration)
             return true
