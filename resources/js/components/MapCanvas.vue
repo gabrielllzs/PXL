@@ -299,7 +299,7 @@ function handleMouseOut() {
 
 .custom-controls {
     position: absolute;
-    bottom: 50px;
+    bottom: 10px;  /* Changed from 50px */
     right: 10px;
     display: flex;
     flex-direction: column;
@@ -312,12 +312,26 @@ function handleMouseOut() {
     font-size: 16px;
     cursor: pointer;
     background: white;
-    border: 1px solid #ccc;
+    border:  1px solid #ccc;
     border-radius: 4px;
 }
 
-.compass img{
+.compass img {
     width: 20px;
     height: 20px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+    .custom-controls {
+        bottom:  10px;
+        right: 5px;
+        gap: 3px;
+    }
+
+    .custom-controls button {
+        padding: 6px 10px;
+        font-size: 14px;
+    }
 }
 </style>

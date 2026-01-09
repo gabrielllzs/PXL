@@ -60,14 +60,15 @@ watch(
 <style scoped>
 #colorPicker {
     position: absolute;
-    bottom: 1px;
+    bottom: 10px;  /* Changed from 1px */
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%);  /* Changed from translate(-50%, -50%) */
     pointer-events: auto;
     padding: 5px;
     margin: 0;
     width: 260px;
     image-rendering: pixelated;
+    max-width: calc(100vw - 20px); /* Add responsive sizing */
 }
 
 .palette-grid {
