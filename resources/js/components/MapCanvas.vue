@@ -266,8 +266,8 @@ function handleMouseOut() {
 <style scoped>
 #mapContainer {
     position: relative;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     background-color: #1e1e1e;
 }
 
@@ -312,7 +312,7 @@ function handleMouseOut() {
     font-size: 16px;
     cursor: pointer;
     background: white;
-    border:  1px solid #ccc;
+    border: 1px solid #ccc;
     border-radius: 4px;
 }
 
