@@ -22,6 +22,7 @@ return new class extends Migration {
 
             $table->index(['visitor_id', 'id']);
             $table->index('created_at');
+            $table->unique(['x', 'y']);
         });
     }
     public function down() { Schema::dropIfExists('pixels'); }
