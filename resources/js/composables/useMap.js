@@ -25,6 +25,7 @@ export function useMap(containerId = 'map') {
             pitch: 0,
             maxPitch: 0,
         })
+        map.value.touchZoomRotate.disableRotation()
         return map.value
     }
 
