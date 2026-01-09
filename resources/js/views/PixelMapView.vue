@@ -23,9 +23,7 @@ import { useWallet } from '@/composables/connectWallet' // Import useWallet
 import ToastContainer from '@/components/ToastContainer.vue'
 import { usePixels } from '@/composables/usePixels'
 
-const MapCanvas = defineAsyncComponent(() =>
-    import('@/components/MapCanvas.vue')
-)
+const MapCanvas = defineAsyncComponent(() => import('@/components/MapCanvas.vue'))
 
 const { buyer, walletSignature, hasReduction } = useWallet()
 const selectedColor = ref('')
@@ -40,7 +38,7 @@ const currentWalletData = computed(() => {
         publicKey: buyer.value,
         signature: walletSignature.value?.signature,
         message: walletSignature.value?.message,
-        hasReduction: hasReduction.value // This tells usePixels to use 60s
+        hasReduction: hasReduction.value || false,
     }
 })
 </script>
