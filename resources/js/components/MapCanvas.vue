@@ -35,7 +35,7 @@ const { stored, load, save, syncCooldown} = usePixels()
 
 const Zoom = 10;
 const min_zoom = 9;
-const cellPixelSizeAtZoom = 1
+const pixelSizeAtZoom = 1
 
 
 const canvas = ref(null)
@@ -102,10 +102,10 @@ function resizeCanvas() {
 }
 
 function getCellScreenBounds(x, y) {
-    const worldX1 = x * cellPixelSizeAtZoom
-    const worldY1 = y * cellPixelSizeAtZoom
-    const worldX2 = (x + 1) * cellPixelSizeAtZoom
-    const worldY2 = (y + 1) * cellPixelSizeAtZoom
+    const worldX1 = x
+    const worldY1 = y
+    const worldX2 = x + 1
+    const worldY2 = y + 1
 
     const topLeft = worldPxToLngLat({ x: worldX1, y: worldY1 }, Zoom)
     const bottomRight = worldPxToLngLat({ x: worldX2, y: worldY2 }, Zoom)
@@ -139,16 +139,16 @@ function drawPixels() {
     const se = lngLatToWorldPx(bounds.getSouthEast(), Zoom);
 
 
-    const minX = Math.floor(nw.x / cellPixelSizeAtZoom);
-    const maxX = Math.ceil(se.x / cellPixelSizeAtZoom);
-    const minY = Math.floor(nw.y / cellPixelSizeAtZoom);
-    const maxY = Math.ceil(se.y / cellPixelSizeAtZoom);
+    const minX = Math.floor(nw.x);
+    const maxX = Math.ceil(se.x);
+    const minY = Math.floor(nw.y);
+    const maxY = Math.ceil(se.y);
 
-    stored.forEach(cell => {
+    stored.forEach(pixel => {
         // FRUSTUM CULLING CHECK
-        if (cell.x >= minX && cell.x <= maxX && cell.y >= minY && cell.y <= maxY) {
-            const rectBounds = getCellScreenBounds(cell.x, cell.y);
-            canvasRender.fillStyle = cell.color;
+        if (pixel.x >= minX && pixel.x <= maxX && pixel.y >= minY && pixel.y <= maxY) {
+            const rectBounds = getCellScreenBounds(pixel.x, pixel.y);
+            canvasRender.fillStyle = pixel.color;
             canvasRender.fillRect(rectBounds.screenX, rectBounds.screenY, rectBounds.width, rectBounds.height);
         }
     });
@@ -212,8 +212,10 @@ async function handleClick(mouseEvent) {
     const lngLat = unproject([xPixel, yPixel]);
     const worldPixel = lngLatToWorldPx(lngLat, Zoom);
 
-    const x = Math.floor(worldPixel.x / cellPixelSizeAtZoom);
-    const y = Math.floor(worldPixel.y / cellPixelSizeAtZoom);
+    const x = Math.floor(worldPixel.x);
+    const y = Math.floor(worldPixel.y);
+
+    console.log("x:", x,"y:", y, "color:", props.selectedColor);
 
     const ok = await save(x, y, props.selectedColor, token);
 
@@ -229,8 +231,8 @@ function handleHover(mouseEvent) {
     const lngLat = unproject([xPixel, yPixel])
     const worldPixel = lngLatToWorldPx(lngLat, Zoom)
 
-    cursorX.value = Math.floor(worldPixel.x / cellPixelSizeAtZoom)
-    cursorY.value = Math.floor(worldPixel.y / cellPixelSizeAtZoom)
+    cursorX.value = Math.floor(worldPixel.x)
+    cursorY.value = Math.floor(worldPixel.y)
 
     if (displayX.value == null) {
         displayX.value = cursorX.value
@@ -266,7 +268,7 @@ function handleMouseOut() {
     position: relative;
     width: 100vw;
     height: 100vh;
-    background-color: #1e1e1e; /* Dark background while loading */
+    background-color: #1e1e1e;
 }
 
 #map, #pixel-map {
