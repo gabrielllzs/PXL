@@ -20,7 +20,7 @@ export function useMap(containerId = 'map') {
             dragRotate: false,
             attributionControl: false,
             touchPitch: false,
-            touchZoomRotate: false,
+            touchRotate: false,
             bearing: 0,
             pitch: 0,
             maxPitch: 0,
