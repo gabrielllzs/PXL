@@ -299,7 +299,7 @@ function handleMouseOut() {
 
 .custom-controls {
     position: absolute;
-    bottom: 10px;  /* Changed from 50px */
+    bottom: 50px;
     right: 10px;
     display: flex;
     flex-direction: column;
@@ -319,19 +319,5 @@ function handleMouseOut() {
 .compass img {
     width: 20px;
     height: 20px;
-}
-
-/* Mobile adjustments */
-@media (max-width: 640px) {
-    .custom-controls {
-        bottom:  10px;
-        right: 5px;
-        gap: 3px;
-    }
-
-    .custom-controls button {
-        padding: 6px 10px;
-        font-size: 14px;
-    }
 }
 </style>
