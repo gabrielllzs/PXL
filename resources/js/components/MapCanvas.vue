@@ -167,9 +167,9 @@ function drawPixels() {
             canvasRender.fillStyle = pixel.color;
             // Use integer coordinates for crisp rendering
             canvasRender.fillRect(
-                Math.round(rectBounds.screenX), 
-                Math.round(rectBounds.screenY), 
-                Math.round(rectBounds.width), 
+                Math.round(rectBounds.screenX),
+                Math.round(rectBounds.screenY),
+                Math.round(rectBounds.width),
                 Math.round(rectBounds.height)
             );
         }
@@ -194,9 +194,9 @@ function drawHoverPreview(x, y) {
         canvasRender.fillStyle = props.selectedColor;
         // Use integer coordinates for crisp rendering
         canvasRender.fillRect(
-            Math.round(pulseX), 
-            Math.round(pulseY), 
-            Math.round(scaledWidth), 
+            Math.round(pulseX),
+            Math.round(pulseY),
+            Math.round(scaledWidth),
             Math.round(scaledHeight)
         )
     }
@@ -308,6 +308,8 @@ function handleMouseOut() {
     left: 0;
     width: 100%;
     height: 100%;
+    will-change: transform;
+    transform: translateZ(0);
 }
 
 .loading-overlay {
