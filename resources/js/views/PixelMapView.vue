@@ -5,6 +5,7 @@
         <CooldownInfo v-if="cooldown.active" :seconds="cooldown.remaining" />
         <WalletConnect/>
         <ToastContainer />
+        <PauseMenu />
     </div>
     <MapCanvas ref="mapCanvasRef" :selectedColor="selectedColor" @pixelHover="pixelInfo = $event" :walletData="currentWalletData"/>
 </template>
