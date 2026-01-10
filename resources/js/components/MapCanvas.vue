@@ -80,8 +80,8 @@ function setupCanvas() {
     canvasValue.height = container.clientHeight
     canvasValue.style.position = 'absolute'
     canvasValue.style.pointerEvents = 'none'
-    canvasRender.imageSmoothingEnabled = false
     canvasRender = canvasValue.getContext('2d')
+    canvasRender.imageSmoothingEnabled = false
     canvasRender.lineWidth = 2
     canvasRender.strokeStyle = '#ffffff'
 }
@@ -116,12 +116,21 @@ function getCellScreenBounds(x, y) {
     const screenTL = project([topLeft.lng, topLeft.lat])
     const screenBR = project([bottomRight.lng, bottomRight.lat])
 
+    // Use Math.round for better pixel alignment and prevent sub-pixel rendering
+    const screenX1 = Math.round(screenTL.x);
+    const screenY1 = Math.round(screenTL.y);
+    const screenX2 = Math.round(screenBR.x);
+    const screenY2 = Math.round(screenBR.y);
+
+    const width = Math.max(1, Math.abs(screenX2 - screenX1));
+    const height = Math.max(1, Math.abs(screenY2 - screenY1));
+
     return {
-        width: Math.ceil(screenBR.x - screenTL.x),
-        height: Math.ceil(screenBR.y - screenTL.y),
-        screenX: Math.floor(screenTL.x),
-        screenY: Math.floor(screenTL.y)
-    }
+        width: width,
+        height: height,
+        screenX: screenX1,
+        screenY: screenY1
+    };
 }
 
 function drawPixels() {
@@ -151,8 +160,18 @@ function drawPixels() {
         // FRUSTUM CULLING CHECK
         if (pixel.x >= minX && pixel.x <= maxX && pixel.y >= minY && pixel.y <= maxY) {
             const rectBounds = getCellScreenBounds(pixel.x, pixel.y);
+            // Skip pixels that are too small to render clearly
+            if (rectBounds.width < 0.5 || rectBounds.height < 0.5) {
+                return;
+            }
             canvasRender.fillStyle = pixel.color;
-            canvasRender.fillRect(rectBounds.screenX, rectBounds.screenY, rectBounds.width, rectBounds.height);
+            // Use integer coordinates for crisp rendering
+            canvasRender.fillRect(
+                Math.round(rectBounds.screenX), 
+                Math.round(rectBounds.screenY), 
+                Math.round(rectBounds.width), 
+                Math.round(rectBounds.height)
+            );
         }
     });
 
@@ -173,7 +192,13 @@ function drawHoverPreview(x, y) {
         const pulseY = bounds.screenY + offsetY;
 
         canvasRender.fillStyle = props.selectedColor;
-        canvasRender.fillRect(pulseX, pulseY, scaledWidth, scaledHeight)
+        // Use integer coordinates for crisp rendering
+        canvasRender.fillRect(
+            Math.round(pulseX), 
+            Math.round(pulseY), 
+            Math.round(scaledWidth), 
+            Math.round(scaledHeight)
+        )
     }
 }
 
@@ -276,6 +301,7 @@ function handleMouseOut() {
 
 #map, #pixel-map {
     image-rendering: pixelated;
+    image-rendering: crisp-edges;
     image-rendering: -moz-crisp-edges;
     position: absolute;
     top: 0;
