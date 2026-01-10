@@ -6,9 +6,11 @@
             Loading World...
         </div>
         <div class="custom-controls">
-            <button @click="zoomIn()">+</button>
-            <button @click="zoomOut()">-</button>
-            <button class="compass" @click="centerMap()"><img src="../../images/mccompass.png" alt="pixel art compass"></button>
+            <div class="zoom-buttons">
+                <button class="button" @click="zoomIn()"><img src="../../images/zoomIn.svg" alt="zoom button"></button>
+                <button class="button" @click="zoomOut()"><img src="../../images/zoomOut.svg" alt="zoom button"></button>
+            </div>
+            <button class="button" @click="centerMap()"><img src="../../images/compass-icon.svg" alt="pixel art compass"></button>
         </div>
 
         <div id="hcaptcha-container"></div>
@@ -78,6 +80,7 @@ function setupCanvas() {
     canvasValue.height = container.clientHeight
     canvasValue.style.position = 'absolute'
     canvasValue.style.pointerEvents = 'none'
+    canvasRender.imageSmoothingEnabled = false
     canvasRender = canvasValue.getContext('2d')
     canvasRender.lineWidth = 2
     canvasRender.strokeStyle = '#ffffff'
@@ -303,21 +306,44 @@ function handleMouseOut() {
     right: 10px;
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    align-items: center;
     gap: 5px;
     pointer-events: auto;
 }
 
 .custom-controls button {
-    padding: 8px 12px;
-    font-size: 16px;
     cursor: pointer;
-    background: white;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    background: transparent;
+    border: none;
+    padding: 0;
+    width: 36px;
 }
 
-.compass img {
-    width: 20px;
-    height: 20px;
+.button img {
+    width: 100%;
+}
+
+.zoom-buttons{
+    display: flex;
+    flex-direction: column;
+    border: 2px solid white;
+    border-radius: 8px;
+    width: 36px;
+}
+
+.zoom-buttons button {
+    border: none;
+    background: transparent;
+    width: 100%;
+    height: 36px;
+}
+
+.zoom-buttons button:first-child {
+    border-bottom: 2px solid white;
+}
+
+.zoom-buttons button:hover {
+    background: #ffffff20;
 }
 </style>
