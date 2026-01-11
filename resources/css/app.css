@@ -1,6 +1,6 @@
 @font-face {
     font-family: 'pixel art';
-    src : url('../fonts/slkscr.ttf') format('truetype');
+    src : url('../fonts/pixel-art.ttf') format('truetype');
     font-display: swap;
 }
 
@@ -18,11 +18,6 @@ html, body {
     overflow: hidden;
 }
 
-html {
-    font-family: 'pixel art', serif;
-}
-
-/* Scrollbar that matches your pixel-card style */
 ::-webkit-scrollbar {
     width: 10px;
 }
