@@ -2,8 +2,8 @@
     <defs>
         <style>
             :root {
-            --outer-color: white;
-            --shadow-color: grey;
+            --outer-color: black;
+            --shadow-color: #1c1c1c;
             }
             .outer { fill: var(--outer-color); }
             .shadow { fill: var(--shadow-color); }
