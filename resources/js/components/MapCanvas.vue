@@ -33,7 +33,7 @@ const props = defineProps(
 )
 const emit = defineEmits(['pixelHover'])
 
-const { map, init, on, unproject, project,  zoomIn, zoomOut, centerMap, getBounds, getZoom } = useMap('map')
+const { map, init, on, unproject, project,  zoomIn, zoomOut, centerMap, getBounds, getZoom, getCenter, setCenter } = useMap('map')
 const { stored, load, save, syncCooldown} = usePixels()
 
 const Zoom = 10;
@@ -60,6 +60,13 @@ const displayY = ref(null)
 
 onMounted(async () => {
     isLoading.value = true
+    
+    // Check URL for coordinates
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlX = urlParams.get('x')
+    const urlY = urlParams.get('y')
+    const urlZ = urlParams.get('z')
+    
     const [mapInstance] = await Promise.all([
         init(),
         load(),
@@ -69,6 +76,24 @@ onMounted(async () => {
     setupCanvas()
     setupEvents(mapInstance)
     initRealtimePixels(drawPixels)
+    
+    // Navigate to URL coordinates if present
+    if (urlX !== null && urlY !== null) {
+        isNavigatingFromURL = true
+        // Wait for map to be fully loaded
+        mapInstance.once('load', () => {
+            const worldPx = { x: parseFloat(urlX), y: parseFloat(urlY) }
+            const lngLat = worldPxToLngLat(worldPx, Zoom)
+            const zoom = urlZ ? parseFloat(urlZ) : 11
+            setCenter([lngLat.lng, lngLat.lat], zoom)
+            
+            // Re-enable URL updates after navigation completes
+            setTimeout(() => {
+                isNavigatingFromURL = false
+            }, 1000)
+        })
+    }
+    
     drawPixels()
 })
 defineExpose({ zoomIn, zoomOut, centerMap })
@@ -87,9 +112,46 @@ function setupCanvas() {
     canvasRender.strokeStyle = '#ffffff'
 }
 
+let urlUpdateTimeout = null
+let isNavigatingFromURL = false
+
+function updateURL() {
+    // Don't update URL if we're currently navigating from URL
+    if (isNavigatingFromURL) return
+    
+    // Debounce URL updates to avoid too many history entries
+    if (urlUpdateTimeout) {
+        clearTimeout(urlUpdateTimeout)
+    }
+    
+    urlUpdateTimeout = setTimeout(() => {
+        if (!map.value) return
+        
+        const center = getCenter()
+        if (!center) return
+        
+        const zoom = getZoom()
+        const worldPx = lngLatToWorldPx({ lng: center.lng, lat: center.lat }, Zoom)
+        
+        const params = new URLSearchParams()
+        params.set('x', Math.round(worldPx.x).toString())
+        params.set('y', Math.round(worldPx.y).toString())
+        params.set('z', zoom.toFixed(2))
+        
+        const newURL = `${window.location.pathname}?${params.toString()}`
+        window.history.replaceState({}, '', newURL)
+    }, 300) // Update URL 300ms after movement stops
+}
+
 function setupEvents(mapInstance) {
-    on('move', () => { drawAll()})
-    on('zoom', () => { drawAll()})
+    on('move', () => { 
+        drawAll()
+        updateURL()
+    })
+    on('zoom', () => { 
+        drawAll()
+        updateURL()
+    })
 
     on('resize', resizeCanvas)
     mapInstance.getCanvas().addEventListener('click', handleClick)
@@ -336,28 +398,54 @@ function handleMouseOut() {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
     pointer-events: auto;
 }
 
 .custom-controls button {
     cursor: pointer;
-    background: transparent;
-    border: none;
-    padding: 0;
-    width: 36px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    padding: 8px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.custom-controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border-color: rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 1);
+}
+
+.custom-controls button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .button img {
-    width: 100%;
+    width: 24px;
+    height: 24px;
+    display: block;
 }
 
-.zoom-buttons{
+.zoom-buttons {
     display: flex;
     flex-direction: column;
-    border: 2px solid white;
-    border-radius: 8px;
-    width: 36px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    width: 44px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .zoom-buttons button {
@@ -365,13 +453,18 @@ function handleMouseOut() {
     background: transparent;
     width: 100%;
     height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
 }
 
 .zoom-buttons button:first-child {
-    border-bottom: 2px solid white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .zoom-buttons button:hover {
-    background: #ffffff20;
+    background: rgba(0, 0, 0, 0.05);
 }
 </style>
