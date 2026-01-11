@@ -115,14 +115,14 @@ class PixelController extends Controller
         $walletData = $request->input('wallet');
 
         $hasReduction = false;
-        $cooldownSeconds = 1;
+        $cooldownSeconds = 180;
 
         if ($walletData && isset($walletData['publicKey'])) {
             $publicKey = $walletData['publicKey'];
             $hasReduction = $this->balanceService->hasReduction($publicKey);
 
             if ($hasReduction) {
-                $cooldownSeconds = 0.5;
+                $cooldownSeconds = 60;
             }
         }
 
