@@ -24,6 +24,7 @@ import { usePixels } from '../composables/usePixels'
 import { initRealtimePixels } from '../composables/realtimePixels'
 import { lngLatToWorldPx, worldPxToLngLat } from '../composables/useWorldConversion'
 import { executeHCaptcha } from '../composables/usecaptcha.js'
+import { playPixelPlaceSound } from '../composables/useAudio.js'
 
 const isLoading = ref(true)
 
@@ -248,6 +249,7 @@ async function handleClick(mouseEvent) {
     if (ok) {
         captchaSessionVerified = true;
         drawAll();
+        playPixelPlaceSound();
     }
 }
 
