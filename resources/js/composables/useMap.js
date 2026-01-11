@@ -1,36 +1,9 @@
 import { ref, onUnmounted } from 'vue'
 
-let maplibreCssLoaded = false
-
-function loadMapLibreCSS() {
-    if (maplibreCssLoaded) return Promise.resolve()
-
-    return new Promise((resolve, reject) => {
-        // Check if already loaded
-        if (document.querySelector('link[href*="maplibre-gl.css"]')) {
-            maplibreCssLoaded = true
-            resolve()
-            return
-        }
-
-        const link = document.createElement('link')
-        link.rel = 'stylesheet'
-        link.href = 'https://unpkg.com/maplibre-gl/dist/maplibre-gl.css'
-        link.crossOrigin = 'anonymous'
-        link.onload = () => {
-            maplibreCssLoaded = true
-            resolve()
-        }
-        link.onerror = reject
-        document.head.appendChild(link)
-    })
-}
-
 export function useMap(containerId = 'map') {
     const map = ref(null)
 
     async function init(options = {}) {
-        await loadMapLibreCSS()
         const maplibregl = (await import('maplibre-gl')).default;
         map.value = new maplibregl.Map({
             container: containerId,
