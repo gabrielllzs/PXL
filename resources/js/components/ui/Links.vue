@@ -46,7 +46,7 @@ onMounted(() => {
                 <span class="flake flake-4"></span>
                 <span class="flake flake-5"></span>
             </div>
-            <a href="https://pump.fun">
+            <a href="https://pump.fun/coin/rs4UYBUja3dJw5N4oKDSjuDAXRQiBGHQqX2SfsZpump">
                 <img
                     src="../../../images/pump-logomark-christmas.webp"
                     alt="pump.fun logo in pixel art"
