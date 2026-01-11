@@ -27,7 +27,7 @@ onMounted(() => {
             :class="{ connecting: connecting, connected: buyer }"
             :disabled="connecting"
         >
-            <img src="../../../images/phantom.svg" alt="phantom logo in pixel art" width="24" height="24" />
+            <img src="../../../images/phantom.svg" alt="phantom logo in pixel art" width="32" height="24" />
             <span v-if="connecting" class="status-text">
                 <span class="loading-dot"></span>
                 Connecting...
@@ -81,6 +81,7 @@ onMounted(() => {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     text-decoration: none;
+    font-family: inherit;
 }
 
 .wallet-btn:hover {
@@ -142,7 +143,7 @@ onMounted(() => {
 }
 
 .wallet-btn img {
-    width: 24px;
+    width: 32px;
     display: block;
     flex-shrink: 0;
 }
@@ -292,7 +293,7 @@ onMounted(() => {
     align-items: center;
     gap: 6px;
     white-space: nowrap;
-    font-family: 'pixel art', serif;
+    font-family: inherit;
 }
 
 .loading-dot {
