@@ -55,9 +55,7 @@
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" crossorigin>
 
     <link rel="dns-prefetch" href="https://js.hcaptcha.com">
-
-    <link rel="preload" href="/fonts/pixel-art.ttf" as="font" type="font/ttf" crossorigin>
-
+    
     <style> body { margin: 0; padding: 0; background: #fff; } </style>
     <title>Pixel Place</title>
     @vite(['resources/css/app.css'])
