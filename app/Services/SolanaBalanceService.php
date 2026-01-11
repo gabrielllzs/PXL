@@ -9,7 +9,7 @@ class SolanaBalanceService
 {
     public function getBalance(string $publicKey): int
     {
-        $mint = 'mytoken';
+        $mint = 'rs4UYBUja3dJw5N4oKDSjuDAXRQiBGHQqX2SfsZpump';
 
         if (!preg_match('/^[1-9A-HJ-NP-Za-km-z]{32,44}$/', $publicKey)) {
             return 0;
