@@ -4,7 +4,7 @@ let maplibreCssLoaded = false
 
 function loadMapLibreCSS() {
     if (maplibreCssLoaded) return Promise.resolve()
-    
+
     return new Promise((resolve, reject) => {
         // Check if already loaded
         if (document.querySelector('link[href*="maplibre-gl.css"]')) {
@@ -12,7 +12,7 @@ function loadMapLibreCSS() {
             resolve()
             return
         }
-        
+
         const link = document.createElement('link')
         link.rel = 'stylesheet'
         link.href = 'https://unpkg.com/maplibre-gl/dist/maplibre-gl.css'
@@ -30,7 +30,6 @@ export function useMap(containerId = 'map') {
     const map = ref(null)
 
     async function init(options = {}) {
-        // Load CSS first, then JS
         await loadMapLibreCSS()
         const maplibregl = (await import('maplibre-gl')).default;
         map.value = new maplibregl.Map({

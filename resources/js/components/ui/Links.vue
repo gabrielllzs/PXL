@@ -39,7 +39,7 @@ onMounted(() => {
             <span v-else class="status-text">Connect Wallet</span>
         </button>
         <div class="pump-btn">
-            <div class="snowfall" aria-label="pixel art snowfall">
+            <div class="snowfall">
                 <span class="flake flake-1"></span>
                 <span class="flake flake-2"></span>
                 <span class="flake flake-3"></span>
