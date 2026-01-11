@@ -44,12 +44,13 @@
             }
         }, 100);
     </script>
-    <script src="https://js.hcaptcha.com/1/api.js?hl=en" async defer></script>
     <meta name="description" content="Place pixels on a shared online canvas. Join the community art experiment.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="preload" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" as="style">
+    <link rel="preload" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" as="style" crossorigin>
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
+    <link rel="dns-prefetch" href="https://js.hcaptcha.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
     <style> body { margin: 0; padding: 0; background: #fff; } </style>
     <title>Pixel Place</title>
     @vite(['resources/css/app.css'])

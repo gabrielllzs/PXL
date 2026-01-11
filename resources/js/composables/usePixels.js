@@ -66,10 +66,10 @@ export function usePixels() {
                 captchaToken,
                 wallet: buyer.value && walletSignature.value ? {
                     publicKey: buyer.value,
-                    signature: walletSignature.value. signature,
+                    signature: walletSignature.value.signature,
                     message: walletSignature.value.message,
                 } : null,
-                components:  fpComponents,
+                components: fpComponents,
             }
 
             const response = await axios.post('/api/pixel', data)
@@ -77,9 +77,9 @@ export function usePixels() {
             const existing = stored.find(p => p.x === x && p.y === y)
             if (existing) {
                 existing.color = color
-                if (response.data?.id) existing.id = response.data. id
+                if (response.data?.id) existing.id = response.data.id
             } else {
-                stored.push({ x, y, color, id: response.data?. id })
+                stored.push({ x, y, color, id: response.data?.id })
             }
 
             const cooldownDuration = hasReduction.value ? 0.5 : 1

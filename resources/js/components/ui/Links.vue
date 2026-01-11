@@ -27,7 +27,7 @@ onMounted(() => {
             :class="{ connecting: connecting, connected: buyer }"
             :disabled="connecting"
         >
-            <img src="../../../images/phantom.svg" alt="phantom logo in pixel art" />
+            <img src="../../../images/phantom.svg" alt="phantom logo in pixel art" width="24" height="24" />
             <span v-if="connecting" class="status-text">
                 <span class="loading-dot"></span>
                 Connecting...
@@ -39,9 +39,22 @@ onMounted(() => {
             <span v-else class="status-text">Connect Wallet</span>
         </button>
         <div class="pump-btn">
-            <img src="../../../images/snowfall.gif" alt="pixel art snowfall" class="snowfall" />
+            <img
+                src="../../../images/snowfall.gif"
+                alt="pixel art snowfall"
+                class="snowfall"
+                width="28"
+                height="32"
+                loading="lazy"
+            />
             <a href="https://pump.fun">
-                <img src="../../../images/pump-logomark-christmas.webp" alt="pump.fun logo in pixel art" fetchpriority="high" />
+                <img
+                    src="../../../images/pump-logomark-christmas.webp"
+                    alt="pump.fun logo in pixel art"
+                    fetchpriority="high"
+                    width="28"
+                    height="32"
+                />
             </a>
         </div>
     </div>

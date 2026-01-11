@@ -1,7 +1,7 @@
 @font-face {
     font-family: 'pixel art';
     src : url('../fonts/slkscr.ttf') format('truetype');
-
+    font-display: swap;
 }
 
 html, body {

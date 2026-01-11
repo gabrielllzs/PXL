@@ -8,7 +8,7 @@ const csrfToken = ref(document.querySelector('meta[name="csrf-token"]')?.content
     <div class="container">
         <div id="login-box">
             <div id="user-info">
-                <img src="../../../images/user-image.png" alt="orange kitty">
+                <img src="../../../images/user-image.png" alt="orange kitty" width="100" height="100">
                 <h1>Administrator</h1>
             </div>
             <div id="login">

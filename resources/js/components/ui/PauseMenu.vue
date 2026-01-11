@@ -26,7 +26,7 @@ function support() {
         <button
             @click="openMenu"
             >
-            <img src="../../../images/settingsIcon.svg" alt="play icon">
+            <img src="../../../images/settingsIcon.svg" alt="play icon" width="24" height="24">
         </button>
         <p>
             pause

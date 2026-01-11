@@ -7,10 +7,10 @@
         </div>
         <div class="custom-controls">
             <div class="zoom-buttons">
-                <button class="button" @click="zoomIn()"><img src="../../images/zoomIn.svg" alt="zoom button"></button>
-                <button class="button" @click="zoomOut()"><img src="../../images/zoomOut.svg" alt="zoom button"></button>
+                <button class="button" @click="zoomIn()"><img src="../../images/zoomIn.svg" alt="zoom button" width="24" height="24"></button>
+                <button class="button" @click="zoomOut()"><img src="../../images/zoomOut.svg" alt="zoom button" width="24" height="24"></button>
             </div>
-            <button class="button" @click="centerMap()"><img src="../../images/compass-icon.svg" alt="pixel art compass"></button>
+            <button class="button" @click="centerMap()"><img src="../../images/compass-icon.svg" alt="pixel art compass" width="24" height="24"></button>
         </div>
 
         <div id="hcaptcha-container"></div>
@@ -242,8 +242,6 @@ async function handleClick(mouseEvent) {
 
     const x = Math.floor(worldPixel.x);
     const y = Math.floor(worldPixel.y);
-
-    console.log("x:", x,"y:", y, "color:", props.selectedColor);
 
     const ok = await save(x, y, props.selectedColor, token);
 
