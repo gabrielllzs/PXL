@@ -82,7 +82,7 @@ export function usePixels() {
                 stored.push({ x, y, color, id: response.data?.id })
             }
 
-            const cooldownDuration = hasReduction.value ? 60 : 180
+            const cooldownDuration = hasReduction.value ? 5 : 10
 
             startCooldown(cooldownDuration)
             return true
