@@ -1,38 +1,46 @@
 let hcaptchaLoaded = false;
 let hcaptchaLoading = false;
+let hcaptchaReadyCallback = null;
+
+// Set up onload callback before loading script
+window.hcaptchaOnLoad = function() {
+    hcaptchaLoaded = true;
+    hcaptchaLoading = false;
+    if (hcaptchaReadyCallback) {
+        hcaptchaReadyCallback();
+        hcaptchaReadyCallback = null;
+    }
+};
 
 function loadHCaptcha() {
     return new Promise((resolve, reject) => {
-        if (window.hcaptcha) {
+        if (window.hcaptcha && hcaptchaLoaded) {
             resolve();
             return;
         }
-        
+
         if (hcaptchaLoading) {
             // Wait for existing load
-            const checkInterval = setInterval(() => {
-                if (window.hcaptcha) {
-                    clearInterval(checkInterval);
-                    resolve();
-                }
-            }, 100);
+            hcaptchaReadyCallback = resolve;
             return;
         }
-        
+
         hcaptchaLoading = true;
         const script = document.createElement('script');
-        script.src = 'https://js.hcaptcha.com/1/api.js?hl=en';
+        // Use render=explicit with onload callback
+        script.src = 'https://js.hcaptcha.com/1/api.js?hl=en&render=explicit&onload=hcaptchaOnLoad';
         script.async = true;
         script.defer = true;
-        script.onload = () => {
-            hcaptchaLoaded = true;
-            hcaptchaLoading = false;
-            resolve();
-        };
         script.onerror = () => {
             hcaptchaLoading = false;
+            hcaptchaReadyCallback = null;
             reject(new Error('Failed to load hCaptcha'));
         };
+        
+        hcaptchaReadyCallback = () => {
+            resolve();
+        };
+        
         document.head.appendChild(script);
     });
 }
