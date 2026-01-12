@@ -40,26 +40,30 @@ class PixelController extends Controller
             'wallet.message' => 'nullable|string',
         ]);
 
-        $token = $request->input('captchaToken');
+        if (!$request->session()->get('captcha_verified', false)) {
+            $token = $request->input('captchaToken');
 
-        if (!$token) {
-            return response()->json([
-                'error' => 'captcha_required',
-            ], 403);
-        }
+            if (!$token) {
+                return response()->json([
+                    'error' => 'captcha_required',
+                ], 403);
+            }
 
-        $response = Http::asForm()->post('https://hcaptcha.com/siteverify', [
-            'secret'   => config('services.captcha.secret'),
-            'response' => $token,
-            'remoteip' => $request->ip(),
-        ]);
+            $response = Http::asForm()->post('https://hcaptcha.com/siteverify', [
+                'secret'   => config('services.captcha.secret'),
+                'response' => $token,
+                'remoteip' => $request->ip(),
+            ]);
 
-        $result = $response->json();
+            $result = $response->json();
 
-        if (!($result['success'] ?? false)) {
-            return response()->json([
-                'error' => 'captcha_failed',
-            ], 403);
+            if (!($result['success'] ?? false)) {
+                return response()->json([
+                    'error' => 'captcha_failed',
+                ], 403);
+            }
+
+            $request->session()->put('captcha_verified', true);
         }
 
         $visitorId = $request->input('visitorId');

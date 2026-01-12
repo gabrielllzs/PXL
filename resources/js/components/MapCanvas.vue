@@ -60,13 +60,13 @@ const displayY = ref(null)
 
 onMounted(async () => {
     isLoading.value = true
-
+    
     // Check URL for coordinates
     const urlParams = new URLSearchParams(window.location.search)
     const urlX = urlParams.get('x')
     const urlY = urlParams.get('y')
     const urlZ = urlParams.get('z')
-
+    
     const [mapInstance] = await Promise.all([
         init(),
         load(),
@@ -76,7 +76,7 @@ onMounted(async () => {
     setupCanvas()
     setupEvents(mapInstance)
     initRealtimePixels(drawPixels)
-
+    
     // Navigate to URL coordinates if present
     if (urlX !== null && urlY !== null) {
         isNavigatingFromURL = true
@@ -86,14 +86,14 @@ onMounted(async () => {
             const lngLat = worldPxToLngLat(worldPx, Zoom)
             const zoom = urlZ ? parseFloat(urlZ) : 11
             setCenter([lngLat.lng, lngLat.lat], zoom)
-
+            
             // Re-enable URL updates after navigation completes
             setTimeout(() => {
                 isNavigatingFromURL = false
             }, 1000)
         })
     }
-
+    
     drawPixels()
 })
 defineExpose({ zoomIn, zoomOut, centerMap })
@@ -118,37 +118,37 @@ let isNavigatingFromURL = false
 function updateURL() {
     // Don't update URL if we're currently navigating from URL
     if (isNavigatingFromURL) return
-
+    
     // Debounce URL updates to avoid too many history entries
     if (urlUpdateTimeout) {
         clearTimeout(urlUpdateTimeout)
     }
-
+    
     urlUpdateTimeout = setTimeout(() => {
         if (!map.value) return
-
+        
         const center = getCenter()
         if (!center) return
-
+        
         const zoom = getZoom()
         const worldPx = lngLatToWorldPx({ lng: center.lng, lat: center.lat }, Zoom)
-
+        
         const params = new URLSearchParams()
         params.set('x', Math.round(worldPx.x).toString())
         params.set('y', Math.round(worldPx.y).toString())
         params.set('z', zoom.toFixed(2))
-
+        
         const newURL = `${window.location.pathname}?${params.toString()}`
         window.history.replaceState({}, '', newURL)
     }, 300) // Update URL 300ms after movement stops
 }
 
 function setupEvents(mapInstance) {
-    on('move', () => {
+    on('move', () => { 
         drawAll()
         updateURL()
     })
-    on('zoom', () => {
+    on('zoom', () => { 
         drawAll()
         updateURL()
     })
@@ -291,6 +291,7 @@ function animateHover() {
 }
 
 async function handleClick(mouseEvent) {
+    // Always get captcha token (required, not nullable)
     const token = await executeHCaptcha();
     if (!token) return;
 
@@ -305,6 +306,7 @@ async function handleClick(mouseEvent) {
     const ok = await save(x, y, props.selectedColor, token);
 
     if (ok) {
+        captchaSessionVerified = true;
         drawAll();
         playPixelPlaceSound();
     }
