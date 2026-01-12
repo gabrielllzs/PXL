@@ -54,28 +54,67 @@ export function executeHCaptcha() {
                 return;
             }
 
-        const siteKey = import.meta.env.VITE_CAPTCHA_SITE
+            const siteKey = import.meta.env.VITE_CAPTCHA_SITE
 
-        const onSuccess = token => resolve(token);
-        const onError = err => reject(err);
+            let widgetId = container.dataset.widgetId
+                ? Number(container.dataset.widgetId)
+                : null;
 
-        let widgetId = container.dataset.widgetId
-            ? Number(container.dataset.widgetId)
-            : null;
+            // Set up callbacks that will be used
+            let resolved = false;
+            const onSuccess = token => {
+                if (!resolved) {
+                    resolved = true;
+                    resolve(token);
+                }
+            };
+            const onError = err => {
+                if (!resolved) {
+                    resolved = true;
+                    reject(err);
+                }
+            };
 
-        if (widgetId === null) {
-            widgetId = window.hcaptcha.render(container, {
-                sitekey: siteKey,
-                size: 'invisible',
-                callback: onSuccess,
-                'error-callback': onError
-            });
-            container.dataset.widgetId = String(widgetId);
-        } else {
-            window.hcaptcha.reset(widgetId);
-        }
+            if (widgetId === null) {
+                // First time: render the widget
+                widgetId = window.hcaptcha.render(container, {
+                    sitekey: siteKey,
+                    size: 'invisible',
+                    callback: onSuccess,
+                    'error-callback': onError
+                });
+                container.dataset.widgetId = String(widgetId);
+            } else {
+                // Reset the widget for subsequent calls
+                window.hcaptcha.reset(widgetId);
+            }
 
-        window.hcaptcha.execute(widgetId);
+            // Execute the widget
+            window.hcaptcha.execute(widgetId);
+
+            // Poll for response as fallback (in case callbacks don't fire after reset)
+            // This ensures we get the token even if callbacks aren't triggered
+            const pollInterval = setInterval(() => {
+                try {
+                    const response = window.hcaptcha.getResponse(widgetId);
+                    if (response && !resolved) {
+                        resolved = true;
+                        clearInterval(pollInterval);
+                        resolve(response);
+                    }
+                } catch (e) {
+                    // Continue polling
+                }
+            }, 100);
+
+            // Timeout after 30 seconds
+            setTimeout(() => {
+                if (!resolved) {
+                    resolved = true;
+                    clearInterval(pollInterval);
+                    reject(new Error('Captcha timeout'));
+                }
+            }, 30000);
         });
     });
 }
