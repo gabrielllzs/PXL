@@ -1,10 +1,11 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { audioEnabled } from '../../composables/useAudio.js'
 
 const open = ref(false)
 const settingsOpen = ref(false)
 const isAudioOn = ref(true)
+const infoOpen = ref(false)
 
 function openMenu() {
     open.value = true
@@ -19,6 +20,11 @@ function toggleSettingsMenu() {
     open.value = !settingsOpen.value;
 }
 
+function toggleInfoMenu() {
+    infoOpen.value = !infoOpen.value
+    open.value = !infoOpen.value;
+}
+
 function exitGame() {
     window.location.href = 'https://www.youtube.com/watch?v=xvFZjo5PgG0'
 }
@@ -29,7 +35,10 @@ function support() {
 
 watch(isAudioOn, (value) => {
     audioEnabled.value = value
-})
+});
+
+const nameText = 'gabriel';
+
 </script>
 
 
@@ -53,7 +62,7 @@ watch(isAudioOn, (value) => {
             <ul>
                 <li @click="resume">Resume Game</li>
                 <li @click="toggleSettingsMenu">Settings</li>
-                <li>Info</li>
+                <li @click="toggleInfoMenu">Info</li>
                 <li @click="support">Support</li>
                 <li @click="exitGame">Exit</li>
             </ul>
@@ -62,7 +71,7 @@ watch(isAudioOn, (value) => {
 
     <div v-if="settingsOpen" class="settings-menu">
         <div class="settings-container">
-            <div class="settings-header">
+            <div class="header">
                 <button @click="toggleSettingsMenu">x</button>
             </div>
             <label class="ccs-toggle">
@@ -73,6 +82,23 @@ watch(isAudioOn, (value) => {
                     </span>
                 </span>
             </label>
+        </div>
+    </div>
+
+    <div v-if="infoOpen" class="info-menu">
+        <div class="info-container">
+            <div class="header">
+                <button @click="toggleInfoMenu">x</button>
+            </div>
+            <h2>Game Info</h2>
+            <div class="info-intro">
+                This game is developed by<div class="wave-text">
+            <span v-for="(char, index) in nameText.split('')" :key="index" :style="{ animationDelay: `${index * 0.1}s`, animationFillMode: 'both' }">
+                {{ char }}
+            </span>
+            </div>
+            </div>
+            <p>Enjoy playing!</p>
         </div>
     </div>
 </template>
@@ -162,26 +188,43 @@ watch(isAudioOn, (value) => {
 .settings-container {
     background: rgba(0, 0, 0, 0.8);
     width: 200px;
-    height: 100px;
+    height: 75px;
     border-radius: 8px;
     display: flex;
     flex-direction: column;
     padding: 16px;
 }
 
-.settings-container button{
+.header button{
     background: transparent;
     border: none;
     color: white;
     cursor: pointer;
 }
 
-.settings-header {
+.header {
     display: flex;
     justify-content: flex-end;
     margin-bottom: 12px;
 }
 
+.info-menu{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    pointer-events: all;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.info-intro {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
 
 /* Custom CSS Switch */
 
@@ -230,5 +273,30 @@ watch(isAudioOn, (value) => {
 
 .ccs-toggle input:checked + .ccs-track .ccs-thumb::after{
     color:#2563eb;
+}
+
+
+/* rainbow wave text */
+
+.wave-text {
+    display: flex;
+}
+
+.wave-text span {
+    display: inline-block;
+    animation: rainbow 3s linear infinite;
+    animation-fill-mode: both; /* ensures delay works */
+}
+
+
+@keyframes rainbow {
+    0% { color: #ff0000; } /* Red */
+    14% { color: #ff7f00; } /* Orange */
+    28% { color: #ffff00; } /* Yellow */
+    42% { color: #00ff00; } /* Green */
+    57% { color: #0000ff; } /* Blue */
+    71% { color: #4b0082; } /* Indigo */
+    85% { color: #9400d3; } /* Violet */
+    100% { color: #ff0000; } /* Back to Red */
 }
 </style>
