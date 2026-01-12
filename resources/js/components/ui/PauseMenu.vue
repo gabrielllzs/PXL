@@ -1,7 +1,10 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { audioEnabled } from '../../composables/useAudio.js'
 
 const open = ref(false)
+const settingsOpen = ref(false)
+const isAudioOn = ref(true)
 
 function openMenu() {
     open.value = true
@@ -11,6 +14,11 @@ function resume() {
     open.value = false
 }
 
+function toggleSettingsMenu() {
+    settingsOpen.value = !settingsOpen.value
+    open.value = !settingsOpen.value;
+}
+
 function exitGame() {
     window.location.href = 'https://www.youtube.com/watch?v=xvFZjo5PgG0'
 }
@@ -18,6 +26,10 @@ function exitGame() {
 function support() {
     window.location.href = '/support'
 }
+
+watch(isAudioOn, (value) => {
+    audioEnabled.value = value
+})
 </script>
 
 
@@ -40,11 +52,27 @@ function support() {
         <div class="game-options">
             <ul>
                 <li @click="resume">Resume Game</li>
-                <li>Settings</li>
+                <li @click="toggleSettingsMenu">Settings</li>
                 <li>Info</li>
                 <li @click="support">Support</li>
                 <li @click="exitGame">Exit</li>
             </ul>
+        </div>
+    </div>
+
+    <div v-if="settingsOpen" class="settings-menu">
+        <div class="settings-container">
+            <div class="settings-header">
+                <button @click="toggleSettingsMenu">x</button>
+            </div>
+            <label class="ccs-toggle">
+                audio :
+                <input type="checkbox" v-model="isAudioOn">
+                <span class="ccs-track">
+                    <span class="ccs-thumb">
+                    </span>
+                </span>
+            </label>
         </div>
     </div>
 </template>
@@ -117,5 +145,90 @@ function support() {
 
 .pause-button button:hover {
     transform: scale(1.1);
+}
+
+.settings-menu{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    pointer-events: all;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.settings-container {
+    background: rgba(0, 0, 0, 0.8);
+    width: 200px;
+    height: 100px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+}
+
+.settings-container button{
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
+
+
+/* Custom CSS Switch */
+
+.ccs-toggle{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap:8px;
+    cursor: pointer;
+}
+
+.ccs-toggle input{ display:none; }
+
+.ccs-track{
+    width:54px; height:28px;
+    background:#e5e7eb;
+    border:1px solid rgba(15,23,42,.5);
+    display:grid;
+    align-items:center;
+    transition:.25s;
+}
+
+.ccs-thumb{
+    width:26px; height:26px;
+    background:#fff;
+    box-shadow:0 6px 14px rgba(2,6,23,.25);
+    position:relative;
+    transition:.25s;
+}
+
+.ccs-thumb::after{
+    position:absolute; inset:0;
+    display:grid;
+    place-items:center;
+    font-size:12px;
+    transition:.25s;
+}
+
+.ccs-toggle input:checked + .ccs-track{
+    background:#2563eb;
+}
+
+.ccs-toggle input:checked + .ccs-track .ccs-thumb{
+    transform:translateX(28px);
+}
+
+.ccs-toggle input:checked + .ccs-track .ccs-thumb::after{
+    color:#2563eb;
 }
 </style>

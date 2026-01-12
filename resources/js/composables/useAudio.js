@@ -1,6 +1,8 @@
 import pixelPlaceSound from '../../audio/pixel-place.wav'
+import {ref} from "vue";
 
 let audioElement = null
+export const audioEnabled = ref(true)
 
 function getAudioElement() {
     if (!audioElement) {
@@ -12,14 +14,16 @@ function getAudioElement() {
 }
 
 export function playPixelPlaceSound() {
-    try {
-        const audio = getAudioElement()
+    if (audioEnabled.value) {
+        try {
+            const audio = getAudioElement()
 
-        audio.currentTime = 0
-        audio.play().catch(err => {
+            audio.currentTime = 0
+            audio.play().catch(err => {
+                console.debug('Audio playback failed:', err)
+            })
+        } catch (err) {
             console.debug('Audio playback failed:', err)
-        })
-    } catch (err) {
-        console.debug('Audio playback failed:', err)
+        }
     }
 }

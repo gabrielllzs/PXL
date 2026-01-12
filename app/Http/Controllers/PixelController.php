@@ -6,6 +6,7 @@ use App\Events\PixelPlaced;
 use App\Models\Pixel;
 use App\Services\SolanaBalanceService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -70,6 +71,15 @@ class PixelController extends Controller
 
         $visitorId = $request->input('visitorId');
         $components = $request->input('components');
+        $cacheKey = "cooldown:{$visitorId}";
+
+        if (Cache::has($cacheKey)) {
+            $remaining = Cache::get($cacheKey);
+            return response()->json([
+                'error' => 'cooldown',
+                'remaining' => $remaining,
+            ], 412);
+        }
 
         $riskData = $this->checkFingerprint($components, $clientIp);
 
@@ -103,6 +113,9 @@ class PixelController extends Controller
                 'ip_address' => $clientIp,
             ]
         );
+
+        $cooldownSeconds = $cooldownCheck['hasReduction'] ? 5 :  10;
+        Cache::put($cacheKey, $cooldownSeconds, $cooldownSeconds);
 
         event(new PixelPlaced($pixel->x, $pixel->y, $pixel->color));
 
