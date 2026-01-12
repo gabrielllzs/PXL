@@ -291,12 +291,9 @@ function animateHover() {
 }
 
 async function handleClick(mouseEvent) {
-    let token = null;
-
-    if (!captchaSessionVerified) {
-        token = await executeHCaptcha();
-        if (!token) return;
-    }
+    // Always get captcha token (required, not nullable)
+    const token = await executeHCaptcha();
+    if (!token) return;
 
     const xPixel = mouseEvent.clientX;
     const yPixel = mouseEvent.clientY;
