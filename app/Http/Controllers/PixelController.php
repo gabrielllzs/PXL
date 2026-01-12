@@ -33,7 +33,9 @@ class PixelController extends Controller
             'color' => 'required|string',
             'visitorId' => 'required|string',
             'components' => 'required|array',
-            'captchaToken' => 'required|string',
+            'captchaToken' => $request->session()->get('captcha_verified', false)
+                ? 'nullable|string'
+                : 'required|string',
             'wallet' => 'nullable|array',
             'wallet.publicKey' => 'nullable|string',
             'wallet.signature' => 'nullable|array',
