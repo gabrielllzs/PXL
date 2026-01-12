@@ -38,7 +38,7 @@ onMounted(() => {
             </span>
             <span v-else class="status-text">Connect Wallet</span>
         </button>
-        <div class="pump-btn">
+        <div class="pump-btn short-btn">
             <div class="snowfall">
                 <span class="flake flake-1"></span>
                 <span class="flake flake-2"></span>
@@ -54,6 +54,11 @@ onMounted(() => {
                     width="32"
                     height="32"
                 />
+            </a>
+        </div>
+        <div class="telegram-btn short-btn">
+            <a href="https://t.me/pixels_g" target="_blank" rel="noopener noreferrer">
+                <img src="../../../images/telegram.webp" alt="telegram logo in pixel art" width="32" height="32" />
             </a>
         </div>
     </div>
@@ -127,18 +132,18 @@ onMounted(() => {
     cursor: not-allowed;
 }
 
-.pump-btn{
+.short-btn {
     display: flex;
     justify-content: flex-end;
     pointer-events: auto;
     padding: 10px;
 }
 
-.pump-btn img {
+.short-btn img {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.pump-btn img:hover {
+.short-btn img:hover {
     transform: translateY(-2px);
 }
 
@@ -148,7 +153,7 @@ onMounted(() => {
     flex-shrink: 0;
 }
 
-.pump-btn img {
+.short-btn img {
     width: 32px;
 }
 
