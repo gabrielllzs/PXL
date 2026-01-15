@@ -22,7 +22,6 @@ Route::post('/api/wallet/check-balance', [WalletController::class, 'checkBalance
 
 /* Auth Routes */
 
-Route::get('/login', function () { return view('login'); })->middleware('guest')->name('login');
 Route::post('/login', [HandleAuthController::class, 'handleLogin']);
 Route::post('/register', [HandleAuthController::class, 'handleRegister'])->middleware('guest');
 Route::post('/api/verify-email', [HandleAuthController::class, 'verifyEmail'])->middleware('auth');
@@ -30,7 +29,7 @@ Route::post('/api/resend-verification', [HandleAuthController::class, 'resendVer
 
 
 
-Route::get('/admin/', function () { return view('admin'); })->middleware('auth');
+Route::get('/admin/', function () { return view('admin'); })->middleware(['auth', 'admin']);
 
 // API routes that can work with or without auth - must be before auth middleware routes
 Route::get('/api/me', function () {
@@ -39,11 +38,14 @@ Route::get('/api/me', function () {
 
 Route::post('/api/feedback', [FeedbackController::class, 'store']);
 
-Route::middleware('auth')->group(function () {
-    Route::post('/logout', [HandleAuthController::class, 'handleLogout']);
+Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/server/metrics', [ServerMetricsController::class, 'index']);
     Route::get('/visitors', [PixelController::class, 'getVisitors']);
     Route::get('/banned-visitors', [BanUserController::class, 'getBannedVisitors']);
     Route::post('/ban-visitors', [BanUserController::class, 'ban']);
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', [HandleAuthController::class, 'handleLogout']);
 });
 
