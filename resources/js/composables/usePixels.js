@@ -64,7 +64,6 @@ export function usePixels() {
                 color,
                 visitorId,
                 captchaToken,
-                components: fpComponents,
             }
 
             const response = await axios.post('/api/pixel', data, {
@@ -88,7 +87,12 @@ export function usePixels() {
             }
             return true
         } catch (err) {
-            if (err.response?.status === 412) {
+            if (err.response?.status === 419) {
+                // CSRF token expired - reload page to get fresh token from meta tag
+                // This typically happens after login when session is regenerated
+                window.location.reload()
+                return false
+            } else if (err.response?.status === 412) {
                 const remaining = err.response.data?.remaining ?? 1
                 startCooldown(remaining)
                 return false
@@ -111,7 +115,7 @@ export function usePixels() {
         await initFingerprint()
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-            const res = await axios.get('/api/cooldown', { 
+            const res = await axios.get('/api/cooldown', {
                 params: { visitorId },
                 headers: { 'X-CSRF-TOKEN': csrfToken }
             })
