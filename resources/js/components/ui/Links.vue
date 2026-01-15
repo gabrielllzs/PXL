@@ -33,20 +33,20 @@
 
 <style scoped>
 .container {
-    position: fixed;
-    top: 16px;
-    right: 16px;
+    position: relative;
     gap: 12px;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
 }
 
 .short-btn {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     pointer-events: auto;
     padding: 10px;
+    position: relative;
 }
 
 .short-btn img {
@@ -202,12 +202,4 @@
     }
 }
 
-/* Responsive design */
-@media (max-width: 640px) {
-    .container {
-        top: 12px;
-        right: 12px;
-        gap: 8px;
-    }
-}
 </style>
