@@ -7,10 +7,12 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\ServerMetricsController;
 use App\Http\Controllers\BanUserController;
 use App\Http\Controllers\WalletController;
+use App\Http\Controllers\FeedbackController;
+use Illuminate\Http\Request;
 
 
 Route::get('/', function () { return view('canvas'); });
-Route::get('/support', function () { return view('support'); });
+Route::get('/feedback', function () { return view('feedback'); });
 
 
 Route::get('/api/map-data', [PixelController::class, 'index']);
@@ -34,6 +36,8 @@ Route::get('/admin/', function () { return view('admin'); })->middleware('auth')
 Route::get('/api/me', function () {
     return auth()->check() ? Auth::user() : null;
 });
+
+Route::post('/api/feedback', [FeedbackController::class, 'store']);
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [HandleAuthController::class, 'handleLogout']);
