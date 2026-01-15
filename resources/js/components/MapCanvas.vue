@@ -21,6 +21,8 @@
 import { onMounted, ref} from 'vue'
 import { useMap } from '../composables/useMap'
 import { usePixels } from '../composables/usePixels'
+import { useAuth } from '../composables/useAuth'
+import { useToast } from '../composables/useToast'
 import { initRealtimePixels } from '../composables/realtimePixels'
 import { lngLatToWorldPx, worldPxToLngLat } from '../composables/useWorldConversion'
 import { executeHCaptcha } from '../composables/usecaptcha.js'
@@ -29,12 +31,14 @@ import { playPixelPlaceSound } from '../composables/useAudio.js'
 const isLoading = ref(true)
 
 const props = defineProps(
-    ['selectedColor', 'walletData']
+    ['selectedColor']
 )
-const emit = defineEmits(['pixelHover'])
+const emit = defineEmits(['pixelHover', 'verificationRequired'])
 
 const { map, init, on, unproject, project,  zoomIn, zoomOut, centerMap, getBounds, getZoom, getCenter, setCenter } = useMap('map')
 const { stored, load, save, syncCooldown} = usePixels()
+const { user, isEmailVerified } = useAuth()
+const { showToast } = useToast()
 
 const Zoom = 10;
 const min_zoom = 9;
@@ -60,13 +64,13 @@ const displayY = ref(null)
 
 onMounted(async () => {
     isLoading.value = true
-    
+
     // Check URL for coordinates
     const urlParams = new URLSearchParams(window.location.search)
     const urlX = urlParams.get('x')
     const urlY = urlParams.get('y')
     const urlZ = urlParams.get('z')
-    
+
     const [mapInstance] = await Promise.all([
         init(),
         load(),
@@ -76,7 +80,7 @@ onMounted(async () => {
     setupCanvas()
     setupEvents(mapInstance)
     initRealtimePixels(drawPixels)
-    
+
     // Navigate to URL coordinates if present
     if (urlX !== null && urlY !== null) {
         isNavigatingFromURL = true
@@ -86,14 +90,14 @@ onMounted(async () => {
             const lngLat = worldPxToLngLat(worldPx, Zoom)
             const zoom = urlZ ? parseFloat(urlZ) : 11
             setCenter([lngLat.lng, lngLat.lat], zoom)
-            
+
             // Re-enable URL updates after navigation completes
             setTimeout(() => {
                 isNavigatingFromURL = false
             }, 1000)
         })
     }
-    
+
     drawPixels()
 })
 defineExpose({ zoomIn, zoomOut, centerMap })
@@ -118,37 +122,37 @@ let isNavigatingFromURL = false
 function updateURL() {
     // Don't update URL if we're currently navigating from URL
     if (isNavigatingFromURL) return
-    
+
     // Debounce URL updates to avoid too many history entries
     if (urlUpdateTimeout) {
         clearTimeout(urlUpdateTimeout)
     }
-    
+
     urlUpdateTimeout = setTimeout(() => {
         if (!map.value) return
-        
+
         const center = getCenter()
         if (!center) return
-        
+
         const zoom = getZoom()
         const worldPx = lngLatToWorldPx({ lng: center.lng, lat: center.lat }, Zoom)
-        
+
         const params = new URLSearchParams()
         params.set('x', Math.round(worldPx.x).toString())
         params.set('y', Math.round(worldPx.y).toString())
         params.set('z', zoom.toFixed(2))
-        
+
         const newURL = `${window.location.pathname}?${params.toString()}`
         window.history.replaceState({}, '', newURL)
     }, 300) // Update URL 300ms after movement stops
 }
 
 function setupEvents(mapInstance) {
-    on('move', () => { 
+    on('move', () => {
         drawAll()
         updateURL()
     })
-    on('zoom', () => { 
+    on('zoom', () => {
         drawAll()
         updateURL()
     })
@@ -291,6 +295,12 @@ function animateHover() {
 }
 
 async function handleClick(mouseEvent) {
+    if (user.value && !isEmailVerified()) {
+        showToast('Please verify your email before placing pixels', 'error')
+        emit('verificationRequired')
+        return
+    }
+
     let token = null;
 
     if (!captchaSessionVerified) {
@@ -306,12 +316,19 @@ async function handleClick(mouseEvent) {
     const x = Math.floor(worldPixel.x);
     const y = Math.floor(worldPixel.y);
 
-    const ok = await save(x, y, props.selectedColor, token);
+    try {
+        const ok = await save(x, y, props.selectedColor, token);
 
-    if (ok) {
-        captchaSessionVerified = true;
-        drawAll();
-        playPixelPlaceSound();
+        if (ok) {
+            captchaSessionVerified = true;
+            drawAll();
+            playPixelPlaceSound();
+        }
+    } catch (err) {
+        if (err.type === 'email_not_verified') {
+            showToast(err.message || 'Please verify your email', 'error')
+            emit('verificationRequired')
+        }
     }
 }
 
