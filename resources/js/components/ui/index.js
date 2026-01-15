@@ -1,7 +1,8 @@
 import ColorPicker from './ColorPicker.vue'
 import PixelInfo from './PixelInfo.vue'
 import CooldownInfo from './CooldownInfo.vue'
-import WalletConnect from './Links.vue'
+import Auth from './Auth.vue'
+import Links from './Links.vue'
 import PauseMenu from './PauseMenu.vue'
 
 export {
@@ -9,5 +10,6 @@ export {
     PixelInfo,
     CooldownInfo,
     PauseMenu,
-    WalletConnect,
+    Auth,
+    Links,
 }
