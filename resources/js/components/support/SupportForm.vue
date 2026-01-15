@@ -16,7 +16,7 @@
         </div>
         <div class="form-group">
             <label for="issue">Issue Description:</label>
-            <textarea type="text" id="issue" name="issue" required />
+            <textarea id="issue" name="issue" required />
         </div>
     </form>
 </div>
@@ -55,6 +55,11 @@
     outline: none;
 }
 
-
+.form-group textarea{
+    border-color: #007bff;
+    outline: none;
+    width: 100%;
+    height: 100px;
+}
 
 </style>
