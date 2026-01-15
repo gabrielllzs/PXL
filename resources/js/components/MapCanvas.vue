@@ -301,9 +301,11 @@ async function handleClick(mouseEvent) {
         return
     }
 
+    // Only require captcha for visitors (non-authenticated users)
     let token = null;
+    const isAuthenticated = user.value !== null;
 
-    if (!captchaSessionVerified) {
+    if (!isAuthenticated && !captchaSessionVerified) {
         token = await executeHCaptcha();
         if (!token) return;
     }
