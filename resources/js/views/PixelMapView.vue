@@ -1,12 +1,11 @@
 <template>
     <div id="overlayContainer">
+        <SideMenu />
         <ColorPicker v-model="selectedColor" />
         <PixelInfo :info="pixelInfo" />
         <CooldownInfo v-if="cooldown.active" :seconds="cooldown.remaining" />
         <Auth ref="authRef"/>
-        <Links/>
         <ToastContainer />
-        <PauseMenu />
     </div>
     <MapCanvas 
         ref="mapCanvasRef" 
@@ -23,8 +22,7 @@ import {
     PixelInfo,
     CooldownInfo,
     Auth,
-    Links,
-    PauseMenu,
+    SideMenu,
 } from '@/components/ui'
 
 import ToastContainer from '@/components/ToastContainer.vue'
@@ -53,5 +51,4 @@ function handleVerificationRequired() {
     height: 100%;
     pointer-events: none;
 }
-
 </style>
