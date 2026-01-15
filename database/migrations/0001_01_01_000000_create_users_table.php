@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
             $table->string('country', 2)->nullable();
+            $table->boolean('is_admin')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('email_verification_code', 6)->nullable();
             $table->timestamp('email_verification_code_expires_at')->nullable();
