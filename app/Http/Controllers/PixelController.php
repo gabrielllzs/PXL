@@ -79,19 +79,6 @@ class PixelController extends Controller
         $visitorId = $request->input('visitorId');
         $components = $request->input('components');
 
-        // Use user_id for cache key if authenticated, otherwise visitor_id
-        $cacheKey = auth()->check()
-            ? "cooldown:user:" . auth()->id()
-            : "cooldown:visitor:{$visitorId}";
-
-        if (Cache::has($cacheKey)) {
-            $remaining = Cache::get($cacheKey);
-            return response()->json([
-                'error' => 'cooldown',
-                'remaining' => $remaining,
-            ], 412);
-        }
-
         $riskData = $this->checkFingerprint($components, $clientIp);
 
         if ($riskData['action'] === 'BLOCK') {
@@ -101,21 +88,30 @@ class PixelController extends Controller
             ], 403);
         }
 
+        // Authenticated users have no cooldown - skip all cooldown checks
         if (auth()->check()) {
-            return response()->json([
-                'remaining' => 0,
-                'hasReduction' => true,
-            ]);
-        }
+            // Continue to pixel placement without cooldown
+        } else {
+            // Visitors have cooldown - check cache and database
+            $cacheKey = "cooldown:visitor:{$visitorId}";
 
-        $cooldownCheck = $this->cooldown($request);
-        $remaining = $cooldownCheck['remaining'];
+            if (Cache::has($cacheKey)) {
+                $remaining = Cache::get($cacheKey);
+                return response()->json([
+                    'error' => 'cooldown',
+                    'remaining' => $remaining,
+                ], 412);
+            }
 
-        if ($remaining > 0) {
-            return response()->json([
-                'error' => 'cooldown',
-                'remaining' => $remaining,
-            ], 412);
+            $cooldownCheck = $this->cooldown($request);
+            $remaining = $cooldownCheck['remaining'];
+
+            if ($remaining > 0) {
+                return response()->json([
+                    'error' => 'cooldown',
+                    'remaining' => $remaining,
+                ], 412);
+            }
         }
 
         // Dit zegt dat als er al een pixel is op die coördinaten, die geüpdatet wordt of er een nieuwe wordt gemaakt
@@ -133,9 +129,14 @@ class PixelController extends Controller
             ]
         );
 
-        // Zet een cooldown in de cache als een pixel is geplaatst 0 voor geauthenticeerde gebruikers, 10 voor anonieme
-        $cooldownSeconds = auth()->check() ? 0 : 10;
-        Cache::put($cacheKey, $cooldownSeconds, $cooldownSeconds);
+        // Zet een cooldown in de cache alleen voor visitors (niet voor geauthenticeerde gebruikers)
+        if (!auth()->check()) {
+            $cooldownSeconds = 10;
+            $cacheKey = "cooldown:visitor:{$visitorId}";
+            Cache::put($cacheKey, $cooldownSeconds, $cooldownSeconds);
+        } else {
+            $cooldownSeconds = 0;
+        }
 
         // Trigger PixelPlaced event voor real-time updates
         event(new PixelPlaced($pixel->x, $pixel->y, $pixel->color));
@@ -151,8 +152,17 @@ class PixelController extends Controller
         $clientIp = $request->ip();
         $visitorId = $request->input('visitorId');
 
-        // Authenticated users get 5s cooldown, anonymous get 10s
-        $cooldownSeconds = auth()->check() ? 5 : 10;
+        // Authenticated users have no cooldown, anonymous get 10s
+        if (auth()->check()) {
+            return [
+                'cooldown' => false,
+                'remaining' => 0,
+                'hasReduction' => true,
+                'cooldownDuration' => 0,
+            ];
+        }
+
+        $cooldownSeconds = 10;
 
         // Check cooldown by user_id if authenticated, otherwise by visitor_id or ip
         if (auth()->check()) {
