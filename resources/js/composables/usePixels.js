@@ -106,6 +106,10 @@ export function usePixels() {
     }
 
     async function syncCooldown() {
+        const { isAuthenticated } = useAuth()
+        // Authenticated users have no cooldown, skip sync
+        if (isAuthenticated()) return
+        
         await initFingerprint()
         try {
             const res = await axios.get('/api/cooldown', {
