@@ -18,19 +18,22 @@ Route::post('/api/pixel', [PixelController::class, 'store']);
 Route::get('/api/cooldown', [PixelController::class, 'cooldown']);
 Route::post('/api/wallet/check-balance', [WalletController::class, 'checkBalance']);
 
-/* Login Routes */
+/* Auth Routes */
 
 Route::get('/login', function () { return view('login'); })->middleware('guest')->name('login');
 Route::post('/login', [HandleAuthController::class, 'handleLogin']);
+Route::post('/register', [HandleAuthController::class, 'handleRegister'])->middleware('guest');
+Route::post('/api/verify-email', [HandleAuthController::class, 'verifyEmail'])->middleware('auth');
+Route::post('/api/resend-verification', [HandleAuthController::class, 'resendVerificationCode'])->middleware('auth');
 
 
 
 Route::get('/admin/', function () { return view('admin'); })->middleware('auth');
 
-Route::middleware('auth')->get('/api/me', function () {
-    return Auth::user();
+// API routes that can work with or without auth - must be before auth middleware routes
+Route::get('/api/me', function () {
+    return auth()->check() ? Auth::user() : null;
 });
-
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [HandleAuthController::class, 'handleLogout']);
