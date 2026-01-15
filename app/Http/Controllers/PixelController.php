@@ -37,10 +37,6 @@ class PixelController extends Controller
             'captchaToken' => $request->session()->get('captcha_verified', false)
                 ? 'nullable|string'
                 : 'required|string',
-            'wallet' => 'nullable|array',
-            'wallet.publicKey' => 'nullable|string',
-            'wallet.signature' => 'nullable|array',
-            'wallet.message' => 'nullable|string',
         ]);
 
         if (!$request->session()->get('captcha_verified', false)) {
@@ -69,9 +65,24 @@ class PixelController extends Controller
             $request->session()->put('captcha_verified', true);
         }
 
+        // Check if authenticated user has verified their email
+        if (auth()->check()) {
+            $user = auth()->user();
+            if (!$user->email_verified_at) {
+                return response()->json([
+                    'error' => 'email_not_verified',
+                    'message' => 'Please verify your email before placing pixels.',
+                ], 403);
+            }
+        }
+
         $visitorId = $request->input('visitorId');
         $components = $request->input('components');
-        $cacheKey = "cooldown:{$visitorId}";
+
+        // Use user_id for cache key if authenticated, otherwise visitor_id
+        $cacheKey = auth()->check()
+            ? "cooldown:user:" . auth()->id()
+            : "cooldown:visitor:{$visitorId}";
 
         if (Cache::has($cacheKey)) {
             $remaining = Cache::get($cacheKey);
@@ -90,6 +101,13 @@ class PixelController extends Controller
             ], 403);
         }
 
+        if (auth()->check()) {
+            return response()->json([
+                'remaining' => 0,
+                'hasReduction' => true,
+            ]);
+        }
+
         $cooldownCheck = $this->cooldown($request);
         $remaining = $cooldownCheck['remaining'];
 
@@ -97,10 +115,10 @@ class PixelController extends Controller
             return response()->json([
                 'error' => 'cooldown',
                 'remaining' => $remaining,
-                'hasReduction' => $cooldownCheck['hasReduction'] ?? false,
             ], 412);
         }
 
+        // Dit zegt dat als er al een pixel is op die coördinaten, die geüpdatet wordt of er een nieuwe wordt gemaakt
         $pixel = Pixel::updateOrCreate(
             [
                 'x' => $request->x,
@@ -109,40 +127,39 @@ class PixelController extends Controller
             [
                 'color' => $request->color ?? 'black',
                 'visitor_id' => $visitorId,
+                'user_id' => auth()->id(),
                 'risk_score' => 0,
                 'ip_address' => $clientIp,
             ]
         );
 
-        $cooldownSeconds = $cooldownCheck['hasReduction'] ? 5 :  10;
+        // Zet een cooldown in de cache als een pixel is geplaatst 0 voor geauthenticeerde gebruikers, 10 voor anonieme
+        $cooldownSeconds = auth()->check() ? 0 : 10;
         Cache::put($cacheKey, $cooldownSeconds, $cooldownSeconds);
 
+        // Trigger PixelPlaced event voor real-time updates
         event(new PixelPlaced($pixel->x, $pixel->y, $pixel->color));
 
-        return response()->json($pixel);
+        return response()->json([
+            ...$pixel->toArray(),
+            'cooldownDuration' => $cooldownSeconds,
+        ]);
     }
 
     public function cooldown(Request $request)
     {
         $clientIp = $request->ip();
-        $walletData = $request->input('wallet');
+        $visitorId = $request->input('visitorId');
 
-        $hasReduction = false;
-        $cooldownSeconds = 10;
+        // Authenticated users get 5s cooldown, anonymous get 10s
+        $cooldownSeconds = auth()->check() ? 5 : 10;
 
-        if ($walletData && isset($walletData['publicKey'])) {
-            $publicKey = $walletData['publicKey'];
-            $hasReduction = $this->balanceService->hasReduction($publicKey);
-
-            if ($hasReduction) {
-                $cooldownSeconds = 5;
-            }
-        }
-
-        if (str_contains($clientIp, ':')) {
+        // Check cooldown by user_id if authenticated, otherwise by visitor_id or ip
+        if (auth()->check()) {
+            $query = Pixel::where('user_id', auth()->id());
+        } elseif (str_contains($clientIp, ':')) {
             $query = Pixel::where('ip_address', $clientIp);
         } else {
-            $visitorId = $request->input('visitorId');
             $query = Pixel::where('visitor_id', $visitorId);
         }
 
@@ -152,7 +169,7 @@ class PixelController extends Controller
             return [
                 'cooldown' => false,
                 'remaining' => 0,
-                'hasReduction' => $hasReduction,
+                'hasReduction' => auth()->check(),
                 'cooldownDuration' => $cooldownSeconds,
             ];
         }
@@ -163,7 +180,7 @@ class PixelController extends Controller
         return [
             'cooldown' => $remaining > 0,
             'remaining' => $remaining,
-            'hasReduction' => $hasReduction,
+            'hasReduction' => auth()->check(),
             'cooldownDuration' => $cooldownSeconds,
             'elapsed' => $elapsed,
         ];
