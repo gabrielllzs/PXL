@@ -28,18 +28,23 @@ class PixelController extends Controller
     {
         $clientIp = $request->ip();
 
+        // Only require captcha for visitors (non-authenticated users)
+        $isAuthenticated = auth()->check();
+        
         $request->validate([
             'x' => 'required|integer',
             'y' => 'required|integer',
             'color' => 'required|string',
             'visitorId' => 'required|string',
-            'components' => 'required|array',
-            'captchaToken' => $request->session()->get('captcha_verified', false)
-                ? 'nullable|string'
-                : 'required|string',
+            'captchaToken' => $isAuthenticated 
+                ? 'nullable|string' 
+                : ($request->session()->get('captcha_verified', false)
+                    ? 'nullable|string'
+                    : 'required|string'),
         ]);
 
-        if (!$request->session()->get('captcha_verified', false)) {
+        // Only check captcha for visitors
+        if (!$isAuthenticated && !$request->session()->get('captcha_verified', false)) {
             $token = $request->input('captchaToken');
 
             if (!$token) {
