@@ -44,7 +44,6 @@ onMounted(async () => {
                             </button>
                         </form>
                     </li>
-
                 </ul>
             </div>
         </div>
