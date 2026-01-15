@@ -22,6 +22,7 @@ class User extends Authenticatable
         'email',
         'password',
         'country',
+        'is_admin',
         'email_verification_code',
         'email_verification_code_expires_at',
     ];
@@ -46,7 +47,13 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->is_admin === true;
     }
 
     public function pixels()
