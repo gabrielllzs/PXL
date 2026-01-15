@@ -32,20 +32,11 @@ async function handleSubmit() {
     if (result.success) {
         showToast('Account created! Please verify your email.', 'success')
         emit('verify', email.value)
-        resetForm()
         emit('update:modelValue', false)
     } else {
         const errorMsg = result.errors ? Object.values(result.errors).flat().join(', ') : result.error
         showToast(errorMsg || 'Registration failed', 'error')
     }
-}
-
-function resetForm() {
-    username.value = ''
-    email.value = ''
-    password.value = ''
-    passwordConfirmation.value = ''
-    country.value = null
 }
 
 function close() {

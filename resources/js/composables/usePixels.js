@@ -4,18 +4,16 @@ import FingerprintJS from '@fingerprintjs/fingerprintjs'
 import { useAuth } from './useAuth'
 
 let visitorId = null
-let fpComponents = null
 
 export const stored = reactive([])
 const cooldown = reactive({ active: false, remaining: 0 })
 let cooldownTimer = null
 
 async function initFingerprint() {
-    if (!visitorId || !fpComponents) {
+    if (!visitorId) {
         const fp = await FingerprintJS.load()
         const result = await fp.get()
         visitorId = result.visitorId
-        fpComponents = result.components
     }
 }
 
@@ -57,7 +55,6 @@ export function usePixels() {
         if (!isAuthenticated() && cooldown.active) return false
 
         try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
             const data = {
                 x,
                 y,
@@ -66,9 +63,7 @@ export function usePixels() {
                 captchaToken,
             }
 
-            const response = await axios.post('/api/pixel', data, {
-                headers: { 'X-CSRF-TOKEN': csrfToken }
-            })
+            const response = await axios.post('/api/pixel', data)
 
             const existing = stored.find(p => p.x === x && p.y === y)
             if (existing) {
@@ -78,7 +73,6 @@ export function usePixels() {
                 stored.push({ x, y, color, id: response.data?.id })
             }
 
-            // Cooldown duration will be determined by server based on auth status
             // Only start cooldown for non-authenticated users
             const { isAuthenticated } = useAuth()
             if (!isAuthenticated()) {
@@ -88,8 +82,8 @@ export function usePixels() {
             return true
         } catch (err) {
             if (err.response?.status === 419) {
-                // CSRF token expired - reload page to get fresh token from meta tag
-                // This typically happens after login when session is regenerated
+                // CSRF token expired - reload page to get fresh session
+                console.error('CSRF token expired, reloading page')
                 window.location.reload()
                 return false
             } else if (err.response?.status === 412) {
@@ -114,10 +108,8 @@ export function usePixels() {
     async function syncCooldown() {
         await initFingerprint()
         try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
             const res = await axios.get('/api/cooldown', {
-                params: { visitorId },
-                headers: { 'X-CSRF-TOKEN': csrfToken }
+                params: { visitorId }
             })
             const remaining = res.data.remaining || 0
             if (remaining > 0) startCooldown(remaining)

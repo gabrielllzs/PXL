@@ -24,48 +24,34 @@ const verificationCode = ref('')
 const resendingCode = ref(false)
 
 async function handleVerify() {
-    if (verificationCode.value.length !== 6) {
-        showToast('Please enter a 6-digit code', 'error')
-        return
-    }
-
+    if (verificationCode.value.length !== 6) return
+    
     try {
         const response = await axios.post('/api/verify-email', {
             code: verificationCode.value
-        }, {
-            withCredentials: true
         })
-
+        
         if (response.data.success) {
-            showToast('Email verified successfully! You can now place pixels.', 'success')
+            showToast('Email verified successfully!', 'success')
             verificationCode.value = ''
             await checkAuth()
             emit('success')
             emit('update:modelValue', false)
-        } else {
-            showToast(response.data.error || 'Verification failed', 'error')
         }
     } catch (err) {
-        const error = err.response?.data?.error || err.response?.data?.message || 'Verification failed'
-        showToast(error, 'error')
+        showToast(err.response?.data?.error || err.response?.data?.message || 'Verification failed', 'error')
     }
 }
 
 async function resendCode() {
     resendingCode.value = true
     try {
-        const response = await axios.post('/api/resend-verification', {}, {
-            withCredentials: true
-        })
-
+        const response = await axios.post('/api/resend-verification')
         if (response.data.success) {
             showToast('Verification code resent!', 'success')
-        } else {
-            showToast(response.data.error || 'Failed to resend code', 'error')
         }
     } catch (err) {
-        const error = err.response?.data?.error || err.response?.data?.message || 'Failed to resend code'
-        showToast(error, 'error')
+        showToast(err.response?.data?.error || err.response?.data?.message || 'Failed to resend code', 'error')
     } finally {
         resendingCode.value = false
     }

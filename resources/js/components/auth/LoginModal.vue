@@ -23,8 +23,6 @@ async function handleSubmit() {
     const result = await login(email.value, password.value, rememberMe.value)
     if (result.success) {
         showToast('Logged in successfully!', 'success')
-        email.value = ''
-        password.value = ''
         emit('success')
         emit('update:modelValue', false)
     } else {
