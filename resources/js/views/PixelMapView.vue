@@ -3,45 +3,46 @@
         <ColorPicker v-model="selectedColor" />
         <PixelInfo :info="pixelInfo" />
         <CooldownInfo v-if="cooldown.active" :seconds="cooldown.remaining" />
-        <WalletConnect/>
+        <Auth ref="authRef"/>
+        <Links/>
         <ToastContainer />
         <PauseMenu />
     </div>
-    <MapCanvas ref="mapCanvasRef" :selectedColor="selectedColor" @pixelHover="pixelInfo = $event" :walletData="currentWalletData"/>
+    <MapCanvas 
+        ref="mapCanvasRef" 
+        :selectedColor="selectedColor" 
+        @pixelHover="pixelInfo = $event"
+        @verification-required="handleVerificationRequired"
+    />
 </template>
 
 <script setup>
-import { ref, defineAsyncComponent, computed } from 'vue'
+import { ref, defineAsyncComponent } from 'vue'
 import {
     ColorPicker,
     PixelInfo,
     CooldownInfo,
-    WalletConnect,
+    Auth,
+    Links,
     PauseMenu,
 } from '@/components/ui'
 
-import { useWallet } from '@/composables/connectWallet' // Import useWallet
 import ToastContainer from '@/components/ToastContainer.vue'
 import { usePixels } from '@/composables/usePixels'
 
 const MapCanvas = defineAsyncComponent(() => import('@/components/MapCanvas.vue'))
 
-const { buyer, walletSignature, hasReduction } = useWallet()
 const selectedColor = ref('')
 const pixelInfo = ref('')
+const authRef = ref(null)
 
 const { cooldown } = usePixels()
 
-const currentWalletData = computed(() => {
-    if (!buyer || !buyer.value) return null
-
-    return {
-        publicKey: buyer.value,
-        signature: walletSignature.value?.signature,
-        message: walletSignature.value?.message,
-        hasReduction: hasReduction.value || false,
+function handleVerificationRequired() {
+    if (authRef.value) {
+        authRef.value.showVerifyModal()
     }
-})
+}
 </script>
 
 <style scoped>
