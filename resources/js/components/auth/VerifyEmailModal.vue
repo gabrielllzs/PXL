@@ -174,7 +174,7 @@ function close() {
 
 .verification-input:focus {
     outline: none;
-    border-color: #ab9ff2;
+    border-color: #2563eb;
 }
 
 .form-actions {
@@ -185,7 +185,7 @@ function close() {
 }
 
 .btn-primary {
-    background: #ab9ff2;
+    background: #2563eb;
     color: white;
     border: none;
     padding: 12px 24px;
@@ -196,7 +196,7 @@ function close() {
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: #b5a9f4;
+    background: #3b82f6;
     transform: translateY(-1px);
 }
 
@@ -208,7 +208,7 @@ function close() {
 .btn-link {
     background: none;
     border: none;
-    color: #ab9ff2;
+    color: #2563eb;
     cursor: pointer;
     text-decoration: underline;
     font-size: 14px;
@@ -216,7 +216,7 @@ function close() {
 }
 
 .btn-link:hover:not(:disabled) {
-    color: #9d8df1;
+    color: #1e40af;
 }
 
 .btn-link:disabled {

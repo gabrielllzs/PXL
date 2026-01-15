@@ -210,10 +210,10 @@ watch(
 }
 
 .swatch.selected {
-    border: 3px solid #667eea;
+    border: 3px solid #1e3a8a;
     box-shadow:
-        0 4px 12px rgba(102, 126, 234, 0.4),
-        0 0 0 4px rgba(102, 126, 234, 0.1);
+        0 4px 12px rgba(30, 58, 138, 0.4),
+        0 0 0 4px rgba(30, 58, 138, 0.1);
     transform: scale(1.1);
 }
 
@@ -267,7 +267,7 @@ watch(
 
 .add-color-btn.active {
     background: rgba(255, 255, 255, 0.3);
-    border-color: #667eea;
+    border-color: #1e3a8a;
 }
 
 .add-icon {

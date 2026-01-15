@@ -30,7 +30,7 @@ onMounted(async () => {
                     <li   :class="{ active: activePage === 'user bans' }"  @click="activePage = 'user bans'">
                         <span>> User Bans</span>
                     </li>
-                    <li  :class="{ active: activePage === 'support tickets' }"  @click="activePage = 'support tickets'">
+                    <li  :class="{ active: activePage === 'Feedback tickets' }"  @click="activePage = 'Feedback tickets'">
                         <span>> Support Tickets</span>
                     </li>
                     <li>
@@ -57,7 +57,7 @@ onMounted(async () => {
             <div id="main-panel-content">
                 <Dashboard v-if="activePage === 'dashboard'" />
                 <UserBans v-if="activePage === 'user bans'" />
-                <SupportTickets v-if="activePage === 'support tickets'" />
+                <SupportTickets v-if="activePage === 'Feedback tickets'" />
             </div>
         </div>
     </div>

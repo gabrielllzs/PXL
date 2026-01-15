@@ -26,7 +26,7 @@
         }
         .code-container {
             background: #f8f9fa;
-            border: 2px dashed #ab9ff2;
+            border: 2px dashed #2563eb;
             border-radius: 8px;
             padding: 20px;
             text-align: center;
@@ -36,7 +36,7 @@
             font-size: 32px;
             font-weight: bold;
             letter-spacing: 8px;
-            color: #ab9ff2;
+            color: #2563eb;
             font-family: 'Courier New', monospace;
         }
         p {

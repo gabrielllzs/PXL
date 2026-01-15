@@ -70,6 +70,12 @@ function close() {
                         </span>
                     </label>
                 </div>
+                
+                <div class="menu-buttons">
+                    <a href="/feedback" class="menu-btn" @click="close">
+                        Feedback
+                    </a>
+                </div>
             </div>
             <div class="menu-footer">
                 <Links />
@@ -109,8 +115,8 @@ function close() {
 }
 
 .menu-toggle.active {
-    background: #ab9ff2;
-    border-color: #9d8df1;
+    background: #2563eb;
+    border-color: #1e40af;
 }
 
 .menu-toggle span {
@@ -240,6 +246,36 @@ function close() {
     border-top: 2px solid rgba(0, 0, 0, 0.06);
     display: flex;
     justify-content: center;
+    margin-bottom: 20px;
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 20px;
+    border-top: 2px solid rgba(0, 0, 0, 0.06);
+}
+
+.menu-btn {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    pointer-events: auto;
+    font-size: 14px;
+    text-decoration: none;
+    display: block;
+    text-align: center;
+}
+
+.menu-btn:hover {
+    background: #3b82f6;
+    transform: translateY(-1px);
 }
 
 .ccs-toggle {
