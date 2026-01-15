@@ -1,7 +1,6 @@
 import { reactive } from 'vue'
 import axios from 'axios'
 import FingerprintJS from '@fingerprintjs/fingerprintjs'
-import { useWallet } from './connectWallet.js'
 
 let visitorId = null
 let fpComponents = null
@@ -51,28 +50,23 @@ export function usePixels() {
 
     async function save(x, y, color, captchaToken) {
         await initFingerprint()
-        const { buyer, walletSignature, hasReduction } = useWallet()
-
 
         if (cooldown.active) return false
 
         try {
-
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
             const data = {
                 x,
                 y,
                 color,
                 visitorId,
                 captchaToken,
-                wallet: buyer.value && walletSignature.value ? {
-                    publicKey: buyer.value,
-                    signature: walletSignature.value.signature,
-                    message: walletSignature.value.message,
-                } : null,
                 components: fpComponents,
             }
 
-            const response = await axios.post('/api/pixel', data)
+            const response = await axios.post('/api/pixel', data, {
+                headers: { 'X-CSRF-TOKEN': csrfToken }
+            })
 
             const existing = stored.find(p => p.x === x && p.y === y)
             if (existing) {
@@ -82,7 +76,8 @@ export function usePixels() {
                 stored.push({ x, y, color, id: response.data?.id })
             }
 
-            const cooldownDuration = hasReduction.value ? 5 : 10
+            // Cooldown duration will be determined by server based on auth status
+            const cooldownDuration = response.data?.cooldownDuration || 10
 
             startCooldown(cooldownDuration)
             return true
@@ -91,10 +86,15 @@ export function usePixels() {
                 const remaining = err.response.data?.remaining ?? 1
                 startCooldown(remaining)
                 return false
-            }else if (err.response?.status === 403) {
+            } else if (err.response?.status === 403) {
+                const error = err.response.data?.error
+                if (error === 'email_not_verified') {
+                    // Return a special error code so the UI can handle it
+                    throw { type: 'email_not_verified', message: err.response.data?.message || 'Please verify your email' }
+                }
                 console.error('Security Blocked');
                 return false;
-            }else {
+            } else {
                 console.error('Unexpected error:', err)
                 return false
             }
@@ -104,7 +104,11 @@ export function usePixels() {
     async function syncCooldown() {
         await initFingerprint()
         try {
-            const res = await axios.get('/api/cooldown', { params: { visitorId } })
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            const res = await axios.get('/api/cooldown', { 
+                params: { visitorId },
+                headers: { 'X-CSRF-TOKEN': csrfToken }
+            })
             const remaining = res.data.remaining || 0
             if (remaining > 0) startCooldown(remaining)
         } catch (err) {
