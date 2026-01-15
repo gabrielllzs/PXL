@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 import axios from 'axios'
 import FingerprintJS from '@fingerprintjs/fingerprintjs'
+import { useAuth } from './useAuth'
 
 let visitorId = null
 let fpComponents = null
@@ -51,7 +52,9 @@ export function usePixels() {
     async function save(x, y, color, captchaToken) {
         await initFingerprint()
 
-        if (cooldown.active) return false
+        // Skip cooldown check for authenticated users
+        const { isAuthenticated } = useAuth()
+        if (!isAuthenticated() && cooldown.active) return false
 
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
@@ -77,9 +80,12 @@ export function usePixels() {
             }
 
             // Cooldown duration will be determined by server based on auth status
-            const cooldownDuration = response.data?.cooldownDuration || 10
-
-            startCooldown(cooldownDuration)
+            // Only start cooldown for non-authenticated users
+            const { isAuthenticated } = useAuth()
+            if (!isAuthenticated()) {
+                const cooldownDuration = response.data?.cooldownDuration || 10
+                startCooldown(cooldownDuration)
+            }
             return true
         } catch (err) {
             if (err.response?.status === 412) {
