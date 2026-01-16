@@ -211,20 +211,24 @@ function drawPixels() {
         return;
     }
 
+    // Bepaal de zichtbare wereld coördinaten
     const bounds = getBounds();
     if (!bounds) return;
 
+    // Converteer de zichtbare wereld coördinaten naar wereld pixel coördinaten
     const nw = lngLatToWorldPx(bounds.getNorthWest(), Zoom);
     const se = lngLatToWorldPx(bounds.getSouthEast(), Zoom);
 
 
+    // Bepaal de zichtbare pixel coördinaten
     const minX = Math.floor(nw.x);
     const maxX = Math.ceil(se.x);
     const minY = Math.floor(nw.y);
     const maxY = Math.ceil(se.y);
 
+    // Voor elke pixel in stored, teken deze als deze binnen de zichtbare bounds valt
     stored.forEach(pixel => {
-        // FRUSTUM CULLING CHECK
+        // alleen tekenen als binnen zichtbare gebied
         if (pixel.x >= minX && pixel.x <= maxX && pixel.y >= minY && pixel.y <= maxY) {
             const rectBounds = getCellScreenBounds(pixel.x, pixel.y);
             // Skip pixels that are too small to render clearly
