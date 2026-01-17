@@ -5,11 +5,12 @@
         <PixelInfo :info="pixelInfo" />
         <CooldownInfo v-if="cooldown.active" :seconds="cooldown.remaining" />
         <Auth ref="authRef"/>
+        <Buttons />
         <ToastContainer />
     </div>
-    <MapCanvas 
-        ref="mapCanvasRef" 
-        :selectedColor="selectedColor" 
+    <MapCanvas
+        ref="mapCanvasRef"
+        :selectedColor="selectedColor"
         @pixelHover="pixelInfo = $event"
         @verification-required="handleVerificationRequired"
     />
@@ -23,6 +24,7 @@ import {
     CooldownInfo,
     Auth,
     SideMenu,
+    Buttons,
 } from '@/components/ui'
 
 import ToastContainer from '@/components/ToastContainer.vue'
