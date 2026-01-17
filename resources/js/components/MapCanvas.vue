@@ -2,6 +2,7 @@
     <div id="mapContainer">
         <div id="map"></div>
         <canvas ref="canvas" id="pixel-map"></canvas>
+        <canvas ref="hoverCanvas" id="hover-preview"></canvas>
         <div v-if="isLoading" class="loading-overlay">
             Loading World...
         </div>
@@ -47,6 +48,8 @@ const pixelSizeAtZoom = 1
 
 const canvas = ref(null)
 let canvasRender = ref(null)
+const hoverCanvas = ref(null)
+let hoverCanvasRender = ref(null)
 let animationFrameId = null
 let captchaSessionVerified = false;
 const animationPulse = ref(0)
@@ -105,15 +108,25 @@ defineExpose({ zoomIn, zoomOut, centerMap })
 
 function setupCanvas() {
     const canvasValue = canvas.value
+    const hoverCanvasValue = hoverCanvas.value
     const container = document.getElementById('map')
+    
+    // Setup main pixel canvas
     canvasValue.width = container.clientWidth
     canvasValue.height = container.clientHeight
     canvasValue.style.position = 'absolute'
     canvasValue.style.pointerEvents = 'none'
     canvasRender = canvasValue.getContext('2d')
     canvasRender.imageSmoothingEnabled = false
-    canvasRender.lineWidth = 2
-    canvasRender.strokeStyle = '#ffffff'
+    
+    // Setup hover preview canvas (on top of main canvas)
+    hoverCanvasValue.width = container.clientWidth
+    hoverCanvasValue.height = container.clientHeight
+    hoverCanvasValue.style.position = 'absolute'
+    hoverCanvasValue.style.pointerEvents = 'none'
+    hoverCanvasValue.style.zIndex = '1'
+    hoverCanvasRender = hoverCanvasValue.getContext('2d')
+    hoverCanvasRender.imageSmoothingEnabled = false
 }
 
 let urlUpdateTimeout = null
@@ -165,9 +178,12 @@ function setupEvents(mapInstance) {
 
 function resizeCanvas() {
     const canvasValue = canvas.value
+    const hoverCanvasValue = hoverCanvas.value
     const container = document.getElementById('map')
     canvasValue.width = container.clientWidth
     canvasValue.height = container.clientHeight
+    hoverCanvasValue.width = container.clientWidth
+    hoverCanvasValue.height = container.clientHeight
     drawAll()
 }
 
@@ -246,10 +262,15 @@ function drawPixels() {
         }
     });
 
-    drawHoverPreview(hoverX.value, hoverY.value);
+    // Note: hover preview is now drawn on separate canvas, not here
 }
 
 function drawHoverPreview(x, y) {
+    if (!hoverCanvasRender || !hoverCanvas.value) return;
+    
+    // Clear the hover canvas
+    hoverCanvasRender.clearRect(0, 0, hoverCanvas.value.width, hoverCanvas.value.height);
+    
     if(x !== null && y !== null) {
         const bounds = getCellScreenBounds(x, y)
 
@@ -262,9 +283,9 @@ function drawHoverPreview(x, y) {
         const pulseX = bounds.screenX + offsetX;
         const pulseY = bounds.screenY + offsetY;
 
-        canvasRender.fillStyle = props.selectedColor;
+        hoverCanvasRender.fillStyle = props.selectedColor;
         // Use integer coordinates for crisp rendering
-        canvasRender.fillRect(
+        hoverCanvasRender.fillRect(
             Math.round(pulseX),
             Math.round(pulseY),
             Math.round(scaledWidth),
@@ -280,6 +301,10 @@ function drawAll() {
 function animateHover() {
     if (cursorX.value == null) {
         animationFrameId = null
+        // Clear hover canvas when mouse leaves
+        if (hoverCanvasRender && hoverCanvas.value) {
+            hoverCanvasRender.clearRect(0, 0, hoverCanvas.value.width, hoverCanvas.value.height);
+        }
         return
     }
 
@@ -293,7 +318,8 @@ function animateHover() {
     hoverY.value = displayY.value
 
     animationPulse.value += 0.025
-    drawPixels()
+    // Only redraw the hover preview, not all pixels!
+    drawHoverPreview(hoverX.value, hoverY.value)
 
     animationFrameId = requestAnimationFrame(animateHover)
 }
@@ -372,6 +398,11 @@ function handleMouseOut() {
     hoverX.value = null
     hoverY.value = null
     animationPulse.value = 0
+    
+    // Clear hover canvas when mouse leaves
+    if (hoverCanvasRender && hoverCanvas.value) {
+        hoverCanvasRender.clearRect(0, 0, hoverCanvas.value.width, hoverCanvas.value.height);
+    }
 }
 
 </script>
@@ -384,7 +415,7 @@ function handleMouseOut() {
     background-color: #1e1e1e;
 }
 
-#map, #pixel-map {
+#map, #pixel-map, #hover-preview {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     image-rendering: -moz-crisp-edges;
