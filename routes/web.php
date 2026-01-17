@@ -11,8 +11,9 @@ use App\Http\Controllers\FeedbackController;
 use Illuminate\Http\Request;
 
 
-Route::get('/', function () { return view('canvas'); });
+Route::get('/', function () { return view('canvas'); })->name('login');;
 Route::get('/feedback', function () { return view('feedback'); });
+Route::get('/leaderboard', function () { return view('leaderboard'); });
 
 
 Route::get('/api/map-data', [PixelController::class, 'index']);
@@ -32,9 +33,7 @@ Route::post('/api/resend-verification', [HandleAuthController::class, 'resendVer
 Route::get('/admin/', function () { return view('admin'); })->middleware(['auth', 'admin']);
 
 // API routes that can work with or without auth - must be before auth middleware routes
-Route::get('/api/me', function () {
-    return auth()->check() ? Auth::user() : null;
-});
+
 
 Route::post('/api/feedback', [FeedbackController::class, 'store']);
 
@@ -44,4 +43,5 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/banned-visitors', [BanUserController::class, 'getBannedVisitors']);
     Route::post('/ban-visitors', [BanUserController::class, 'ban']);
     Route::post('/logout', [HandleAuthController::class, 'handleLogout']);
+    Route::get('/api/me', function () {return auth()->check() ? Auth::user() : null;});
 });
