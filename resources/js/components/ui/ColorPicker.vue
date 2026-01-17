@@ -244,7 +244,7 @@ watch(
     opacity: 0;
     transition: opacity 0.2s;
     padding: 0;
-    z-index: 10;
+    z-index: 2;
 }
 
 .delete-btn:hover {

@@ -582,7 +582,7 @@ h1, h2, h3 {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 3;
     animation: fadeIn 0.2s ease-out;
 }
 
@@ -770,7 +770,7 @@ thead {
     background: #252525;
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 2;
 }
 
 th {

@@ -1,8 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { audioEnabled } from '../../composables/useAudio.js'
-import Links from './Links.vue'
-
 const isOpen = ref(false)
 const isAudioOn = ref(audioEnabled.value)
 
@@ -26,8 +24,8 @@ function close() {
 <template>
     <div>
         <!-- Toggle Button -->
-        <button 
-            @click="toggle" 
+        <button
+            @click="toggle"
             class="menu-toggle"
             :class="{ active: isOpen }"
         >
@@ -37,9 +35,9 @@ function close() {
         </button>
 
         <!-- Overlay -->
-        <div 
-            v-if="isOpen" 
-            class="menu-overlay" 
+        <div
+            v-if="isOpen"
+            class="menu-overlay"
             @click="close"
         ></div>
 
@@ -53,14 +51,14 @@ function close() {
                 <div class="game-explanation">
                     <h3>How to Play</h3>
                     <p>Place pixels on the shared canvas to create art together with the community. Each pixel you place becomes part of a collaborative masterpiece.</p>
-                    
+
                     <h3>Cooldown</h3>
                     <p>There's a cooldown between placing pixels. Authenticated users have no cooldown, so consider creating an account!</p>
-                    
+
                     <h3>Navigation</h3>
                     <p>Use the zoom buttons and compass to navigate around the canvas. You can zoom in and out to see different areas of the world.</p>
                 </div>
-                
+
                 <div class="audio-control">
                     <label class="ccs-toggle">
                         Sound effects :
@@ -70,15 +68,12 @@ function close() {
                         </span>
                     </label>
                 </div>
-                
+
                 <div class="menu-buttons">
                     <a href="/feedback" class="menu-btn" @click="close">
                         Feedback
                     </a>
                 </div>
-            </div>
-            <div class="menu-footer">
-                <Links />
             </div>
         </div>
     </div>
@@ -89,7 +84,7 @@ function close() {
     position: fixed;
     top: 16px;
     left: 16px;
-    z-index: 1001;
+    z-index: 1;
     width: 48px;
     height: 48px;
     background: rgba(255, 255, 255, 0.95);
@@ -150,7 +145,7 @@ function close() {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 1002;
+    z-index: 3;
     pointer-events: auto;
 }
 
@@ -163,7 +158,7 @@ function close() {
     max-width: 85vw;
     background: white;
     box-shadow: 2px 0 16px rgba(0, 0, 0, 0.1);
-    z-index: 1003;
+    z-index: 3;
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: auto;
@@ -214,15 +209,6 @@ function close() {
     overflow-y: auto;
     padding: 20px;
 }
-
-.menu-footer {
-    padding: 20px;
-    border-top: 2px solid rgba(0, 0, 0, 0.06);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
 .game-explanation {
     margin-bottom: 24px;
 }

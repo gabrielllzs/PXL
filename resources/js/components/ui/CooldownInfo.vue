@@ -39,6 +39,6 @@ const formatted = computed(() => {
     border: 1px solid #ddd;
     font-size: 16px;
     color: #333;
-    z-index: 5;
+    z-index: 2;
 }
 </style>

@@ -93,7 +93,7 @@ function toggleMenu() {
     min-width: 200px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     pointer-events: auto;
-    z-index: 1000;
+    z-index: 2;
 }
 
 .user-info {

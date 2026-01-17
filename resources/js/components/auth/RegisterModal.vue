@@ -93,7 +93,7 @@ function close() {
                     <button type="submit" class="btn-primary" :disabled="loading">
                         {{ loading ? 'Creating account...' : 'Register' }}
                     </button>
-                    <button type="button" class="btn-link" @click="$emit('switchToLogin')">
+                    <button type="button" class="btn-link" @click="emit('switchToLogin')">
                         Already have an account? Login
                     </button>
                 </div>
@@ -114,7 +114,7 @@ function close() {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 2000;
+    z-index: 3;
     pointer-events: auto;
 }
 
