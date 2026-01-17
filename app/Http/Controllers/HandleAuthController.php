@@ -22,7 +22,10 @@ class HandleAuthController extends Controller
             $request->session()->regenerate();
 
             if ($request->expectsJson()) {
-                return response()->json(['user' => auth()->user()]);
+                return response()->json([
+                    'user' => auth()->user(),
+                    'csrf_token' => csrf_token(),
+                ]);
             }
 
             return redirect()->intended('/');
@@ -75,6 +78,7 @@ class HandleAuthController extends Controller
             return response()->json([
                 'user' => $user,
                 'verification_required' => true,
+                'csrf_token' => csrf_token(),
             ], 201);
         }
 

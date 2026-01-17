@@ -24,9 +24,14 @@ export function useAuth() {
     async function login(email, password, remember = false) {
         loading.value = true
         try {
-            await axios.post('/login', { email, password, remember })
+            const response = await axios.post('/login', { email, password, remember })
+
+            if (response.data.csrf_token) {
+                axios.defaults.headers.common['X-CSRF-TOKEN'] = response.data.csrf_token
+                document.querySelector('meta[name="csrf-token"]')?.setAttribute('content', response.data.csrf_token)
+            }
+
             await checkAuth()
-            window.location.reload()
             return { success: true }
         } catch (err) {
             return { success: false, error: err.response?.data?.message || err.response?.data?.error || 'Login failed' }
@@ -48,8 +53,8 @@ export function useAuth() {
             await checkAuth()
             return { success: true }
         } catch (err) {
-            return { 
-                success: false, 
+            return {
+                success: false,
                 error: err.response?.data?.message || err.response?.data?.error || 'Registration failed',
                 errors: err.response?.data?.errors || {}
             }
