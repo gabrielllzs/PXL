@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\ServerMetricsController;
 use App\Http\Controllers\BanUserController;
-use App\Http\Controllers\WalletController;
 use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\GroupController;
 use Illuminate\Http\Request;
 
 
@@ -19,7 +19,6 @@ Route::get('/leaderboard', function () { return view('leaderboard'); });
 Route::get('/api/map-data', [PixelController::class, 'index']);
 Route::post('/api/pixel', [PixelController::class, 'store']);
 Route::get('/api/cooldown', [PixelController::class, 'cooldown']);
-Route::post('/api/wallet/check-balance', [WalletController::class, 'checkBalance']);
 
 /* Auth Routes */
 
@@ -44,4 +43,5 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/ban-visitors', [BanUserController::class, 'ban']);
     Route::post('/logout', [HandleAuthController::class, 'handleLogout']);
     Route::get('/api/me', function () {return auth()->check() ? Auth::user() : null;});
+    Route::get('/group', [GroupController::class, 'showMyGroup']);
 });
