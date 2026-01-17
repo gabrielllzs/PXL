@@ -21,7 +21,7 @@ const { toasts, removeToast } = useToast()
     flex-direction: column;
     gap: 8px;
     pointer-events: none;
-    z-index: 2000;
+    z-index: 3;
     max-width: 400px;
 }
 
