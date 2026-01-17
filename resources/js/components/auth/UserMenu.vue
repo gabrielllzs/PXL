@@ -27,7 +27,7 @@ function toggleMenu() {
             @click="toggleMenu"
             class="auth-btn user-btn"
         >
-            {{ user?.username || user?.name || 'User' }}
+            {{ user?.username || 'User' }}
         </button>
 
         <div v-if="showMenu" class="user-dropdown">
