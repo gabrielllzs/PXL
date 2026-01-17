@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Events\PixelPlaced;
 use App\Models\Pixel;
-use App\Services\SolanaBalanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -12,11 +11,9 @@ use Illuminate\Support\Facades\Log;
 
 class PixelController extends Controller
 {
-    private SolanaBalanceService $balanceService;
 
-    public function __construct(SolanaBalanceService $balanceService)
+    public function __construct()
     {
-        $this->balanceService = $balanceService;
     }
 
     public function index()
@@ -30,14 +27,14 @@ class PixelController extends Controller
 
         // Only require captcha for visitors (non-authenticated users)
         $isAuthenticated = auth()->check();
-        
+
         $request->validate([
             'x' => 'required|integer',
             'y' => 'required|integer',
             'color' => 'required|string',
             'visitorId' => 'required|string',
-            'captchaToken' => $isAuthenticated 
-                ? 'nullable|string' 
+            'captchaToken' => $isAuthenticated
+                ? 'nullable|string'
                 : ($request->session()->get('captcha_verified', false)
                     ? 'nullable|string'
                     : 'required|string'),
@@ -94,8 +91,8 @@ class PixelController extends Controller
         }
 
         // Authenticated users have no cooldown - skip all cooldown checks
-        if (auth()->check()) {
-            // Continue to pixel placement without cooldown
+        if(auth()->check()) {
+
         } else {
             // Visitors have cooldown - check cache and database
             $cacheKey = "cooldown:visitor:{$visitorId}";
@@ -157,26 +154,11 @@ class PixelController extends Controller
         $clientIp = $request->ip();
         $visitorId = $request->input('visitorId');
 
-        // Authenticated users have no cooldown, anonymous get 10s
-        if (auth()->check()) {
-            return [
-                'cooldown' => false,
-                'remaining' => 0,
-                'hasReduction' => true,
-                'cooldownDuration' => 0,
-            ];
-        }
-
         $cooldownSeconds = 10;
 
         // Check cooldown by user_id if authenticated, otherwise by visitor_id or ip
-        if (auth()->check()) {
-            $query = Pixel::where('user_id', auth()->id());
-        } elseif (str_contains($clientIp, ':')) {
-            $query = Pixel::where('ip_address', $clientIp);
-        } else {
-            $query = Pixel::where('visitor_id', $visitorId);
-        }
+
+        $query = Pixel::where('visitor_id', $visitorId);
 
         $last = $query->latest()->first();
 
