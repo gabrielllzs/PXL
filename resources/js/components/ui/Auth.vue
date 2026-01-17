@@ -140,7 +140,7 @@ onMounted(checkAuth)
     position: fixed;
     top: 16px;
     right: 16px;
-    z-index: 1000;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -159,7 +159,7 @@ onMounted(checkAuth)
     pointer-events: auto;
     min-width: 300px;
     max-width: 500px;
-    z-index: 1001;
+    z-index: 2;
 }
 
 .banner-content {
