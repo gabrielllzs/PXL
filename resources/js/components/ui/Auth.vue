@@ -75,8 +75,7 @@ async function resendVerificationCode() {
             showToast(response.data.error || 'Failed to resend code', 'error')
         }
     } catch (err) {
-        const error = err.response?.data?.error || err.response?.data?.message || 'Failed to resend code'
-        showToast(error, 'error')
+        showToast(err.response?.data?.message || 'Failed to resend code', 'error')
     } finally {
         resendingCode.value = false
     }
