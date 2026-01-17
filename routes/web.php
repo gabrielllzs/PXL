@@ -24,8 +24,8 @@ Route::post('/api/wallet/check-balance', [WalletController::class, 'checkBalance
 
 Route::post('/login', [HandleAuthController::class, 'handleLogin']);
 Route::post('/register', [HandleAuthController::class, 'handleRegister'])->middleware('guest');
-Route::post('/api/verify-email', [HandleAuthController::class, 'verifyEmail'])->middleware('auth');
-Route::post('/api/resend-verification', [HandleAuthController::class, 'resendVerificationCode'])->middleware('auth');
+Route::post('/api/verify-email', [HandleAuthController::class, 'verifyEmail'])->middleware('auth', 'throttle:5,1');
+Route::post('/api/resend-verification', [HandleAuthController::class, 'resendVerificationCode'])->middleware('auth' , 'throttle:3,1');
 
 
 
@@ -43,9 +43,5 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/visitors', [PixelController::class, 'getVisitors']);
     Route::get('/banned-visitors', [BanUserController::class, 'getBannedVisitors']);
     Route::post('/ban-visitors', [BanUserController::class, 'ban']);
-});
-
-Route::middleware('auth')->group(function () {
     Route::post('/logout', [HandleAuthController::class, 'handleLogout']);
 });
-
