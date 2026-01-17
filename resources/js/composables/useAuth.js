@@ -2,6 +2,7 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
 const user = ref(null)
+const group = ref(null)
 const loading = ref(false)
 
 export function useAuth() {
@@ -9,7 +10,7 @@ export function useAuth() {
     async function checkAuth() {
         try {
             const response = await axios.get('/api/me')
-            if (response.data && (response.data.id || response.data.email)) {
+            if (response.data) {
                 user.value = response.data
                 return response.data
             }
@@ -34,7 +35,7 @@ export function useAuth() {
             await checkAuth()
             return { success: true }
         } catch (err) {
-            return { success: false, error: err.response?.data?.message || err.response?.data?.error || 'Login failed' }
+            return { success: false, error: err.response?.data?.message || 'Login failed' }
         } finally {
             loading.value = false
         }
@@ -55,8 +56,7 @@ export function useAuth() {
         } catch (err) {
             return {
                 success: false,
-                error: err.response?.data?.message || err.response?.data?.error || 'Registration failed',
-                errors: err.response?.data?.errors || {}
+                error: err.response?.data?.message || 'Registration failed'
             }
         } finally {
             loading.value = false
@@ -77,21 +77,38 @@ export function useAuth() {
         }
     }
 
-    onMounted(async () => {
-        await checkAuth()
-    })
-
     function isEmailVerified() {
         return !!user.value?.email_verified_at
     }
 
+    async function fetchGroup(){
+        loading.value = true
+        try {
+            const response = await axios.get('/group');
+            if (response.data) {
+                group.value = response.data;
+                return response.data
+            }
+            group.value = null;
+            return null;
+        } catch (err)
+        {
+            group.value = null
+            return false;
+        }finally {
+            loading.value = false
+        }
+    }
+
     return {
         user,
+        group,
         loading,
         checkAuth,
         login,
         register,
         logout,
+        fetchGroup,
         isAuthenticated: () => user.value !== null,
         isEmailVerified
     }
