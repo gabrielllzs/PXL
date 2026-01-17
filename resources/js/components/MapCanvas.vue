@@ -42,7 +42,7 @@ const { user, isEmailVerified } = useAuth()
 const { showToast } = useToast()
 
 const Zoom = 10;
-const min_zoom = 9;
+const min_zoom = 9.5;
 const pixelSizeAtZoom = 1
 
 
@@ -110,15 +110,13 @@ function setupCanvas() {
     const canvasValue = canvas.value
     const hoverCanvasValue = hoverCanvas.value
     const container = document.getElementById('map')
-    
     // Setup main pixel canvas
     canvasValue.width = container.clientWidth
     canvasValue.height = container.clientHeight
     canvasValue.style.position = 'absolute'
     canvasValue.style.pointerEvents = 'none'
     canvasRender = canvasValue.getContext('2d')
-    canvasRender.imageSmoothingEnabled = false
-    
+
     // Setup hover preview canvas (on top of main canvas)
     hoverCanvasValue.width = container.clientWidth
     hoverCanvasValue.height = container.clientHeight
@@ -126,7 +124,6 @@ function setupCanvas() {
     hoverCanvasValue.style.pointerEvents = 'none'
     hoverCanvasValue.style.zIndex = '1'
     hoverCanvasRender = hoverCanvasValue.getContext('2d')
-    hoverCanvasRender.imageSmoothingEnabled = false
 }
 
 let urlUpdateTimeout = null
@@ -247,18 +244,14 @@ function drawPixels() {
         // alleen tekenen als binnen zichtbare gebied
         if (pixel.x >= minX && pixel.x <= maxX && pixel.y >= minY && pixel.y <= maxY) {
             const rectBounds = getCellScreenBounds(pixel.x, pixel.y);
-            // Skip pixels that are too small to render clearly
-            if (rectBounds.width < 0.5 || rectBounds.height < 0.5) {
-                return;
-            }
             canvasRender.fillStyle = pixel.color;
             // Use integer coordinates for crisp rendering
-            canvasRender.fillRect(
-                Math.round(rectBounds.screenX),
-                Math.round(rectBounds.screenY),
-                Math.round(rectBounds.width),
-                Math.round(rectBounds.height)
-            );
+            const x = rectBounds.screenX;
+            const y = rectBounds.screenY;
+            const w = rectBounds.width;
+            const h = rectBounds.height;
+
+            canvasRender.fillRect(x, y, w, h);
         }
     });
 
@@ -267,10 +260,10 @@ function drawPixels() {
 
 function drawHoverPreview(x, y) {
     if (!hoverCanvasRender || !hoverCanvas.value) return;
-    
+
     // Clear the hover canvas
     hoverCanvasRender.clearRect(0, 0, hoverCanvas.value.width, hoverCanvas.value.height);
-    
+
     if(x !== null && y !== null) {
         const bounds = getCellScreenBounds(x, y)
 
@@ -284,13 +277,13 @@ function drawHoverPreview(x, y) {
         const pulseY = bounds.screenY + offsetY;
 
         hoverCanvasRender.fillStyle = props.selectedColor;
-        // Use integer coordinates for crisp rendering
-        hoverCanvasRender.fillRect(
-            Math.round(pulseX),
-            Math.round(pulseY),
-            Math.round(scaledWidth),
-            Math.round(scaledHeight)
-        )
+
+        const hx = Math.round(pulseX);
+        const hy = Math.round(pulseY);
+        const hw = Math.max(1, Math.round(scaledWidth));
+        const hh = Math.max(1, Math.round(scaledHeight));
+
+        hoverCanvasRender.fillRect(hx, hy, hw, hh);
     }
 }
 
@@ -398,7 +391,7 @@ function handleMouseOut() {
     hoverX.value = null
     hoverY.value = null
     animationPulse.value = 0
-    
+
     // Clear hover canvas when mouse leaves
     if (hoverCanvasRender && hoverCanvas.value) {
         hoverCanvasRender.clearRect(0, 0, hoverCanvas.value.width, hoverCanvas.value.height);
@@ -415,11 +408,15 @@ function handleMouseOut() {
     background-color: #1e1e1e;
 }
 
-#map, #pixel-map, #hover-preview {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-    image-rendering: -moz-crisp-edges;
+#map {
     position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#pixel-map, #hover-preview {
     top: 0;
     left: 0;
     width: 100%;
