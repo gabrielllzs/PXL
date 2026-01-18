@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\PixelPlaced;
 use App\Models\Pixel;
+use App\Services\PixelCounter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -12,8 +13,11 @@ use Illuminate\Support\Facades\Log;
 class PixelController extends Controller
 {
 
-    public function __construct()
+    protected PixelCounter $pixelCounter;
+
+    public function __construct(PixelCounter $pixelCounter)
     {
+        $this->pixelCounter = $pixelCounter;
     }
 
     public function index()
@@ -24,8 +28,7 @@ class PixelController extends Controller
     public function store(Request $request)
     {
         $clientIp = $request->ip();
-
-        // Only require captcha for visitors (non-authenticated users)
+        $user = auth()->user();
         $isAuthenticated = auth()->check();
 
         $request->validate([
@@ -68,8 +71,7 @@ class PixelController extends Controller
         }
 
         // Check if authenticated user has verified their email
-        if (auth()->check()) {
-            $user = auth()->user();
+        if ($isAuthenticated) {
             if (!$user->email_verified_at) {
                 return response()->json([
                     'error' => 'email_not_verified',
@@ -79,21 +81,11 @@ class PixelController extends Controller
         }
 
         $visitorId = $request->input('visitorId');
-        $components = $request->input('components');
 
-        $riskData = $this->checkFingerprint($components, $clientIp);
 
-        if ($riskData['action'] === 'BLOCK') {
-            return response()->json([
-                'error' => 'security_block',
-                'reason' => $riskData['reason'],
-            ], 403);
-        }
 
         // Authenticated users have no cooldown - skip all cooldown checks
-        if(auth()->check()) {
-
-        } else {
+        if(!$isAuthenticated) {
             // Visitors have cooldown - check cache and database
             $cacheKey = "cooldown:visitor:{$visitorId}";
 
@@ -131,6 +123,9 @@ class PixelController extends Controller
             ]
         );
 
+        $this->pixelCounter->addPixel($user);
+
+
         // Zet een cooldown in de cache alleen voor visitors (niet voor geauthenticeerde gebruikers)
         if (!auth()->check()) {
             $cooldownSeconds = 10;
@@ -143,10 +138,11 @@ class PixelController extends Controller
         // Trigger PixelPlaced event voor real-time updates
         event(new PixelPlaced($pixel->x, $pixel->y, $pixel->color));
 
-        return response()->json([
-            ...$pixel->toArray(),
-            'cooldownDuration' => $cooldownSeconds,
-        ]);
+        return response()->json(array_merge(
+            $pixel->toArray(),
+            ['cooldownDuration' => $cooldownSeconds]
+        ));
+
     }
 
     public function cooldown(Request $request)
@@ -156,7 +152,6 @@ class PixelController extends Controller
 
         $cooldownSeconds = 10;
 
-        // Check cooldown by user_id if authenticated, otherwise by visitor_id or ip
 
         $query = Pixel::where('visitor_id', $visitorId);
 
@@ -181,11 +176,6 @@ class PixelController extends Controller
             'cooldownDuration' => $cooldownSeconds,
             'elapsed' => $elapsed,
         ];
-    }
-
-    public function checkFingerprint($fingerPrintComponents, $clientIp)
-    {
-        return ['risk_score' => 0, 'action' => 'ALLOW', 'reason' => 'OK'];
     }
 
     public function getVisitors()
