@@ -23,9 +23,9 @@ class Groups extends Model
     public function members()
     {
         return $this->belongsToMany(User::class, 'group_members', 'group_id', 'user_id')
-            ->withPivot('role')
+            ->withPivot('role', 'pixels_placed')
             ->withTimestamps()
-            ->select('users.id', 'users.username', 'users.pixels_placed')
-            ->orderBy('users.pixels_placed', 'desc');
+            ->select('users.id', 'users.username')
+            ->orderBy('group_members.pixels_placed', 'desc');
     }
 }
