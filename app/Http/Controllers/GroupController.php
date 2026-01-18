@@ -18,9 +18,9 @@ class GroupController extends Controller
             $groups->map(function ($group) {
                 return [
                     'name' => $group->name,
-                    'total_group_pixels' => $group->members()->sum('pixels_placed'),
+                    'pixels' => $group->pixels,
                 ];
-            })
+            })->sortByDesc('pixels')->values()
         );
     }
 

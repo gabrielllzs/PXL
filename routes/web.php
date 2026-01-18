@@ -8,18 +8,19 @@ use App\Http\Controllers\Api\ServerMetricsController;
 use App\Http\Controllers\BanUserController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 
 
 Route::get('/', function () { return view('canvas'); })->name('login');;
 Route::get('/feedback', function () { return view('feedback'); });
-Route::get('/leaderboard', function () { return view('leaderboard'); });
 
 
 Route::get('/api/map-data', [PixelController::class, 'index']);
 Route::post('/api/pixel', [PixelController::class, 'store']);
 Route::get('/api/cooldown', [PixelController::class, 'cooldown']);
-
+Route::get('/api/groups', [GroupController::class, 'index']);
+Route::get('/api/leaderboard/users', [UserController::class, 'getUsersPixels']);
 /* Auth Routes */
 
 Route::post('/login', [HandleAuthController::class, 'handleLogin']);

@@ -22,4 +22,15 @@ class UserController extends Controller
             ] : null,
         ]);
     }
+
+
+    public function getUsersPixels()
+    {
+        $users = User::orderBy('pixels_placed', 'desc')
+            ->take(10)
+            ->get(['username', 'pixels_placed']);
+
+        return response()->json($users
+        );
+    }
 }
