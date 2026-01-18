@@ -20,14 +20,12 @@ class Groups extends Model
     }
 
 
-    public function users()
-    {
-        return $this->hasMany(User::class);
-    }
-
     public function members()
     {
-        return $this->hasMany(User::class, 'group_id')
-            ->select('id', 'username', 'group_id', 'group_pixels');
+        return $this->belongsToMany(User::class, 'group_members', 'group_id', 'user_id')
+            ->withPivot('role')
+            ->withTimestamps()
+            ->select('users.id', 'users.username', 'users.pixels_placed')
+            ->orderBy('users.pixels_placed', 'desc');
     }
 }
