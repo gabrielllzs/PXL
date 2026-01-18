@@ -25,6 +25,7 @@ class User extends Authenticatable
         'is_admin',
         'email_verification_code',
         'email_verification_code_expires_at',
+        'group_id',
     ];
 
     /**
@@ -59,5 +60,15 @@ class User extends Authenticatable
     public function pixels()
     {
         return $this->hasMany(Pixel::class);
+    }
+
+    public function group()
+    {
+        return $this->belongsTo(Groups::class, 'group_id');
+    }
+
+    public function ownedGroup()
+    {
+        return $this->hasOne(Groups::class, 'owner_id');
     }
 }
