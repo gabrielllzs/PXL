@@ -13,10 +13,14 @@ return new class extends Migration
     {
         Schema::create('group_members', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('group_id')->constrained('groups')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->enum('role', ['member', 'admin'])->default('member');
+            $table->foreignId('group_id')->constrained('groups')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->enum('role', ['member', 'admin', 'owner'])->default('member');
+            $table->integer('pixels_placed')->default(0);
             $table->timestamps();
+
+            $table->unique('user_id');
+
         });
     }
 
