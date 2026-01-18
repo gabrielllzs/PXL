@@ -107,10 +107,9 @@ function close() {
 .modal-content {
     background: white;
     padding: 24px;
-    border-radius: 12px;
-    width: 100%;
-    max-width: 500px;
-    max-height: 90vh;
+    border-radius: 32px;
+    width: 45%;
+    height: 80%;
     overflow-y: auto;
     position: relative;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -179,10 +178,7 @@ function close() {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding: 16px;
-    background: #f5f5f5;
-    border-radius: 8px;
-    margin-bottom: 24px;
+    margin-bottom: 32px;
 }
 
 .group-details-item {
@@ -203,12 +199,6 @@ function close() {
 .group-details-item strong {
     color: #1e1e1e;
     font-weight: 600;
-}
-
-.group-members-leaderboard {
-    margin-top: 24px;
-    padding-top: 24px;
-    border-top: 1px solid #e5e5e5;
 }
 
 .group-members-leaderboard h3 {
@@ -232,8 +222,7 @@ function close() {
     justify-content: space-between;
     align-items: center;
     padding: 12px;
-    background: #f9f9f9;
-    border-radius: 8px;
+    border-bottom: 1px solid #e5e5e5;
     font-size: 14px;
 }
 
