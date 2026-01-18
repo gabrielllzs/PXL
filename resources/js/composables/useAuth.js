@@ -91,11 +91,16 @@ export function useAuth() {
             }
             group.value = null;
             return null;
-        } catch (err)
-        {
+        } catch (err) {
+            // 404 means user has no group, which is fine
+            if (err.response?.status === 404) {
+                group.value = null
+                return null
+            }
+            // Other errors
             group.value = null
-            return false;
-        }finally {
+            return null
+        } finally {
             loading.value = false
         }
     }
