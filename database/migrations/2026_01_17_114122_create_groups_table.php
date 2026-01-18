@@ -14,8 +14,9 @@ return new class extends Migration
         Schema::create('groups', function (Blueprint $table) {
             $table->id();
             $table->string('name', 16);
-            $table->foreignId('owner_id')->constrained()->unique();
+            $table->foreignId('owner_id')->constrained('users')->unique();
             $table->string('invite_code')->unique();
+            $table->integer('pixels')->default(0);
             $table->timestamps();
         });
     }
