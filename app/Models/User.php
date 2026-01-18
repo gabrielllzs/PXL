@@ -62,13 +62,21 @@ class User extends Authenticatable
         return $this->hasMany(Pixel::class);
     }
 
-    public function group()
+    public function groups()
     {
-        return $this->belongsTo(Groups::class, 'group_id');
+        return $this->belongsToMany(Groups::class, 'group_members', 'user_id', 'group_id')
+            ->withPivot('role')
+            ->withTimestamps();
     }
 
     public function ownedGroup()
     {
         return $this->hasOne(Groups::class, 'owner_id');
+    }
+    
+    // Get the user's primary/current group (first group they're a member of)
+    public function group()
+    {
+        return $this->groups()->first();
     }
 }
