@@ -53,13 +53,13 @@ class User extends Authenticatable
     public function group()
     {
         return $this->hasOneThrough(
-            Groups::class, GroupMembers::class, 'user_id', 'id', 'id', 'group_id'
+            Group::class, GroupMembers::class, 'user_id', 'id', 'id', 'group_id'
         );
     }
 
     public function ownedGroup()
     {
-        return $this->hasOne(Groups::class, 'owner_id');
+        return $this->hasOne(Group::class, 'owner_id');
     }
 
     public function countryRelation()

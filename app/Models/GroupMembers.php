@@ -17,7 +17,7 @@ class GroupMembers extends Model
 
     public function group()
     {
-        return $this->belongsTo(Groups::class);
+        return $this->belongsTo(Group::class);
     }
 
     public function user()
