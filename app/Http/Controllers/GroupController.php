@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Groups;
+use App\Models\Group;
 use App\Models\GroupMembers;
 use Illuminate\Support\Facades\Auth;
 
@@ -12,7 +12,7 @@ class GroupController extends Controller
     public function index()
     {
         // leaderboard
-        $groups = Groups::with('members')->get();
+        $groups = Group::with('members')->get();
 
         return response()->json(
             $groups->map(function ($group) {
@@ -37,7 +37,7 @@ class GroupController extends Controller
             return response()->json(['error' => 'You are already in a group'], 400);
         }
 
-        $group = Groups::create([
+        $group = Group::create([
             'name' => $validated['name'],
             'owner_id' => $user->id,
             'invite_code' => bin2hex(random_bytes(6)),
@@ -100,7 +100,7 @@ class GroupController extends Controller
             return response()->json(['error' => 'You are already in a group'], 400);
         }
 
-        $group = Groups::where('invite_code', $request->invite_code)->firstOrFail();
+        $group = Group::where('invite_code', $request->invite_code)->firstOrFail();
 
         GroupMembers::create([
             'group_id' => $group->id,
