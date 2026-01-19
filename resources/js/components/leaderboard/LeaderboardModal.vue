@@ -62,7 +62,8 @@ async function fetchLeaderboard(tab) {
                 .map((country, i) => ({
                     rank: i + 1,
                     name: country.country,
-                    pixels: country.pixels || 0
+                    pixels: country.pixels || 0,
+                    emoji: country.emoji || ''
                 }))
         }
     } catch {
@@ -142,8 +143,11 @@ function setTab(tab) {
                         <div class="col-rank">
                             <span class="rank-number">{{ entry.rank }}</span>
                         </div>
-                        <div class="col-name">{{ entry.name }}</div>
-                        <div class="col-pixels">{{ entry.pixels.toLocaleString() }}</div>
+                        <div class="col-name country-cell">
+                            <span v-if="activeTab === 'country'" class="country-emoji">{{ entry.emoji || '' }}</span>
+                            <span class="country-name">{{ entry.name }}</span>
+                        </div>
+                        <div class="col-pixels">{{ entry.pixels }}</div>
                     </div>
                     <div v-if="currentLeaderboard.length === 0" class="empty-state">
                         No data available
@@ -322,6 +326,26 @@ function setTab(tab) {
     font-weight: 600;
     color: #1e1e1e;
     font-size: 15px;
+}
+
+.country-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.country-emoji {
+    font-size: 1.4em;
+    line-height: 1;
+    min-width: 1.4em;
+    text-align: center;
+}
+
+.country-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .col-pixels {

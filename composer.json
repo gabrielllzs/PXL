@@ -13,6 +13,7 @@
         "laravel/reverb": "^1.0",
         "laravel/tinker": "^2.10.1",
         "pusher/pusher-php-server": "^7.2",
+        "rinvex/countries": "^9.1",
         "stephenhill/base58": "^2.1"
     },
     "require-dev": {
