@@ -74,6 +74,7 @@ class GroupController extends Controller
             'name' => $group->name,
             'pixels' => $group->pixels,
             'members' => $members,
+            'invite_code' => $group->invite_code,
         ]);
     }
 
