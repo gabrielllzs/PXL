@@ -34,7 +34,7 @@ async function fetchLeaderboard(tab) {
 
     try {
         if (tab === 'player') {
-            const { data } = await axios.get('/api/leaderboard/users')
+            const { data } = await axios.get('/leaderboard/users')
             leaderboards.value.player = data
                 .slice(0, 15)
                 .map((user, i) => ({
@@ -45,7 +45,7 @@ async function fetchLeaderboard(tab) {
         }
 
         if (tab === 'guild') {
-            const { data } = await axios.get('/api/groups')
+            const { data } = await axios.get('/leaderboard/groups')
             leaderboards.value.guild = data
                 .slice(0, 15)
                 .map((group, i) => ({
@@ -56,7 +56,14 @@ async function fetchLeaderboard(tab) {
         }
 
         if (tab === 'country') {
-            leaderboards.value.country = []
+            const { data } = await axios.get('/leaderboard/countries')
+            leaderboards.value.country = data
+                .slice(0, 15)
+                .map((country, i) => ({
+                    rank: i + 1,
+                    name: country.country,
+                    pixels: country.pixels || 0
+                }))
         }
     } catch {
         leaderboards.value[tab] = []
