@@ -16,7 +16,7 @@ class PixelCounterService
         $this->countryIsoService = $countryIsoService;
     }
 
-    public static function addPixel(?User $user)
+    public function addPixel(?User $user)
     {
 
         DB::transaction(function () use ($user) {
@@ -27,13 +27,10 @@ class PixelCounterService
 
             if ($user) {
                 if (!$user->country) {
-                    $countryCode = app(CountryIsoService::class)->getCountries($ip);
+                    $countryCode = $this->countryIsoService->getCountries($ip);
                     if ($countryCode) {
                         $user->country = $countryCode;
                         $user->save();
-                    }
-                    else {
-                        return null;
                     }
                 }
 
@@ -45,13 +42,10 @@ class PixelCounterService
                     $groupMember->increment('pixels_placed');
                     $groupMember->group->increment('pixels');
                 }
-                else {
-                    $countryCode = $this->countryIsoService->getCountries($ip);
-
-                    if (!$countryCode) {
-                        return;
-                    }
-                }
+            }
+            
+            if (!$countryCode && $ip) {
+                $countryCode = $this->countryIsoService->getCountries($ip);
             }
 
             if ($countryCode) {

@@ -117,7 +117,7 @@ class PixelController extends Controller
             [
                 'color' => $request->color ?? 'black',
                 'visitor_id' => $visitorId,
-                'user_id' => auth()->id(),
+                'user_id' => $isAuthenticated && $user ? $user->id : null,
                 'risk_score' => 0,
                 'ip_address' => $clientIp,
             ]

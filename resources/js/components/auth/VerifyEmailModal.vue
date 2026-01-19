@@ -25,12 +25,12 @@ const resendingCode = ref(false)
 
 async function handleVerify() {
     if (verificationCode.value.length !== 6) return
-    
+
     try {
-        const response = await axios.post('/api/verify-email', {
+        const response = await axios.post('/verify-email', {
             code: verificationCode.value
         })
-        
+
         if (response.data.success) {
             showToast('Email verified successfully!', 'success')
             verificationCode.value = ''
@@ -46,7 +46,7 @@ async function handleVerify() {
 async function resendCode() {
     resendingCode.value = true
     try {
-        const response = await axios.post('/api/resend-verification')
+        const response = await axios.post('/resend-verification')
         if (response.data.success) {
             showToast('Verification code resent!', 'success')
         }
@@ -87,9 +87,9 @@ function close() {
                     <button type="submit" class="btn-primary" :disabled="loading || verificationCode.length !== 6">
                         {{ loading ? 'Verifying...' : 'Verify Email' }}
                     </button>
-                    <button 
-                        type="button" 
-                        class="btn-link" 
+                    <button
+                        type="button"
+                        class="btn-link"
                         @click="resendCode"
                         :disabled="resendingCode"
                     >

@@ -29,8 +29,8 @@ Route::prefix('leaderboard')->group(function () {
 
 Route::post('/login', [HandleAuthController::class, 'handleLogin']);
 Route::post('/register', [HandleAuthController::class, 'handleRegister'])->middleware('guest');
-Route::post('/api/verify-email', [HandleAuthController::class, 'verifyEmail'])->middleware('auth', 'throttle:5,1');
-Route::post('/api/resend-verification', [HandleAuthController::class, 'resendVerificationCode'])->middleware('auth' , 'throttle:3,1');
+Route::post('/verify-email', [HandleAuthController::class, 'verifyEmail'])->middleware('auth', 'throttle:5,1');
+Route::post('/resend-verification', [HandleAuthController::class, 'resendVerificationCode'])->middleware('auth' , 'throttle:3,1');
 
 
 
@@ -45,9 +45,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [HandleAuthController::class, 'handleLogout']);
     Route::get('/api/me', function () {return auth()->check() ? Auth::user() : null;});
     Route::get('/group', [GroupController::class, 'showMyGroup']);
-    Route::post('/api/group/create', [GroupController::class, 'create']);
-    Route::post('/api/group/join', [GroupController::class, 'joinGroup']);
-    Route::post('/api/group/leave', [GroupController::class, 'leaveGroup']);
+    Route::post('/group/create', [GroupController::class, 'create']);
+    Route::post('/group/join', [GroupController::class, 'joinGroup']);
+    Route::post('/group/leave', [GroupController::class, 'leaveGroup']);
 });
 
 Route::middleware(['auth', 'admin'])->group(function () {

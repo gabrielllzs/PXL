@@ -63,7 +63,7 @@ async function resendVerificationCode() {
 
     resendingCode.value = true
     try {
-        const response = await axios.post('/api/resend-verification', {}, {
+        const response = await axios.post('/resend-verification', {}, {
             withCredentials: true
         })
 

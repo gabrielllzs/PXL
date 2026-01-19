@@ -44,19 +44,46 @@ export function useAuth() {
     async function register(username, email, password, passwordConfirmation, country = null) {
         loading.value = true
         try {
-            await axios.post('/register', {
+            const response = await axios.post('/register', {
                 username,
                 email,
                 password,
                 password_confirmation: passwordConfirmation,
                 country
             })
+
+            if (response.data.csrf_token) {
+                axios.defaults.headers.common['X-CSRF-TOKEN'] = response.data.csrf_token
+                document.querySelector('meta[name="csrf-token"]')?.setAttribute('content', response.data.csrf_token)
+            }
+
             await checkAuth()
             return { success: true }
-        } catch {
+        } catch (err) {
+            if (err.response?.status === 422 && err.response?.data?.errors) {
+                // Laravel validation errors
+                const errors = err.response.data.errors
+                const errorMessages = []
+                
+                if (errors.username) {
+                    errorMessages.push('Username already exists')
+                }
+                if (errors.email) {
+                    errorMessages.push('Email already exists')
+                }
+                if (errors.password) {
+                    errorMessages.push(errors.password[0] || 'Invalid password')
+                }
+                
+                return {
+                    success: false,
+                    error: errorMessages.length > 0 ? errorMessages.join(', ') : 'Validation failed',
+                    errors: errors
+                }
+            }
             return {
                 success: false,
-                error: 'Registration failed'
+                error: err.response?.data?.message || 'Registration failed'
             }
         } finally {
             loading.value = false

@@ -72,7 +72,7 @@ async function leaveGroup() {
     isLeaving.value = true
     try {
         const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-        const res = await fetch('/api/group/leave', {
+        const res = await fetch('/group/leave', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ async function joinGroupByCode(code) {
     isJoining.value = true
     try {
         const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-        const res = await fetch('/api/group/join', {
+        const res = await fetch('/group/join', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
