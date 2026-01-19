@@ -9,6 +9,7 @@ use App\Http\Controllers\BanUserController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CountryController;
 use Illuminate\Http\Request;
 
 
@@ -19,9 +20,12 @@ Route::get('/feedback', function () { return view('feedback'); });
 Route::get('/api/map-data', [PixelController::class, 'index']);
 Route::post('/api/pixel', [PixelController::class, 'store']);
 Route::get('/api/cooldown', [PixelController::class, 'cooldown']);
-Route::get('/api/groups', [GroupController::class, 'index']);
-Route::get('/api/leaderboard/users', [UserController::class, 'getUsersPixels']);
-/* Auth Routes */
+
+Route::prefix('leaderboard')->group(function () {
+    Route::get('/groups', [GroupController::class, 'index']);
+    Route::get('/users', [UserController::class, 'getUsersPixels']);
+    Route::get('/countries', [CountryController::class, 'index']);
+});
 
 Route::post('/login', [HandleAuthController::class, 'handleLogin']);
 Route::post('/register', [HandleAuthController::class, 'handleRegister'])->middleware('guest');
@@ -35,7 +39,7 @@ Route::get('/admin/', function () { return view('admin'); })->middleware(['auth'
 // API routes that can work with or without auth - must be before auth middleware routes
 
 
-Route::post('/api/feedback', [FeedbackController::class, 'store']);
+Route::post('/feedback', [FeedbackController::class, 'store']);
 
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/server/metrics', [ServerMetricsController::class, 'index']);
