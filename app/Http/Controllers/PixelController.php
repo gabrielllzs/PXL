@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\PixelPlaced;
 use App\Models\Pixel;
-use App\Services\PixelCounter;
+use App\Services\PixelCounterService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\Log;
 class PixelController extends Controller
 {
 
-    protected PixelCounter $pixelCounter;
+    protected PixelCounterService $pixelCounter;
 
-    public function __construct(PixelCounter $pixelCounter)
+    public function __construct(PixelCounterService $pixelCounter)
     {
         $this->pixelCounter = $pixelCounter;
     }
