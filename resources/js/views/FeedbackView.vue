@@ -26,7 +26,7 @@ async function handleSubmit() {
 
     loading.value = true
     try {
-        await axios.post('/api/feedback', {
+        await axios.post('/feedback', {
             email: email.value,
             username: username.value,
             message: message.value,
