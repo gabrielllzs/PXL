@@ -61,4 +61,10 @@ class User extends Authenticatable
     {
         return $this->hasOne(Groups::class, 'owner_id');
     }
+
+    public function countryRelation()
+    {
+        return $this->belongsTo(Country::class, 'country', 'country_code');
+    }
+
 }
