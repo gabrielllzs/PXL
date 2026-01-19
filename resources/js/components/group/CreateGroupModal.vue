@@ -30,42 +30,31 @@
         emit('update:modelValue', false)
     }
     
-    async function handleCreate() {
-        if (!groupName.value.trim()) {
-            showToast('Please enter a group name', 'error')
-            return
-        }
-        if (groupName.value.length > 16) {
-            showToast('Group name must be 16 characters or less', 'error')
-            return
-        }
-        isCreating.value = true
-        try {
-            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-            const res = await fetch('/api/group/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    ...(token ? { 'X-CSRF-TOKEN': token } : {})
-                },
-                body: JSON.stringify({ name: groupName.value.trim() })
-            })
-            if (!res.ok) {
-                const error = await res.json().catch(() => ({ error: 'Failed to create group' }))
-                throw new Error(error.error || 'Failed to create group')
-            }
-            showToast('Group created successfully', 'success')
-            emit('created')
-            close()
-        } catch (e) {
-            console.error(e)
-            showToast(e.message || 'Could not create group', 'error')
-        } finally {
-            isCreating.value = false
-        }
+async function handleCreate() {
+    if (!groupName.value.trim()) return
+    isCreating.value = true
+    try {
+        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+        const res = await fetch('/api/group/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                ...(token ? { 'X-CSRF-TOKEN': token } : {})
+            },
+            body: JSON.stringify({ name: groupName.value.trim() })
+        })
+        if (!res.ok) throw new Error('Failed to create group')
+        showToast('Group created successfully', 'success')
+        emit('created')
+        close()
+    } catch (e) {
+        showToast('Could not create group', 'error')
+    } finally {
+        isCreating.value = false
     }
-    </script>
+}
+</script>
 
 <template>
     <div v-if="modelValue" class="modal-overlay" @click="close">
