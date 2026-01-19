@@ -147,11 +147,8 @@ class PixelController extends Controller
 
     public function cooldown(Request $request)
     {
-        $clientIp = $request->ip();
         $visitorId = $request->input('visitorId');
-
         $cooldownSeconds = 10;
-
 
         $query = Pixel::where('visitor_id', $visitorId);
 
