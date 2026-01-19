@@ -38,17 +38,15 @@ class BanUserController extends Controller
 
     public function getBannedMetrics()
     {
-
         $now = now();
 
         $total_records = Pixel::count();
-        $active_banned_count = Pixel::where('banned', true)->count();
-        $permanent_count = Pixel::where('is_permanent', true)->count();
-        $temporary_count = Pixel::where('is_permanent', false)
+        $active_banned_count = BannedUser::where('banned', true)->count();
+        $permanent_count = BannedUser::where('is_permanent', true)->count();
+        $temporary_count = BannedUser::where('is_permanent', false)
             ->whereNotNull('banned_until')
             ->where('banned_until', '>', $now)
             ->count();
-
 
         $metrics = [
             'current'   => $active_banned_count,
@@ -57,15 +55,12 @@ class BanUserController extends Controller
             'total'     => $total_records
         ];
 
-
         return response()->json($metrics, 200);
-
     }
 
     public function getBannedVisitors()
     {
         $bannedVisitors = BannedUser::where('banned', true)->get();
-
 
         if ($bannedVisitors->isNotEmpty()) {
             return response()->json($bannedVisitors, 200);
