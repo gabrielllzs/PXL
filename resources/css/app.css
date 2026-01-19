@@ -1,7 +1,8 @@
 @font-face {
     font-family: 'pixel art';
     src : url('../fonts/pixel-art.ttf') format('truetype');
-    font-display: swap;
+    font-weight: normal;
+    font-style:  normal;
 }
 
 html, body {
@@ -9,7 +10,7 @@ html, body {
     padding:  0;
     width: 100%;
     height:  100%;
-    font-family: 'pixel art', serif;
+    font-family: 'pixel art', monospace;
     user-select: none; /* prevent text selection */
     -webkit-user-select: none;
     -moz-user-select: none;

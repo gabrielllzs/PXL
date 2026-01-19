@@ -106,14 +106,16 @@ function close() {
 
 .modal-content {
     background: white;
+    border-radius: 16px;
     padding: 24px;
-    border-radius: 32px;
-    min-width: 600px;
-    max-width: 900px;
+    max-width: 600px;
+    width: 90%;
     height: 80%;
-    overflow-y: auto;
+    overflow: hidden;
     position: relative;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-close {
