@@ -41,12 +41,18 @@ Route::get('/admin/', function () { return view('admin'); })->middleware(['auth'
 
 Route::post('/feedback', [FeedbackController::class, 'store']);
 
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', [HandleAuthController::class, 'handleLogout']);
+    Route::get('/api/me', function () {return auth()->check() ? Auth::user() : null;});
+    Route::get('/group', [GroupController::class, 'showMyGroup']);
+    Route::post('/api/group/create', [GroupController::class, 'create']);
+    Route::post('/api/group/join', [GroupController::class, 'joinGroup']);
+    Route::post('/api/group/leave', [GroupController::class, 'leaveGroup']);
+});
+
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/server/metrics', [ServerMetricsController::class, 'index']);
     Route::get('/visitors', [PixelController::class, 'getVisitors']);
     Route::get('/banned-visitors', [BanUserController::class, 'getBannedVisitors']);
     Route::post('/ban-visitors', [BanUserController::class, 'ban']);
-    Route::post('/logout', [HandleAuthController::class, 'handleLogout']);
-    Route::get('/api/me', function () {return auth()->check() ? Auth::user() : null;});
-    Route::get('/group', [GroupController::class, 'showMyGroup']);
 });
