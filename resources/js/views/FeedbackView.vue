@@ -37,8 +37,8 @@ async function handleSubmit() {
         setTimeout(() => {
             window.location.href = '/'
         }, 1500)
-    } catch (err) {
-        showToast(err.response?.data?.error || err.response?.data?.message || `Failed to submit ${type.value}`, 'error')
+    } catch {
+        showToast(`Failed to submit ${type.value}`, 'error')
     } finally {
         loading.value = false
     }

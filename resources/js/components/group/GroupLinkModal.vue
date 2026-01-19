@@ -15,24 +15,23 @@
         emit('update:open', false)
     }
     
-    async function copyInviteLink() {
-        if (!props.inviteLink) return
-        isCopying.value = true
-        try {
-            await navigator.clipboard.writeText(props.inviteLink)
-            showToast('Invite link copied', 'success')
-        } catch (e) {
-            console.error(e)
-            showToast('Could not copy link', 'error')
-        } finally {
-            isCopying.value = false
-        }
+async function copyInviteLink() {
+    if (!props.inviteLink) return
+    isCopying.value = true
+    try {
+        await navigator.clipboard.writeText(props.inviteLink)
+        showToast('Invite link copied', 'success')
+    } catch {
+        showToast('Could not copy link', 'error')
+    } finally {
+        isCopying.value = false
     }
+}
     
     watch(open, val => {
         if (!val) isCopying.value = false
     })
-    </script>
+</script>
 
 <template>
     <div v-if="open" class="share-modal-backdrop" @click.self="close">

@@ -34,8 +34,8 @@ export function useAuth() {
 
             await checkAuth()
             return { success: true }
-        } catch (err) {
-            return { success: false, error: err.response?.data?.message || 'Login failed' }
+        } catch {
+            return { success: false, error: 'Login failed' }
         } finally {
             loading.value = false
         }
@@ -53,10 +53,10 @@ export function useAuth() {
             })
             await checkAuth()
             return { success: true }
-        } catch (err) {
+        } catch {
             return {
                 success: false,
-                error: err.response?.data?.message || 'Registration failed'
+                error: 'Registration failed'
             }
         } finally {
             loading.value = false
@@ -92,12 +92,11 @@ export function useAuth() {
             group.value = null;
             return null;
         } catch (err) {
-            // 404 means user has no group, which is fine
             if (err.response?.status === 404) {
                 group.value = null
                 return null
             }
-            // Other errors
+            // Other 
             group.value = null
             return null
         } finally {

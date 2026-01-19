@@ -74,8 +74,8 @@ async function resendVerificationCode() {
         } else {
             showToast(response.data.error || 'Failed to resend code', 'error')
         }
-    } catch (err) {
-        showToast(err.response?.data?.message || 'Failed to resend code', 'error')
+    } catch {
+        showToast('Failed to resend code', 'error')
     } finally {
         resendingCode.value = false
     }

@@ -80,15 +80,11 @@ async function leaveGroup() {
                 ...(token ? { 'X-CSRF-TOKEN': token } : {})
             }
         })
-        if (!res.ok) {
-            const error = await res.json().catch(() => ({ error: 'Failed to leave group' }))
-            throw new Error(error.error || 'Failed to leave group')
-        }
+        if (!res.ok) throw new Error('Failed to leave group')
         showToast('Left group successfully', 'success')
         await fetchGroup()
     } catch (e) {
-        console.error(e)
-        showToast(e.message || 'Could not leave group', 'error')
+        showToast('Could not leave group', 'error')
     } finally {
         isLeaving.value = false
     }
@@ -108,19 +104,14 @@ async function joinGroupByCode(code) {
             },
             body: JSON.stringify({ invite_code: code })
         })
-        if (!res.ok) {
-            const error = await res.json().catch(() => ({ error: 'Failed to join group' }))
-            throw new Error(error.error || 'Failed to join group')
-        }
+        if (!res.ok) throw new Error('Failed to join group')
         showToast('Joined group successfully', 'success')
-        // Remove invite param from URL
         const url = new URL(window.location.href)
         url.searchParams.delete('invite')
         window.history.replaceState({}, '', url.toString())
         await fetchGroup()
     } catch (e) {
-        console.error(e)
-        showToast(e.message || 'Could not join group', 'error')
+        showToast('Could not join group', 'error')
     } finally {
         isJoining.value = false
     }

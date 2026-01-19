@@ -38,8 +38,8 @@ async function handleVerify() {
             emit('success')
             emit('update:modelValue', false)
         }
-    } catch (err) {
-        showToast(err.response?.data?.error || err.response?.data?.message || 'Verification failed', 'error')
+    } catch {
+        showToast('Verification failed', 'error')
     }
 }
 
@@ -50,8 +50,8 @@ async function resendCode() {
         if (response.data.success) {
             showToast('Verification code resent!', 'success')
         }
-    } catch (err) {
-        showToast(err.response?.data?.error || err.response?.data?.message || 'Failed to resend code', 'error')
+    } catch {
+        showToast('Failed to resend code', 'error')
     } finally {
         resendingCode.value = false
     }
