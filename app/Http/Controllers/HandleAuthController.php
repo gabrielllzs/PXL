@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\EmailVerification;
 use App\Models\User;
+use App\Services\CountryIsoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -11,6 +12,13 @@ use Illuminate\Validation\Rules\Password;
 
 class HandleAuthController extends Controller
 {
+    protected CountryIsoService $countryIsoService;
+
+    public function __construct(CountryIsoService $countryIsoService)
+    {
+        $this->countryIsoService = $countryIsoService;
+    }
+
     public function handleLogin(Request $request)
     {
         $credentials = $request->validate([
@@ -44,14 +52,15 @@ class HandleAuthController extends Controller
 
     public function handleRegister(Request $request)
     {
+        $clientIp = $request->ip();
+
         $validated = $request->validate([
             'username' => ['required', 'string', 'max:255', 'unique:users'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Password::defaults()],
-            'country' => ['nullable', 'string', 'size:2'],
         ]);
 
-        $country = $validated['country'] ?? $this->detectCountry($request->ip());
+        $country = $this->countryIsoService->getCountries($clientIp);
 
         $verificationCode = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $expiresAt = now()->addMinutes(15);
@@ -194,13 +203,5 @@ class HandleAuthController extends Controller
             'success' => true,
             'message' => 'Verification code sent successfully!',
         ]);
-    }
-
-    private function detectCountry(string $ip): ?string
-    {
-        // Simple IP-based country detection
-        // MaxMind GeoIP2
-        // For now, return null and let it be set later
-        return null;
     }
 }
