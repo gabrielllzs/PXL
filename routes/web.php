@@ -20,7 +20,6 @@ Route::get('/feedback', function () { return view('feedback'); });
 
 Route::get('/api/map-data', [PixelController::class, 'index']);
 Route::post('/api/pixel', [PixelController::class, 'store']);
-Route::post('/api/cursor/move', [CursorController::class, 'move']);
 Route::get('/api/cooldown', [PixelController::class, 'cooldown']);
 
 Route::prefix('leaderboard')->group(function () {
@@ -46,6 +45,7 @@ Route::post('/feedback', [FeedbackController::class, 'store']);
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [HandleAuthController::class, 'handleLogout']);
     Route::get('/api/me', function () {return auth()->check() ? Auth::user() : null;});
+    Route::post('/api/cursor/move', [CursorController::class, 'move']);
     Route::get('/group', [GroupController::class, 'showMyGroup']);
     Route::post('/group/create', [GroupController::class, 'create']);
     Route::post('/group/join', [GroupController::class, 'joinGroup']);
