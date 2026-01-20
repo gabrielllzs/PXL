@@ -1,10 +1,14 @@
 import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
+import { reactive } from 'vue'
 import {stored} from "./usePixels.js";
+import { useAuth } from "./useAuth.js";
+
+export const groupCursors = reactive({})
 
 window.Pusher = Pusher
 
-export function initRealtimePixels(drawAll) {
+export async function initRealtimePixels(drawAll) {
     try {
         // connect met websocket server voor realtime pixel updates
         window.Echo = new Echo({
@@ -24,14 +28,32 @@ export function initRealtimePixels(drawAll) {
             if (index >= 0) {
                 stored[index].color = e.color;
             } else {
-                stored.push({ x: e.x, y: e.y, color: e.color });
+                stored.push({x: e.x, y: e.y, color: e.color});
             }
 
             // hertekend pixels
             drawAll();
         });
 
-    }catch (err){
+        // Subscribe to group cursor channel if user is in a group
+        const { group, fetchGroup } = useAuth()
+        if (!group.value) {
+            await fetchGroup()
+        }
+
+        if (group.value?.id) {
+            window.Echo.private(`group.${group.value.id}`)
+                .listen('.GroupCursorMoved', (e) => {
+                    groupCursors[e.username] = {
+                        x: e.x,
+                        y: e.y,
+                        username: e.username,
+                        lastSeen: Date.now()
+                    }
+                })
+        }
+
+    } catch (err) {
         console.log("Failed to init realtime pixels:", err);
     }
 }
