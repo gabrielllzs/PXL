@@ -71,6 +71,7 @@ class GroupController extends Controller
         });
 
         return response()->json([
+            'id' => $group->id,
             'name' => $group->name,
             'pixels' => $group->pixels,
             'members' => $members,
