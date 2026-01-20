@@ -10,6 +10,7 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CountryController;
+use App\Http\Controllers\CursorController;
 use Illuminate\Http\Request;
 
 
@@ -19,6 +20,7 @@ Route::get('/feedback', function () { return view('feedback'); });
 
 Route::get('/api/map-data', [PixelController::class, 'index']);
 Route::post('/api/pixel', [PixelController::class, 'store']);
+Route::post('/api/cursor/move', [CursorController::class, 'move']);
 Route::get('/api/cooldown', [PixelController::class, 'cooldown']);
 
 Route::prefix('leaderboard')->group(function () {
