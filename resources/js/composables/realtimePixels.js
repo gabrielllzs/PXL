@@ -11,15 +11,18 @@ window.Pusher = Pusher
 export async function initRealtimePixels(drawAll) {
     try {
         // connect met websocket server voor realtime pixel updates
+        // forceTLS: use wss when page is HTTPS (required on production)
+        const isSecure = typeof window !== 'undefined' && window.location?.protocol === 'https:'
         window.Echo = new Echo({
             broadcaster: "reverb",
             key: import.meta.env.VITE_REVERB_APP_KEY,
             wsHost: import.meta.env.VITE_REVERB_HOST,
             wsPort: import.meta.env.VITE_REVERB_PORT ?? 8080,
             wssPort: import.meta.env.VITE_REVERB_PORT ?? 8080,
-            forceTLS: false,
-            enabledTransports: ["ws"],
+            forceTLS: isSecure,
+            enabledTransports: isSecure ? ["wss"] : ["ws"],
             disableStats: true,
+            authEndpoint: "/broadcasting/auth",
         });
 
         // luister naar pixel updates op kanaal "pixel"
@@ -41,9 +44,21 @@ export async function initRealtimePixels(drawAll) {
             await fetchGroup()
         }
 
-        if (group.value?.id) {
+        if (!group.value?.id) {
+            if (import.meta.env.DEV || (typeof window !== 'undefined' && window.__DEBUG_CURSORS)) {
+                console.warn("[GroupCursor] Not in a group, skipping private channel subscription")
+            }
+        } else {
+            if (import.meta.env.DEV || (typeof window !== 'undefined' && window.__DEBUG_CURSORS)) {
+                console.log("[GroupCursor] Subscribing to private channel group." + group.value.id)
+            }
+            let hasReceivedOnce = false
             window.Echo.private(`group.${group.value.id}`)
                 .listen('.GroupCursorMoved', (e) => {
+                    if (!hasReceivedOnce && (import.meta.env.DEV || (typeof window !== 'undefined' && window.__DEBUG_CURSORS))) {
+                        hasReceivedOnce = true
+                        console.log("[GroupCursor] Receiving cursor events (connected)")
+                    }
                     groupCursors[e.username] = {
                         x: e.x,
                         y: e.y,
@@ -54,6 +69,6 @@ export async function initRealtimePixels(drawAll) {
         }
 
     } catch (err) {
-        console.log("Failed to init realtime pixels:", err);
+        console.warn("Failed to init realtime pixels:", err)
     }
 }
