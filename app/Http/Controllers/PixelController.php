@@ -147,6 +147,16 @@ class PixelController extends Controller
 
     public function cooldown(Request $request)
     {
+        // Authenticated users have no cooldown
+        if (auth()->check()) {
+            return [
+                'cooldown' => false,
+                'remaining' => 0,
+                'hasReduction' => true,
+                'cooldownDuration' => 10,
+            ];
+        }
+
         $visitorId = $request->input('visitorId');
         $cooldownSeconds = 10;
 

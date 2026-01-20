@@ -3,7 +3,7 @@
         <SideMenu />
         <ColorPicker v-model="selectedColor" />
         <PixelInfo :info="pixelInfo" />
-        <CooldownInfo v-if="cooldown.active" :seconds="cooldown.remaining" />
+        <CooldownInfo v-if="cooldown.active && !isAuthenticated()" :seconds="cooldown.remaining" />
         <Auth ref="authRef"/>
         <Buttons />
         <ToastContainer />
@@ -29,6 +29,7 @@ import {
 
 import ToastContainer from '@/components/ToastContainer.vue'
 import { usePixels } from '@/composables/usePixels'
+import { useAuth } from '@/composables/useAuth'
 
 const MapCanvas = defineAsyncComponent(() => import('@/components/MapCanvas.vue'))
 
@@ -37,6 +38,7 @@ const pixelInfo = ref('')
 const authRef = ref(null)
 
 const { cooldown } = usePixels()
+const { isAuthenticated } = useAuth()
 
 function handleVerificationRequired() {
     if (authRef.value) {
