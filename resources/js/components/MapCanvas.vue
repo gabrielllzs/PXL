@@ -20,11 +20,12 @@
 
 <script setup>
 import { onMounted, ref} from 'vue'
+import axios from 'axios'
 import { useMap } from '../composables/useMap'
 import { usePixels } from '../composables/usePixels'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
-import { initRealtimePixels } from '../composables/realtimePixels'
+import { initRealtimePixels, groupCursors } from '../composables/realtimePixels'
 import { lngLatToWorldPx, worldPxToLngLat } from '../composables/useWorldConversion'
 import { executeHCaptcha } from '../composables/usecaptcha.js'
 import { playPixelPlaceSound } from '../composables/useAudio.js'
@@ -38,7 +39,7 @@ const emit = defineEmits(['pixelHover', 'verificationRequired'])
 
 const { map, init, on, unproject, project,  zoomIn, zoomOut, centerMap, getBounds, getZoom, getCenter, setCenter } = useMap('map')
 const { stored, load, save, syncCooldown} = usePixels()
-const { user, isEmailVerified } = useAuth()
+const { user, isEmailVerified, group } = useAuth()
 const { showToast } = useToast()
 
 const Zoom = 10;
@@ -64,6 +65,25 @@ const cursorY = ref(null)
 const displayX = ref(null)
 const displayY = ref(null)
 
+let lastCursorSendTime = 0
+const CURSOR_SEND_INTERVAL = 150
+
+async function sendCursorPosition(x, y) {
+    if (!group.value?.id) {
+        return
+    }
+    
+    const now = Date.now()
+    if (now - lastCursorSendTime < CURSOR_SEND_INTERVAL) return
+    
+    lastCursorSendTime = now
+    
+    try {
+        await axios.post('/api/cursor/move', { x, y })
+    } catch (err) {
+        // Silently fail - cursor updates are not critical
+    }
+}
 
 onMounted(async () => {
     isLoading.value = true
@@ -258,11 +278,61 @@ function drawPixels() {
     // Note: hover preview is now drawn on separate canvas, not here
 }
 
+function drawGroupCursors() {
+    if (!hoverCanvasRender || !hoverCanvas.value) return;
+
+    const now = Date.now()
+    const CURSOR_TIMEOUT = 3000 // Remove cursors after 3 seconds of inactivity
+
+    // Clean up old cursors
+    Object.keys(groupCursors).forEach(username => {
+        if (now - groupCursors[username].lastSeen > CURSOR_TIMEOUT) {
+            delete groupCursors[username]
+        }
+    })
+
+    // Draw each group member's cursor
+    Object.values(groupCursors).forEach(cursor => {
+        // Skip own cursor
+        if (user.value && cursor.username === user.value.username) {
+            return
+        }
+
+        try {
+            const bounds = getCellScreenBounds(cursor.x, cursor.y)
+            const centerX = bounds.screenX + bounds.width / 2
+            const centerY = bounds.screenY + bounds.height / 2
+
+            // Draw a small circle for the cursor
+            hoverCanvasRender.strokeStyle = '#3b82f6'
+            hoverCanvasRender.fillStyle = 'rgba(59, 130, 246, 0.2)'
+            hoverCanvasRender.lineWidth = 2
+            
+            hoverCanvasRender.beginPath()
+            hoverCanvasRender.arc(centerX, centerY, 8, 0, Math.PI * 2)
+            hoverCanvasRender.fill()
+            hoverCanvasRender.stroke()
+
+            // Draw username label
+            hoverCanvasRender.fillStyle = '#3b82f6'
+            hoverCanvasRender.font = '12px sans-serif'
+            hoverCanvasRender.textAlign = 'center'
+            hoverCanvasRender.textBaseline = 'bottom'
+            hoverCanvasRender.fillText(cursor.username, centerX, centerY - 12)
+        } catch (err) {
+            console.error('Error drawing cursor for', cursor.username, err)
+        }
+    })
+}
+
 function drawHoverPreview(x, y) {
     if (!hoverCanvasRender || !hoverCanvas.value) return;
 
     // Clear the hover canvas
     hoverCanvasRender.clearRect(0, 0, hoverCanvas.value.width, hoverCanvas.value.height);
+
+    // Draw group member cursors first
+    drawGroupCursors()
 
     if(x !== null && y !== null) {
         const bounds = getCellScreenBounds(x, y)
@@ -294,9 +364,10 @@ function drawAll() {
 function animateHover() {
     if (cursorX.value == null) {
         animationFrameId = null
-        // Clear hover canvas when mouse leaves
+        // Clear hover canvas when mouse leaves, then redraw group cursors so they stay visible
         if (hoverCanvasRender && hoverCanvas.value) {
             hoverCanvasRender.clearRect(0, 0, hoverCanvas.value.width, hoverCanvas.value.height);
+            drawGroupCursors();
         }
         return
     }
@@ -372,6 +443,9 @@ function handleHover(mouseEvent) {
     }
 
     emit('pixelHover', `${cursorX.value}, ${cursorY.value}`)
+    
+    // Send cursor position to group members
+    sendCursorPosition(cursorX.value, cursorY.value)
 
     if (animationFrameId === null) {
         animationFrameId = requestAnimationFrame(animateHover)
@@ -392,9 +466,10 @@ function handleMouseOut() {
     hoverY.value = null
     animationPulse.value = 0
 
-    // Clear hover canvas when mouse leaves
+    // Clear hover canvas when mouse leaves, then redraw group cursors so they stay visible
     if (hoverCanvasRender && hoverCanvas.value) {
         hoverCanvasRender.clearRect(0, 0, hoverCanvas.value.width, hoverCanvas.value.height);
+        drawGroupCursors();
     }
 }
 
