@@ -11,18 +11,15 @@ window.Pusher = Pusher
 export async function initRealtimePixels(drawAll) {
     try {
         // connect met websocket server voor realtime pixel updates
-        // forceTLS: use wss when page is HTTPS (required on production)
-        const isSecure = typeof window !== 'undefined' && window.location?.protocol === 'https:'
         window.Echo = new Echo({
             broadcaster: "reverb",
             key: import.meta.env.VITE_REVERB_APP_KEY,
             wsHost: import.meta.env.VITE_REVERB_HOST,
             wsPort: import.meta.env.VITE_REVERB_PORT ?? 8080,
             wssPort: import.meta.env.VITE_REVERB_PORT ?? 8080,
-            forceTLS: isSecure,
-            enabledTransports: isSecure ? ["wss"] : ["ws"],
+            forceTLS: false,
+            enabledTransports: ["ws"],
             disableStats: true,
-            authEndpoint: "/broadcasting/auth",
         });
 
         // luister naar pixel updates op kanaal "pixel"
