@@ -123,7 +123,7 @@ class PixelController extends Controller
             ]
         );
 
-        $this->pixelCounter->addPixel($user);
+        $this->pixelCounter->addPixel($user, $clientIp);
 
 
         // Zet een cooldown in de cache alleen voor visitors (niet voor geauthenticeerde gebruikers)
