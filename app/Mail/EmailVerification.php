@@ -35,11 +35,13 @@ class EmailVerification extends Mailable
 
     /**
      * Get the message content definition.
+     * Plain-text part improves deliverability (many filters penalize HTML-only).
      */
     public function content(): Content
     {
         return new Content(
             view: 'emails.verification',
+            text: 'emails.verification-text',
             with: [
                 'code' => $this->code,
             ],
