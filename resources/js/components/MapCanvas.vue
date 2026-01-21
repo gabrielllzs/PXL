@@ -593,4 +593,10 @@ function handleMouseOut() {
 .zoom-buttons button:hover {
     background: rgba(0, 0, 0, 0.05);
 }
+
+@media (max-width: 768px) {
+    .custom-controls {
+        bottom: 240px;
+    }
+}
 </style>

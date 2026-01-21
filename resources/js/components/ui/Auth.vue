@@ -267,7 +267,7 @@ onMounted(checkAuth)
     .verification-banner {
         min-width: 280px;
         max-width: calc(100vw - 24px);
-        top: 12px;
+        top: 80px;
         left: 50%;
         transform: translateX(-50%);
     }

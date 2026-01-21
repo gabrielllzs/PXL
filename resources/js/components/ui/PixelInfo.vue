@@ -26,4 +26,10 @@ defineProps({
     width: 180px;
     text-align: center;
 }
+
+@media (max-width: 768px) {
+    #pixel-info {
+        bottom: 200px;
+    }
+}
 </style>

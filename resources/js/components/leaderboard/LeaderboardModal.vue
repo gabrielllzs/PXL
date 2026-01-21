@@ -138,7 +138,12 @@ function setTab(tab) {
                         v-for="entry in currentLeaderboard"
                         :key="entry.rank"
                         class="table-row"
-                        :class="{ 'top-three': entry.rank <= 3 }"
+                        :class="{
+                            'top-three': entry.rank <= 3,
+                            'rank-1': entry.rank === 1,
+                            'rank-2': entry.rank === 2,
+                            'rank-3': entry.rank === 3
+                        }"
                     >
                         <div class="col-rank">
                             <span class="rank-number">{{ entry.rank }}</span>
@@ -238,6 +243,7 @@ function setTab(tab) {
     border: none;
     background: transparent;
     color: #666;
+    font-family: 'pixel art', monospace;
     font-size: 15px;
     font-weight: 500;
     cursor: pointer;
@@ -306,8 +312,33 @@ function setTab(tab) {
     background: linear-gradient(90deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.1) 100%);
 }
 
+.table-row.rank-1 {
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.08) 100%);
+}
+
+.table-row.rank-1:hover {
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.12) 100%);
+}
+
+.table-row.rank-2 {
+    background: linear-gradient(90deg, rgba(192, 192, 192, 0.15) 0%, rgba(192, 192, 192, 0.08) 100%);
+}
+
+.table-row.rank-2:hover {
+    background: linear-gradient(90deg, rgba(192, 192, 192, 0.2) 0%, rgba(192, 192, 192, 0.12) 100%);
+}
+
+.table-row.rank-3 {
+    background: linear-gradient(90deg, rgba(205, 127, 50, 0.15) 0%, rgba(205, 127, 50, 0.08) 100%);
+}
+
+.table-row.rank-3:hover {
+    background: linear-gradient(90deg, rgba(205, 127, 50, 0.2) 0%, rgba(205, 127, 50, 0.12) 100%);
+}
+
 .col-rank {
     display: flex;
+    justify-content: center;
     align-items: center;
 }
 
@@ -318,8 +349,19 @@ function setTab(tab) {
 }
 
 .table-row.top-three .rank-number {
-    color: #d4af37;
     font-size: 18px;
+}
+
+.table-row.rank-1 .rank-number {
+    color: #d4af37;
+}
+
+.table-row.rank-2 .rank-number {
+    color: #c0c0c0;
+}
+
+.table-row.rank-3 .rank-number {
+    color: #cd7f32;
 }
 
 .col-name {

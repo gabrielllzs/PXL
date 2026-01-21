@@ -171,24 +171,24 @@ watch(
     left: 50%;
     transform: translateX(-50%);
     pointer-events: auto;
-    padding: 5px;
+    padding: 8px;
     margin: 0;
-    width: 260px;
+    width: 320px;
     image-rendering: pixelated;
     max-width: calc(100vw - 20px);
 }
 
 .palette-grid {
     display: grid;
-    gap: 2px;
+    gap: 4px;
     grid-template-columns: repeat(8, 1fr);
     background: rgba(0, 0, 0, 0.5);
-    padding: 2px;
-    margin-bottom: 5px;
+    padding: 4px;
+    margin-bottom: 6px;
 }
 
 .custom-palette-section {
-    margin-top: 5px;
+    margin-top: 6px;
 }
 
 .custom-grid {
@@ -227,10 +227,10 @@ watch(
 
 .delete-btn {
     position: absolute;
-    top: 2px;
-    right: 2px;
-    width: 18px;
-    height: 18px;
+    top: 3px;
+    right: 3px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.7);
     color: white;
@@ -271,7 +271,7 @@ watch(
 }
 
 .add-icon {
-    font-size: 20px;
+    font-size: 24px;
     color: rgba(255, 255, 255, 0.7);
     font-weight: bold;
 }
@@ -284,10 +284,44 @@ watch(
 
 .color-input {
     width: 100%;
-    height: 40px;
+    height: 48px;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 4px;
     cursor: pointer;
     background: rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 768px) {
+    #colorPicker {
+        width: min(360px, calc(100vw - 24px));
+        padding: 10px;
+        bottom: 12px;
+    }
+
+    .palette-grid {
+        gap: 5px;
+        padding: 5px;
+        margin-bottom: 8px;
+    }
+
+    .custom-palette-section {
+        margin-top: 8px;
+    }
+
+    .delete-btn {
+        width: 24px;
+        height: 24px;
+        top: 4px;
+        right: 4px;
+        font-size: 16px;
+    }
+
+    .add-icon {
+        font-size: 28px;
+    }
+
+    .color-input {
+        height: 52px;
+    }
 }
 </style>

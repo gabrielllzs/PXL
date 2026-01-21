@@ -94,7 +94,8 @@ const { toasts, removeToast } = useToast()
 /* Responsive */
 @media (max-width: 640px) {
     .toast-container {
-        bottom: 12px;
+        top: 250px;
+        bottom: auto;
         left: 12px;
         right: 12px;
         max-width: none;

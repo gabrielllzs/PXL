@@ -78,4 +78,10 @@ function openLeaderboardModal() {
     height: 24px;
     color: black;
 }
+
+@media (max-width: 640px) {
+    .container {
+        top: 70px;
+    }
+}
 </style>
