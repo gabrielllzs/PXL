@@ -4,6 +4,7 @@ import Auth from './Auth.vue'
 import Buttons from './Buttons.vue'
 import SideMenu from './SideMenu.vue'
 import ZoomControls from './ZoomControls.vue'
+import WelcomeModal from './WelcomeModal.vue'
 
 export {
     ColorPicker,
@@ -12,4 +13,5 @@ export {
     Buttons,
     SideMenu,
     ZoomControls,
+    WelcomeModal,
 }

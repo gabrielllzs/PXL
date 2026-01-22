@@ -22,6 +22,10 @@
         <Auth ref="authRef" :hidden="paintMode" />
         <Buttons :hidden="paintMode" />
         <ToastContainer />
+        <WelcomeModal 
+            v-model="showWelcome" 
+            videoUrl="https://www.youtube.com/watch?v=YOUR_VIDEO_ID"
+        />
     </div>
     <MapCanvas
         ref="mapCanvasRef"
@@ -34,7 +38,7 @@
 
 <script setup>
 import { ref, defineAsyncComponent, watch, computed, onMounted, onUnmounted } from 'vue'
-import { ColorPicker, CooldownInfo, Auth, SideMenu, Buttons } from '@/components/ui'
+import { ColorPicker, CooldownInfo, Auth, SideMenu, Buttons, WelcomeModal } from '@/components/ui'
 import ToastContainer from '@/components/ToastContainer.vue'
 import PaintButton from '@/components/ui/PaintButton.vue'
 import { usePixels } from '@/composables/usePixels'
@@ -50,6 +54,7 @@ const paintMode = ref(false)
 const pixelCount = ref(null)
 const pixelLimit = ref(null)
 const regenTimer = ref(null)
+const showWelcome = ref(false)
 
 const { cooldown } = usePixels()
 const { isAuthenticated, user } = useAuth()
