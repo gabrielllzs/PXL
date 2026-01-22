@@ -4,6 +4,10 @@ import {ref} from "vue";
 let audioElement = null
 export const audioEnabled = ref(true)
 
+// Throttle audio to prevent glitches when placing fast
+const MIN_AUDIO_INTERVAL = 80 // ms
+let lastPlayTime = 0
+
 function getAudioElement() {
     if (!audioElement) {
         audioElement = new Audio(pixelPlaceSound)
@@ -14,16 +18,15 @@ function getAudioElement() {
 }
 
 export function playPixelPlaceSound() {
-    if (audioEnabled.value) {
-        try {
-            const audio = getAudioElement()
-
-            audio.currentTime = 0
-            audio.play().catch(err => {
-                console.debug('Audio playback failed:', err)
-            })
-        } catch (err) {
-            console.debug('Audio playback failed:', err)
-        }
-    }
+    if (!audioEnabled.value) return
+    
+    const now = Date.now()
+    if (now - lastPlayTime < MIN_AUDIO_INTERVAL) return
+    lastPlayTime = now
+    
+    try {
+        const audio = getAudioElement()
+        audio.currentTime = 0
+        audio.play().catch(() => {})
+    } catch {}
 }
