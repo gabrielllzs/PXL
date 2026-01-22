@@ -51,16 +51,6 @@ const newColor = ref('#000000')
 const colorInputRef = ref(null)
 const isEraser = ref(false)
 
-function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {
-            console.log('Fullscreen error:', err)
-        })
-    } else {
-        document.exitFullscreen()
-    }
-}
-
 function openColorInput() {
     showColorInput.value = true
     if (colorInputRef.value) {
@@ -153,12 +143,6 @@ watch(
 
             <!-- Header with controls -->
             <div class="picker-header">
-                <button class="header-btn" @click="toggleFullscreen" title="Fullscreen">
-                    <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" class="icon">
-                        <path d="M5 21C4.45 21 3.97917 20.8042 3.5875 20.4125C3.19583 20.0208 3 19.55 3 19V15H5V19H9V21H5ZM15 21V19H19V15H21V19C21 19.55 20.8042 20.0208 20.4125 20.4125C20.0208 20.8042 19.55 21 19 21H15ZM3 9V5C3 4.45 3.19583 3.97917 3.5875 3.5875C3.97917 3.19583 4.45 3 5 3H9V5H5V9H3ZM19 9V5H15V3H19C19.55 3 20.0208 3.19583 20.4125 3.5875C20.8042 3.97917 21 4.45 21 5V9H19Z"></path>
-                    </svg>
-                </button>
-
                 <div class="header-title">
                     <h2>Paint pixel <span class="color-preview" :style="{ background: modelValue }"></span></h2>
                     <button class="header-btn color-picker-btn" @click="openColorInput" title="Color Picker">
@@ -271,6 +255,8 @@ watch(
     display: flex;
     flex-direction: column;
     pointer-events: auto;
+    max-height: 40vh;
+    overflow: hidden;
 }
 
 /* Hint Banner */

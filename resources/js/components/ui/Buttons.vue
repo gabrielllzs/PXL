@@ -24,9 +24,9 @@ function openLeaderboardModal() {
 
 <template>
     <div class="floating-buttons" :class="{ 'mobile-hidden': hidden }">
-        <button 
-            class="action-btn leaderboard-btn" 
-            @click="openLeaderboardModal" 
+        <button
+            class="action-btn leaderboard-btn"
+            @click="openLeaderboardModal"
             title="Leaderboard"
         >
             <span class="btn-icon">
@@ -36,10 +36,10 @@ function openLeaderboardModal() {
             </span>
             <span class="btn-label">Leaderboard</span>
         </button>
-        
-        <button 
-            class="action-btn groups-btn" 
-            @click="openGroupModal" 
+
+        <button
+            class="action-btn groups-btn"
+            @click="openGroupModal"
             title="Manage Groups"
         >
             <span class="btn-icon">
@@ -161,7 +161,7 @@ function openLeaderboardModal() {
     }
 
     .btn-label {
-        font-size: 13px;
+        diplay: none;
     }
 }
 </style>
