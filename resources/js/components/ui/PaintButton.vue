@@ -25,33 +25,15 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps({
-    modelValue: {
-        type: Boolean,
-        default: false
-    },
-    pixelCount: {
-        type: Number,
-        default: null
-    },
-    pixelLimit: {
-        type: Number,
-        default: null
-    },
-    regenTimer: {
-        type: Number,
-        default: null
-    },
-    disabled: {
-        type: Boolean,
-        default: false
-    },
-    showHint: {
-        type: Boolean,
-        default: true
-    }
+    modelValue: { type: Boolean, default: false },
+    pixelCount: { type: Number, default: null },
+    pixelLimit: { type: Number, default: null },
+    regenTimer: { type: Number, default: null },
+    disabled: { type: Boolean, default: false },
+    showHint: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -60,64 +42,29 @@ const showHintState = ref(false)
 
 function formatTimer(seconds) {
     const s = Math.ceil(seconds)
-    if (s >= 60) {
-        const mins = Math.floor(s / 60)
-        const secs = s % 60
-        return `${mins}:${secs.toString().padStart(2, '0')}`
-    }
-    return `${s}s`
+    if (s < 60) return `${s}s`
+    return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`
 }
 
 function togglePaintMode() {
-    // Don't allow opening if disabled
-    if (props.disabled && !isPaintMode.value) {
-        return
-    }
+    if (props.disabled && !isPaintMode.value) return
     
     isPaintMode.value = !isPaintMode.value
     emit('update:modelValue', isPaintMode.value)
-
-    // Show hint briefly when activating paint mode
+    
     if (isPaintMode.value && props.showHint) {
         showHintState.value = true
-        setTimeout(() => {
-            showHintState.value = false
-        }, 3000)
+        setTimeout(() => { showHintState.value = false }, 3000)
     }
 }
 
-watch(() => props.modelValue, (newVal) => {
-    isPaintMode.value = newVal
-})
+watch(() => props.modelValue, (val) => { isPaintMode.value = val })
 
-// Auto-close paint mode when disabled
-watch(() => props.disabled, (isDisabled) => {
-    if (isDisabled && isPaintMode.value) {
+watch(() => props.disabled, (disabled) => {
+    if (disabled && isPaintMode.value) {
         isPaintMode.value = false
         emit('update:modelValue', false)
     }
-})
-
-// Handle SPACE key to toggle paint mode
-function handleKeyDown(e) {
-    if (e.code === 'Space' && !e.repeat && !props.disabled) {
-        // Don't prevent default if user is typing in an input
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-            return
-        }
-        e.preventDefault()
-        if (!isPaintMode.value) {
-            togglePaintMode()
-        }
-    }
-}
-
-onMounted(() => {
-    window.addEventListener('keydown', handleKeyDown)
-})
-
-onUnmounted(() => {
-    window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
 
