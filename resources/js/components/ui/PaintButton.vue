@@ -10,7 +10,8 @@
                 <path d="M240-120q-45 0-89-22t-71-58q26 0 53-20.5t27-59.5q0-50 35-85t85-35q50 0 85 35t35 85q0 66-47 113t-113 47Zm230-240L360-470l358-358q11-11 27.5-11.5T774-828l54 54q12 12 12 28t-12 28L470-360Z"></path>
             </svg>
             <span class="paint-text">Paint</span>
-            <span v-if="pixelCount !== null" class="pixel-count-badge">{{ pixelCount }}</span>
+            <span v-if="regenTimer > 0" class="pixel-count-badge timer">{{ Math.ceil(regenTimer) }}s</span>
+            <span v-else-if="pixelCount !== null" class="pixel-count-badge">{{ pixelCount }}</span>
         </button>
 
         <div v-if="isPaintMode && showHintState && showHint" class="paint-hint">
@@ -31,6 +32,10 @@ const props = defineProps({
         default: false
     },
     pixelCount: {
+        type: Number,
+        default: null
+    },
+    regenTimer: {
         type: Number,
         default: null
     },
@@ -169,6 +174,11 @@ onUnmounted(() => {
     font-weight: 600;
     min-width: 30px;
     text-align: center;
+}
+
+.pixel-count-badge.timer {
+    background: rgba(245, 158, 11, 0.3);
+    color: #fef3c7;
 }
 
 .paint-hint {

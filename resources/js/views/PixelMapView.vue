@@ -12,7 +12,8 @@
         />
         <PaintButton 
             v-model="paintMode" 
-            :pixelCount="pixelCount" 
+            :pixelCount="pixelCount"
+            :regenTimer="regenTimer"
             :disabled="isAuthenticated() && pixelCount !== null && pixelCount <= 0"
             :showHint="false"
         />
@@ -57,42 +58,66 @@ const pixelInfo = ref('')
 const authRef = ref(null)
 const paintMode = ref(false)
 const pixelCount = ref(null)
+const regenTimer = ref(null)
 
 const { cooldown } = usePixels()
 const { isAuthenticated } = useAuth()
 
 let pixelStatusInterval = null
+let regenCountdownInterval = null
 
 async function fetchPixelStatus() {
     if (!isAuthenticated()) {
         pixelCount.value = null
+        regenTimer.value = null
         return
     }
     
     try {
         const { data } = await axios.get('/api/pixel-status')
         pixelCount.value = data.pixels_available
+        regenTimer.value = data.time_until_regeneration
         
-        // Disable paint mode if no pixels available
         if (data.pixels_available <= 0 && paintMode.value) {
             paintMode.value = false
         }
+        
+        startRegenCountdown()
     } catch (err) {
         if (err.response?.status === 429) return
+    }
+}
+
+function startRegenCountdown() {
+    if (regenCountdownInterval) {
+        clearInterval(regenCountdownInterval)
+        regenCountdownInterval = null
+    }
+    
+    if (regenTimer.value > 0) {
+        regenCountdownInterval = setInterval(() => {
+            if (regenTimer.value > 0) {
+                regenTimer.value = Math.max(0, regenTimer.value - 1)
+            }
+            if (regenTimer.value <= 0) {
+                clearInterval(regenCountdownInterval)
+                regenCountdownInterval = null
+                fetchPixelStatus()
+            }
+        }, 1000)
     }
 }
 
 onMounted(() => {
     if (isAuthenticated()) {
         fetchPixelStatus()
-        pixelStatusInterval = setInterval(fetchPixelStatus, 5000)
+        pixelStatusInterval = setInterval(fetchPixelStatus, 10000)
     }
 })
 
 onUnmounted(() => {
-    if (pixelStatusInterval) {
-        clearInterval(pixelStatusInterval)
-    }
+    if (pixelStatusInterval) clearInterval(pixelStatusInterval)
+    if (regenCountdownInterval) clearInterval(regenCountdownInterval)
 })
 
 function handlePixelPlaced(data) {
