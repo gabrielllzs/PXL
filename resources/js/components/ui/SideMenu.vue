@@ -141,8 +141,8 @@ const close = () => { isOpen.value = false }
             </div>
 
             <div class="menu-footer">
-                <span class="version">v1.0.0</span>
-                <span class="made-with">Made with ❤️</span>
+                <span class="version"></span>
+                <span class="made-with">Made by Gabriel️</span>
             </div>
         </div>
     </div>
