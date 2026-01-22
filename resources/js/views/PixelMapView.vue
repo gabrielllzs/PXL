@@ -18,7 +18,6 @@
             :disabled="isAuthenticated() && pixelCount !== null && pixelCount <= 0"
             :showHint="false"
         />
-        <PixelInfo :info="pixelInfo" />
         <CooldownInfo v-if="cooldown.active && !isAuthenticated()" :seconds="cooldown.remaining" />
         <Auth ref="authRef" :hidden="paintMode" />
         <Buttons :hidden="paintMode" />
@@ -38,7 +37,6 @@
 import { ref, defineAsyncComponent, watch } from 'vue'
 import {
     ColorPicker,
-    PixelInfo,
     CooldownInfo,
     Auth,
     SideMenu,
@@ -55,7 +53,6 @@ import axios from 'axios'
 const MapCanvas = defineAsyncComponent(() => import('@/components/MapCanvas.vue'))
 
 const selectedColor = ref('')
-const pixelInfo = ref('')
 const authRef = ref(null)
 const paintMode = ref(false)
 const pixelCount = ref(null)
