@@ -33,20 +33,12 @@
 </template>
 
 <script setup>
-import { ref, defineAsyncComponent, watch, computed } from 'vue'
-import {
-    ColorPicker,
-    CooldownInfo,
-    Auth,
-    SideMenu,
-    Buttons,
-} from '@/components/ui'
-
+import { ref, defineAsyncComponent, watch, computed, onMounted, onUnmounted } from 'vue'
+import { ColorPicker, CooldownInfo, Auth, SideMenu, Buttons } from '@/components/ui'
 import ToastContainer from '@/components/ToastContainer.vue'
 import PaintButton from '@/components/ui/PaintButton.vue'
 import { usePixels } from '@/composables/usePixels'
 import { useAuth } from '@/composables/useAuth'
-import { onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 
 const MapCanvas = defineAsyncComponent(() => import('@/components/MapCanvas.vue'))
@@ -62,21 +54,24 @@ const regenTimer = ref(null)
 const { cooldown } = usePixels()
 const { isAuthenticated, user } = useAuth()
 
-// Computed to check if painting should be disabled
-const isPaintDisabled = computed(() => {
-    return isAuthenticated() && pixelCount.value !== null && pixelCount.value <= 0
-})
+const isPaintDisabled = computed(() => 
+    isAuthenticated() && pixelCount.value !== null && pixelCount.value <= 0
+)
 
 let pixelStatusInterval = null
 let regenCountdownInterval = null
 
+function clearPixelStatus() {
+    pixelCount.value = pixelLimit.value = regenTimer.value = null
+}
+
+function clearIntervals() {
+    if (pixelStatusInterval) { clearInterval(pixelStatusInterval); pixelStatusInterval = null }
+    if (regenCountdownInterval) { clearInterval(regenCountdownInterval); regenCountdownInterval = null }
+}
+
 async function fetchPixelStatus() {
-    if (!isAuthenticated()) {
-        pixelCount.value = null
-        pixelLimit.value = null
-        regenTimer.value = null
-        return
-    }
+    if (!isAuthenticated()) { clearPixelStatus(); return }
     
     try {
         const { data } = await axios.get('/api/pixel-status')
@@ -84,103 +79,70 @@ async function fetchPixelStatus() {
         pixelLimit.value = data.pixel_limit
         regenTimer.value = data.time_until_regeneration
         
-        if (data.pixels_available <= 0 && paintMode.value) {
-            paintMode.value = false
-        }
-        
+        if (data.pixels_available <= 0 && paintMode.value) paintMode.value = false
         startRegenCountdown()
     } catch (err) {
-        if (err.response?.status === 429) return
+        if (err.response?.status !== 429) console.error(err)
     }
 }
 
 function startRegenCountdown() {
-    if (regenCountdownInterval) {
-        clearInterval(regenCountdownInterval)
-        regenCountdownInterval = null
-    }
+    if (regenCountdownInterval) { clearInterval(regenCountdownInterval); regenCountdownInterval = null }
+    if (regenTimer.value <= 0) return
     
-    if (regenTimer.value > 0) {
-        regenCountdownInterval = setInterval(async () => {
-            if (regenTimer.value > 0) {
-                regenTimer.value = Math.max(0, regenTimer.value - 1)
+    regenCountdownInterval = setInterval(async () => {
+        regenTimer.value = Math.max(0, regenTimer.value - 1)
+        if (regenTimer.value <= 0) {
+            clearInterval(regenCountdownInterval)
+            regenCountdownInterval = null
+            await fetchPixelStatus()
+            // Retry if server hasn't regenerated yet
+            if (pixelCount.value <= 0 && regenTimer.value <= 0) {
+                setTimeout(fetchPixelStatus, 1000)
             }
-            if (regenTimer.value <= 0) {
-                clearInterval(regenCountdownInterval)
-                regenCountdownInterval = null
-                // Fetch updated status - retry once if still 0 pixels
-                await fetchPixelStatus()
-                if (pixelCount.value <= 0 && regenTimer.value <= 0) {
-                    // Server might not have regenerated yet, retry after 1 second
-                    setTimeout(fetchPixelStatus, 1000)
-                }
-            }
-        }, 1000)
-    }
+        }
+    }, 1000)
 }
 
-onMounted(() => {
-    if (isAuthenticated()) {
-        fetchPixelStatus()
-        pixelStatusInterval = setInterval(fetchPixelStatus, 10000)
-    }
-})
+function startPolling() {
+    fetchPixelStatus()
+    if (!pixelStatusInterval) pixelStatusInterval = setInterval(fetchPixelStatus, 10000)
+}
 
-onUnmounted(() => {
-    if (pixelStatusInterval) clearInterval(pixelStatusInterval)
-    if (regenCountdownInterval) clearInterval(regenCountdownInterval)
-})
+onMounted(() => { if (isAuthenticated()) startPolling() })
+onUnmounted(clearIntervals)
 
-// Watch for auth state changes to fetch/clear pixel status
 watch(user, (newUser) => {
     if (newUser) {
-        fetchPixelStatus()
-        if (!pixelStatusInterval) {
-            pixelStatusInterval = setInterval(fetchPixelStatus, 10000)
-        }
+        startPolling()
     } else {
-        pixelCount.value = null
-        pixelLimit.value = null
-        regenTimer.value = null
-        if (pixelStatusInterval) {
-            clearInterval(pixelStatusInterval)
-            pixelStatusInterval = null
-        }
+        clearPixelStatus()
+        clearIntervals()
     }
 })
 
 function handlePixelPlaced(data) {
-    if (data && typeof data.pixels_available === 'number') {
-        pixelCount.value = data.pixels_available
-        if (data.pixel_limit) {
-            pixelLimit.value = data.pixel_limit
-        }
-        if (data.time_until_regeneration) {
-            regenTimer.value = data.time_until_regeneration
-            startRegenCountdown()
-        }
-        if (data.pixels_available <= 0 && paintMode.value) {
-            paintMode.value = false
-        }
+    if (!data || typeof data.pixels_available !== 'number') return
+    
+    pixelCount.value = data.pixels_available
+    if (data.pixel_limit) pixelLimit.value = data.pixel_limit
+    if (data.time_until_regeneration) {
+        regenTimer.value = data.time_until_regeneration
+        startRegenCountdown()
     }
+    if (data.pixels_available <= 0 && paintMode.value) paintMode.value = false
 }
 
 function handleVerificationRequired() {
-    if (authRef.value) {
-        authRef.value.showVerifyModal()
-    }
+    authRef.value?.showVerifyModal()
 }
 
 function handleZoomUp() {
-    if (mapCanvasRef.value) {
-        mapCanvasRef.value.zoomIn()
-    }
+    mapCanvasRef.value?.zoomIn()
 }
 
 function handleToggleEraser(isEraser) {
-    if (isEraser) {
-        selectedColor.value = 'transparent'
-    }
+    if (isEraser) selectedColor.value = 'transparent'
 }
 </script>
 
