@@ -2,6 +2,13 @@
 import { ref, watch } from 'vue'
 import { audioEnabled } from '../../composables/useAudio.js'
 
+defineProps({
+    hidden: {
+        type: Boolean,
+        default: false
+    }
+})
+
 const isOpen = ref(false)
 const isAudioOn = ref(audioEnabled.value)
 
@@ -23,7 +30,7 @@ function close() {
 </script>
 
 <template>
-    <div>
+    <div :class="{ 'mobile-hidden': hidden }">
         <button @click="toggle" class="menu-toggle" :class="{ active: isOpen }">
             <span class="bar"></span>
             <span class="bar"></span>
@@ -549,6 +556,10 @@ function close() {
 }
 
 @media (max-width: 640px) {
+    .mobile-hidden {
+        display: none !important;
+    }
+
     .menu-toggle {
         top: 12px;
         left: 12px;

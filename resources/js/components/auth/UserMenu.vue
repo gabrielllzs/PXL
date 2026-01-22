@@ -150,7 +150,7 @@ onUnmounted(() => {
                     <div v-if="pixelStatus.level_progress" class="level-progress-section">
                         <div class="progress-header">
                             <span class="progress-label">Progress to Level {{ pixelStatus.level_progress.next_level }}</span>
-                            <span class="progress-value">{{ pixelStatus.level_progress.percentage }}%</span>
+                            <span class="progress-value">{{ Math.floor(pixelStatus.level_progress.percentage) }}%</span>
                         </div>
                         <div class="level-progress-bar">
                             <div 

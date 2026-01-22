@@ -3,6 +3,13 @@ import { ref } from 'vue'
 import GroupModal from '@/components/group/GroupModal.vue'
 import LeaderboardModal from '@/components/leaderboard/LeaderboardModal.vue'
 
+defineProps({
+    hidden: {
+        type: Boolean,
+        default: false
+    }
+})
+
 const showGroupModal = ref(false)
 const showLeaderboardModal = ref(false)
 
@@ -16,7 +23,7 @@ function openLeaderboardModal() {
 </script>
 
 <template>
-    <div class="floating-buttons">
+    <div class="floating-buttons" :class="{ 'mobile-hidden': hidden }">
         <button 
             class="action-btn leaderboard-btn" 
             @click="openLeaderboardModal" 
@@ -131,6 +138,10 @@ function openLeaderboardModal() {
         top: 80px;
         right: 12px;
         gap: 8px;
+    }
+
+    .floating-buttons.mobile-hidden {
+        display: none !important;
     }
 
     .action-btn {

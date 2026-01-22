@@ -7,6 +7,13 @@ import AuthModal from '@/components/auth/AuthModal.vue'
 import VerifyEmailModal from '@/components/auth/VerifyEmailModal.vue'
 import UserMenu from '@/components/auth/UserMenu.vue'
 
+defineProps({
+    hidden: {
+        type: Boolean,
+        default: false
+    }
+})
+
 const { user, loading, checkAuth, isEmailVerified } = useAuth()
 const { showToast } = useToast()
 
@@ -89,7 +96,7 @@ onMounted(checkAuth)
 </script>
 
 <template>
-    <div class="container">
+    <div class="container" :class="{ 'mobile-hidden': hidden }">
         <div v-if="needsVerification" class="verification-banner">
             <div class="banner-content">
                 <span class="banner-text">Please verify your email to place pixels</span>
@@ -270,6 +277,10 @@ onMounted(checkAuth)
         top: 12px;
         right: 12px;
         gap: 8px;
+    }
+
+    .container.mobile-hidden {
+        display: none !important;
     }
 
     .login-btn {

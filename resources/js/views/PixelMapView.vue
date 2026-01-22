@@ -1,6 +1,6 @@
 <template>
-    <div id="overlayContainer">
-        <SideMenu />
+    <div id="overlayContainer" :class="{ 'picker-open': paintMode }">
+        <SideMenu :hidden="paintMode" />
         <ColorPicker 
             v-model="selectedColor" 
             :paintMode="paintMode"
@@ -19,8 +19,8 @@
         />
         <PixelInfo :info="pixelInfo" />
         <CooldownInfo v-if="cooldown.active && !isAuthenticated()" :seconds="cooldown.remaining" />
-        <Auth ref="authRef"/>
-        <Buttons />
+        <Auth ref="authRef" :hidden="paintMode" />
+        <Buttons :hidden="paintMode" />
         <ToastContainer />
     </div>
     <MapCanvas

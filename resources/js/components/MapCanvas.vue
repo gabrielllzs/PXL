@@ -94,14 +94,24 @@ async function sendCursorPosition(x, y) {
     }
 }
 
+const MAP_POSITION_KEY = 'mapCanvas:position'
+
 onMounted(async () => {
     isLoading.value = true
 
-    // Check URL for coordinates
-    const urlParams = new URLSearchParams(window.location.search)
-    const urlX = urlParams.get('x')
-    const urlY = urlParams.get('y')
-    const urlZ = urlParams.get('z')
+    // Check localStorage for saved position
+    let savedX = null
+    let savedY = null
+    let savedZ = null
+    try {
+        const saved = localStorage.getItem(MAP_POSITION_KEY)
+        if (saved) {
+            const pos = JSON.parse(saved)
+            savedX = pos.x
+            savedY = pos.y
+            savedZ = pos.z
+        }
+    } catch (e) {}
 
     const [mapInstance] = await Promise.all([
         init(),
@@ -113,17 +123,17 @@ onMounted(async () => {
     setupEvents(mapInstance)
     initRealtimePixels(drawPixels)
 
-    // Navigate to URL coordinates if present
-    if (urlX !== null && urlY !== null) {
+    // Navigate to saved coordinates if present
+    if (savedX !== null && savedY !== null) {
         isNavigatingFromURL = true
         // Wait for map to be fully loaded
         mapInstance.once('load', () => {
-            const worldPx = { x: parseFloat(urlX), y: parseFloat(urlY) }
+            const worldPx = { x: parseFloat(savedX), y: parseFloat(savedY) }
             const lngLat = worldPxToLngLat(worldPx, Zoom)
-            const zoom = urlZ ? parseFloat(urlZ) : 11
+            const zoom = savedZ ? parseFloat(savedZ) : 11
             setCenter([lngLat.lng, lngLat.lat], zoom)
 
-            // Re-enable URL updates after navigation completes
+            // Re-enable position updates after navigation completes
             setTimeout(() => {
                 isNavigatingFromURL = false
             }, 1000)
@@ -185,13 +195,14 @@ function updateURL() {
         const zoom = getZoom()
         const worldPx = lngLatToWorldPx({ lng: center.lng, lat: center.lat }, Zoom)
 
-        const params = new URLSearchParams()
-        params.set('x', Math.round(worldPx.x).toString())
-        params.set('y', Math.round(worldPx.y).toString())
-        params.set('z', zoom.toFixed(2))
-
-        const newURL = `${window.location.pathname}?${params.toString()}`
-        window.history.replaceState({}, '', newURL)
+        // Save position to localStorage
+        try {
+            localStorage.setItem(MAP_POSITION_KEY, JSON.stringify({
+                x: Math.round(worldPx.x),
+                y: Math.round(worldPx.y),
+                z: parseFloat(zoom.toFixed(2))
+            }))
+        } catch (e) {}
     }, 300) // Update URL 300ms after movement stops
 }
 
@@ -528,7 +539,8 @@ function handleHover(mouseEvent) {
         displayY.value = cursorY.value
     }
 
-    emit('pixelHover', `${cursorX.value}, ${cursorY.value}`)
+    // Coordinates hidden per user request
+    // emit('pixelHover', `${cursorX.value}, ${cursorY.value}`)
     
     // Send cursor position to group members
     sendCursorPosition(cursorX.value, cursorY.value)
