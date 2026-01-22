@@ -36,7 +36,7 @@ const emit = defineEmits(['zoomIn', 'zoomOut', 'center'])
 <style scoped>
 .zoom-controls {
     position: absolute;
-    bottom: 50px;
+    bottom: 20px;
     right: 10px;
     display: flex;
     flex-direction: column;
@@ -124,7 +124,7 @@ const emit = defineEmits(['zoomIn', 'zoomOut', 'center'])
     }
 
     .zoom-controls {
-        bottom: 120px;
+        bottom: 160px;
     }
 
     .zoom-controls.raised {
