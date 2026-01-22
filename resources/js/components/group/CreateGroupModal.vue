@@ -101,7 +101,7 @@ async function handleCreate() {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 50;
+    z-index: 100;
     pointer-events: auto;
 }
 
@@ -114,6 +114,7 @@ async function handleCreate() {
     width: 90%;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
     pointer-events: auto;
+    font-family: 'pixel art', monospace;
 }
 
 .modal-close-btn {
@@ -180,6 +181,7 @@ async function handleCreate() {
     background: white;
     transition: border-color 0.2s;
     box-sizing: border-box;
+    font-family: 'pixel art', monospace;
 }
 
 .form-input:focus {
@@ -247,5 +249,26 @@ async function handleCreate() {
 
 .btn-primary:hover:not(:disabled) {
     background: #0b0f17;
+}
+
+@media (max-width: 640px) {
+    .modal-box {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        border-radius: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-actions {
+        margin-top: auto;
+        padding-top: 20px;
+    }
+
+    .form-actions .btn {
+        flex: 1;
+        justify-content: center;
+    }
 }
 </style>

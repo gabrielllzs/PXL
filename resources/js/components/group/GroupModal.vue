@@ -129,28 +129,26 @@ function handleGroupCreated() {
 <template>
     <div v-if="modelValue" class="modal-overlay" @click="close">
         <div class="modal-content" @click.stop>
-            <button class="modal-close" @click="close">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
+            <div class="modal-top-header">
+                <div class="header-left">
+                    <span class="modal-header-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                        </svg>
+                    </span>
+                    <span class="modal-header__label">Group</span>
+                </div>
+                <button class="modal-close" @click="close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
 
-            <div v-if="hasGroup">
+            <div v-if="hasGroup" class="group-content">
                 <div class="modal-header">
-                    <div class="modal-header-title">
-                        <span class="modal-header-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-                            </svg>
-                        </span>
-                        <p class="modal-header__label">group</p>
-                    </div>
-
                     <div class="modal-header-bar">
-                        <h2>
-                            {{ group?.name || 'Group name not found' }}
-                            <span v-if="inviteCode" class="invite-code">Code: {{ inviteCode }}</span>
-                        </h2>
+                        <h2>{{ group?.name || 'Group name not found' }}</h2>
                         <div class="header-actions">
                             <button class="btn btn-secondary" @click="openShareModal" :disabled="!inviteCode">
                                 Share
@@ -191,12 +189,6 @@ function handleGroupCreated() {
             </div>
 
             <div v-else class="no-group-container">
-                <div class="no-group-header">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-icon">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-                    </svg>
-                    <h3 class="group-title">Group</h3>
-                </div>
                 <div class="no-group-content">
                     <span class="no-group-text">You are not in a group:</span>
                     <span class="get-invited-text">
@@ -255,14 +247,14 @@ function handleGroupCreated() {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 3;
+    z-index: 100;
     pointer-events: auto;
 }
 
 .modal-content {
     background: white;
     border-radius: 16px;
-    padding: 24px;
+    padding: 0;
     max-width: 768px;
     width: 90%;
     height: 88%;
@@ -271,21 +263,48 @@ function handleGroupCreated() {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
+    font-family: 'pixel art', monospace;
 }
 
-@media (max-width: 640px) {
-    .modal-content {
-        width: 100%;
-        height: 100%;
-        border-radius: 0;
-        padding: 20px 12px;
-    }
+.modal-top-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: #fafafa;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-header-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2563eb;
+}
+
+.modal-header-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.modal-header__label {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e1e1e;
+    margin: 0;
 }
 
 .modal-close {
-    position: absolute;
-    top: 16px;
-    right: 16px;
     background: transparent;
     border: none;
     cursor: pointer;
@@ -293,9 +312,9 @@ function handleGroupCreated() {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #666;
-    transition: color 0.2s;
-    border-radius: 6px;
+    color: #888;
+    transition: all 0.2s;
+    border-radius: 10px;
 }
 
 .modal-close:hover {
@@ -308,16 +327,83 @@ function handleGroupCreated() {
     height: 20px;
 }
 
+.group-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+}
+
 .modal-header {
     margin-bottom: 24px;
 }
 
-.modal-header-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
+@media (max-width: 640px) {
+    .modal-content {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+    }
+
+    .modal-top-header {
+        padding: 16px;
+    }
+
+    .group-content {
+        padding: 16px;
+    }
+
+    .modal-header {
+        margin-bottom: 16px;
+    }
+
+    .modal-header-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .modal-header-bar h2 {
+        font-size: 18px;
+        flex-wrap: wrap;
+    }
+
+    .invite-code {
+        font-size: 11px;
+    }
+
+    .header-actions {
+        width: 100%;
+    }
+
+    .header-actions .btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .group-details {
+        margin-bottom: 20px;
+    }
+
+    .group-members-leaderboard {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .get-invited-text {
+        font-size: 16px;
+        margin-top: 20px;
+    }
+
+    .no-group-text {
+        font-size: 14px;
+    }
+
+    .btn-create-group {
+        font-size: 14px;
+        padding: 10px 20px;
+    }
 }
+
 
 .modal-header-icon {
     width: 20px;
@@ -510,28 +596,10 @@ function handleGroupCreated() {
 .no-group-container {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
+    padding: 24px;
 }
 
-.no-group-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 4px;
-}
-
-.group-icon {
-    width: 20px;
-    height: 20px;
-    color: #666;
-}
-
-.group-title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #1e1e1e;
-}
 
 .no-group-content {
     flex: 1;

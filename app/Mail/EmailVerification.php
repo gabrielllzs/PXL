@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Queue\SerializesModels;
 
 class EmailVerification extends Mailable
@@ -14,13 +15,15 @@ class EmailVerification extends Mailable
     use Queueable, SerializesModels;
 
     public string $code;
+    public string $username;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(string $code)
+    public function __construct(string $code, string $username = 'there')
     {
         $this->code = $code;
+        $this->username = $username;
     }
 
     /**
@@ -29,7 +32,8 @@ class EmailVerification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Verify Your Email - Pixel Place',
+            from: new Address(config('mail.from.address'), 'PXL'),
+            subject: $this->username . ', your verification code is ' . $this->code,
         );
     }
 
@@ -44,6 +48,7 @@ class EmailVerification extends Mailable
             text: 'emails.verification-text',
             with: [
                 'code' => $this->code,
+                'username' => $this->username,
             ],
         );
     }

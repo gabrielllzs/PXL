@@ -109,30 +109,33 @@ function close() {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 3;
+    z-index: 1000;
     pointer-events: auto;
 }
 
 .modal-content {
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
+    background: #fafafa;
+    border-radius: 20px;
+    padding: 32px;
     max-width: 400px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    font-family: 'pixel art', monospace;
 }
 
 .modal-content h2 {
     margin: 0 0 20px 0;
     color: #1e1e1e;
     font-size: 24px;
+    text-align: center;
 }
 
 .verification-info {
@@ -154,27 +157,29 @@ function close() {
     display: block;
     margin-bottom: 6px;
     color: #1e1e1e;
-    font-weight: 500;
-    font-size: 14px;
+    font-weight: 600;
+    font-size: 13px;
 }
 
 .verification-input {
     width: 100%;
-    padding: 10px 12px;
-    border: 2px solid rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
+    padding: 14px 12px;
+    border: 2px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
     font-size: 24px;
     letter-spacing: 8px;
     text-align: center;
     font-weight: 600;
-    font-family: 'Courier New', monospace;
-    transition: border-color 0.2s;
+    font-family: 'pixel art', monospace;
+    transition: all 0.2s;
     box-sizing: border-box;
+    background: white;
 }
 
 .verification-input:focus {
     outline: none;
     border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .form-actions {
@@ -185,19 +190,33 @@ function close() {
 }
 
 .btn-primary {
-    background: #2563eb;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 24px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    border-radius: 14px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 12px rgba(59, 130, 246, 0.15);
+    font-family: 'pixel art', monospace;
+    font-weight: 600;
+    font-size: 15px;
+    color: #2563eb;
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: #3b82f6;
-    transform: translateY(-1px);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.5);
+    background: rgba(239, 246, 255, 0.95);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
 }
 
 .btn-primary:disabled {
@@ -210,9 +229,10 @@ function close() {
     border: none;
     color: #2563eb;
     cursor: pointer;
-    text-decoration: underline;
     font-size: 14px;
+    font-weight: 600;
     padding: 0;
+    transition: color 0.2s;
 }
 
 .btn-link:hover:not(:disabled) {
@@ -226,23 +246,62 @@ function close() {
 
 .modal-close {
     position: absolute;
-    top: 12px;
-    right: 12px;
-    background: none;
+    top: 16px;
+    right: 16px;
+    background: rgba(0, 0, 0, 0.05);
     border: none;
     font-size: 28px;
     color: #666;
     cursor: pointer;
     line-height: 1;
     padding: 0;
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 12px;
+    transition: all 0.2s;
+    z-index: 10;
 }
 
 .modal-close:hover {
+    background: rgba(0, 0, 0, 0.1);
     color: #1e1e1e;
+}
+
+@media (max-width: 640px) {
+    .modal-content {
+        width: 100%;
+        height: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 24px 20px;
+        padding-top: 80px;
+        padding-bottom: 60px;
+    }
+
+    .modal-close {
+        top: 24px;
+        right: 20px;
+        width: 44px;
+        height: 44px;
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 12px;
+    }
+
+    .modal-close:hover {
+        background: rgba(0, 0, 0, 0.1);
+    }
+
+    .form-actions {
+        margin-top: auto;
+    }
+
+    .btn-primary {
+        border-radius: 12px;
+    }
 }
 </style>

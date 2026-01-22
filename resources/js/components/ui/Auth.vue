@@ -3,16 +3,15 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
-import LoginModal from '@/components/auth/LoginModal.vue'
-import RegisterModal from '@/components/auth/RegisterModal.vue'
+import AuthModal from '@/components/auth/AuthModal.vue'
 import VerifyEmailModal from '@/components/auth/VerifyEmailModal.vue'
 import UserMenu from '@/components/auth/UserMenu.vue'
 
 const { user, loading, checkAuth, isEmailVerified } = useAuth()
 const { showToast } = useToast()
 
-const showLoginModal = ref(false)
-const showRegisterModal = ref(false)
+const showAuthModal = ref(false)
+const authMode = ref('login')
 const showVerifyModal = ref(false)
 const verificationEmail = ref('')
 const resendingCode = ref(false)
@@ -21,26 +20,26 @@ const isAuthenticated = computed(() => user.value !== null)
 const needsVerification = computed(() => isAuthenticated.value && !isEmailVerified())
 
 function openLogin() {
-    showLoginModal.value = true
-    showRegisterModal.value = false
+    authMode.value = 'login'
+    showAuthModal.value = true
 }
 
 function openRegister() {
-    showRegisterModal.value = true
-    showLoginModal.value = false
+    authMode.value = 'register'
+    showAuthModal.value = true
 }
 
 function openVerify(email) {
     verificationEmail.value = email
     showVerifyModal.value = true
-    showRegisterModal.value = false
+    showAuthModal.value = false
 }
 
-function handleLoginSuccess() {
-    showLoginModal.value = false
+function handleAuthSuccess() {
+    showAuthModal.value = false
 }
 
-function handleRegisterVerify(email) {
+function handleAuthVerify(email) {
     openVerify(email)
 }
 
@@ -107,24 +106,24 @@ onMounted(checkAuth)
         <button
             v-if="!isAuthenticated"
             @click="openLogin"
-            class="auth-btn connect-btn"
+            class="login-btn"
             :disabled="loading"
         >
-            {{ loading ? 'Loading...' : 'Login / Register' }}
+            <span class="btn-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd"/>
+                </svg>
+            </span>
+            <span class="btn-label">{{ loading ? 'Loading...' : 'Login' }}</span>
         </button>
 
         <UserMenu v-else />
 
-        <LoginModal
-            v-model="showLoginModal"
-            @switch-to-register="openRegister"
-            @success="handleLoginSuccess"
-        />
-
-        <RegisterModal
-            v-model="showRegisterModal"
-            @switch-to-login="openLogin"
-            @verify="handleRegisterVerify"
+        <AuthModal
+            v-model="showAuthModal"
+            :initial-mode="authMode"
+            @success="handleAuthSuccess"
+            @verify="handleAuthVerify"
         />
 
         <VerifyEmailModal
@@ -140,7 +139,7 @@ onMounted(checkAuth)
     position: fixed;
     top: 16px;
     right: 16px;
-    z-index: 1;
+    z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -206,45 +205,63 @@ onMounted(checkAuth)
     cursor: not-allowed;
 }
 
-.auth-btn {
-    padding: 12px 16px;
+.login-btn {
     display: flex;
     align-items: center;
     gap: 10px;
+    padding: 12px 16px;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-    border: 2px solid rgba(0, 0, 0, 0.06);
-    border-radius: 12px;
-    pointer-events: auto;
+    border: 2px solid rgba(0, 0, 0, 0.08);
+    border-radius: 14px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    text-decoration: none;
-    font-family: inherit;
-    font-weight: 500;
+    pointer-events: auto;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    font-family: 'pixel art', monospace;
 }
 
-.auth-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    border-color: rgba(0, 0, 0, 0.1);
+.login-btn:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    border-color: rgba(0, 0, 0, 0.12);
 }
 
-.auth-btn:disabled {
+.login-btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+}
+
+.login-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
 
-.connect-btn {
-    background: rgb(56, 191, 63);
-    border-color: rgb(122, 191, 127, 0.3);
-    color: white;
-    min-width: 160px;
+.login-btn .btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #059669;
 }
 
-.connect-btn:hover:not(:disabled) {
-    border-color: rgb(122, 191, 127);
+.login-btn:hover .btn-icon {
+    background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
+}
+
+.login-btn .btn-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.login-btn .btn-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e1e1e;
+    white-space: nowrap;
 }
 
 /* Responsive */
@@ -255,13 +272,24 @@ onMounted(checkAuth)
         gap: 8px;
     }
 
-    .auth-btn {
-        padding: 10px 12px;
-        border-radius: 10px;
+    .login-btn {
+        padding: 10px 14px;
+        border-radius: 12px;
     }
 
-    .connect-btn {
-        min-width: 140px;
+    .login-btn .btn-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+    }
+
+    .login-btn .btn-icon svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .login-btn .btn-label {
+        font-size: 13px;
     }
 
     .verification-banner {

@@ -75,7 +75,7 @@ class HandleAuthController extends Controller
         ]);
 
         try {
-            Mail::to($user->email)->send(new EmailVerification($verificationCode));
+            Mail::to($user->email)->send(new EmailVerification($verificationCode, $user->username));
         } catch (\Exception $e) {
             \Log::error('Failed to send verification email: ' . $e->getMessage());
         }
@@ -190,7 +190,7 @@ class HandleAuthController extends Controller
 
         // Send verification email
         try {
-            Mail::to($user->email)->send(new EmailVerification($verificationCode));
+            Mail::to($user->email)->send(new EmailVerification($verificationCode, $user->username));
         } catch (\Exception $e) {
             \Log::error('Failed to send verification email: ' . $e->getMessage());
             return response()->json([

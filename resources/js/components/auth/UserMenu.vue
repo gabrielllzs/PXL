@@ -20,7 +20,7 @@ async function fetchPixelStatus() {
         pixelStatus.value = data
         
         if (oldLevel && data.level > oldLevel) {
-            showToast(`Level Up! You're now Level ${data.level}! 🎉`, 'success')
+            showToast(`Level Up! You're now Level ${data.level}!`, 'success')
         }
     } catch (err) {
         if (err.response?.status !== 429) {
@@ -77,49 +77,99 @@ onUnmounted(() => {
 
 <template>
     <div class="user-menu">
-        <button
-            @click="toggleMenu"
-            class="auth-btn user-btn"
-        >
-            {{ user?.username || 'User' }}
+        <button @click="toggleMenu" class="user-btn" :class="{ active: showMenu }">
+            <span class="user-avatar">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd"/>
+                </svg>
+            </span>
+            <span class="user-name">{{ user?.username || 'User' }}</span>
+            <svg class="chevron" :class="{ rotated: showMenu }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+            </svg>
         </button>
 
-        <div v-if="showMenu" class="user-dropdown">
-            <div class="user-info">
-                <p><strong>{{ user?.name }}</strong></p>
-                <p class="user-email">{{ user?.email }}</p>
-                <p v-if="user?.country" class="user-country">Country: {{ user.country }}</p>
-            </div>
-            
-            <div v-if="pixelStatus" class="level-info">
-                <div class="level-header">
-                    <span class="level-badge">Level {{ pixelStatus.level }}</span>
-                    <span class="pixel-count">{{ pixelStatus.pixels_available }}/{{ pixelStatus.pixel_limit }}</span>
-                </div>
-                <div class="pixel-progress-bar">
-                    <div 
-                        class="pixel-progress-fill" 
-                        :style="{ width: `${(pixelStatus.pixels_available / pixelStatus.pixel_limit) * 100}%` }"
-                    ></div>
-                </div>
-                <div v-if="pixelStatus.time_until_regeneration > 0" class="regen-timer">
-                    Refill in {{ Math.ceil(pixelStatus.time_until_regeneration) }}s
-                </div>
-                <div v-if="pixelStatus.level_progress" class="level-progress">
-                    <span class="progress-text">
-                        {{ pixelStatus.level_progress.progress }} / {{ pixelStatus.level_progress.needed }} pixels to Level {{ pixelStatus.level_progress.next_level }}
-                    </span>
-                    <div class="level-progress-bar">
-                        <div 
-                            class="level-progress-fill" 
-                            :style="{ width: `${pixelStatus.level_progress.percentage}%` }"
-                        ></div>
+        <Transition name="dropdown">
+            <div v-if="showMenu" class="user-dropdown">
+                <div class="dropdown-header">
+                    <div class="header-avatar">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="header-info">
+                        <span class="header-name">{{ user?.username || user?.name }}</span>
+                        <span class="header-email">{{ user?.email }}</span>
                     </div>
                 </div>
+                
+                <div v-if="pixelStatus" class="stats-section">
+                    <div class="stat-card level-card">
+                        <div class="stat-icon level-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Level</span>
+                            <span class="stat-value">{{ pixelStatus.level }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card pixels-card">
+                        <div class="stat-icon pixels-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor">
+                                <path d="M240-120q-45 0-89-22t-71-58q26 0 53-20.5t27-59.5q0-50 35-85t85-35q50 0 85 35t35 85q0 66-47 113t-113 47Zm230-240L360-470l358-358q11-11 27.5-11.5T774-828l54 54q12 12 12 28t-12 28L470-360Z"/>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Pixels Available</span>
+                            <span class="stat-value">{{ pixelStatus.pixels_available }}<span class="stat-max">/{{ pixelStatus.pixel_limit }}</span></span>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-section">
+                        <div class="progress-header">
+                            <span class="progress-label">Pixel Capacity</span>
+                            <span class="progress-value">{{ Math.round((pixelStatus.pixels_available / pixelStatus.pixel_limit) * 100) }}%</span>
+                        </div>
+                        <div class="pixel-progress-bar">
+                            <div 
+                                class="pixel-progress-fill" 
+                                :style="{ width: `${(pixelStatus.pixels_available / pixelStatus.pixel_limit) * 100}%` }"
+                            ></div>
+                        </div>
+                        <div v-if="pixelStatus.time_until_regeneration > 0" class="regen-timer">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clip-rule="evenodd"/>
+                            </svg>
+                            Refill in {{ Math.ceil(pixelStatus.time_until_regeneration) }}s
+                        </div>
+                    </div>
+                    
+                    <div v-if="pixelStatus.level_progress" class="level-progress-section">
+                        <div class="progress-header">
+                            <span class="progress-label">Progress to Level {{ pixelStatus.level_progress.next_level }}</span>
+                            <span class="progress-value">{{ pixelStatus.level_progress.percentage }}%</span>
+                        </div>
+                        <div class="level-progress-bar">
+                            <div 
+                                class="level-progress-fill" 
+                                :style="{ width: `${pixelStatus.level_progress.percentage}%` }"
+                            ></div>
+                        </div>
+                        <span class="xp-text">{{ pixelStatus.level_progress.progress }} / {{ pixelStatus.level_progress.needed }} XP</span>
+                    </div>
+                </div>
+                
+                <button @click="handleLogout" class="btn-logout">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.5 3.75A1.5 1.5 0 006 5.25v13.5a1.5 1.5 0 001.5 1.5h6a1.5 1.5 0 001.5-1.5V15a.75.75 0 011.5 0v3.75a3 3 0 01-3 3h-6a3 3 0 01-3-3V5.25a3 3 0 013-3h6a3 3 0 013 3V9A.75.75 0 0115 9V5.25a1.5 1.5 0 00-1.5-1.5h-6zm10.72 4.72a.75.75 0 011.06 0l3 3a.75.75 0 010 1.06l-3 3a.75.75 0 11-1.06-1.06l1.72-1.72H9a.75.75 0 010-1.5h10.94l-1.72-1.72a.75.75 0 010-1.06z" clip-rule="evenodd"/>
+                    </svg>
+                    Sign out
+                </button>
             </div>
-            
-            <button @click="handleLogout" class="btn-logout">Logout</button>
-        </div>
+        </Transition>
     </div>
 </template>
 
@@ -128,119 +178,231 @@ onUnmounted(() => {
     position: relative;
 }
 
-.auth-btn {
-    padding: 12px 16px;
+.user-btn {
     display: flex;
     align-items: center;
     gap: 10px;
+    padding: 10px 14px;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-    border: 2px solid rgba(0, 0, 0, 0.06);
-    border-radius: 12px;
-    pointer-events: auto;
+    border: 2px solid rgba(0, 0, 0, 0.08);
+    border-radius: 14px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    text-decoration: none;
-    font-family: inherit;
-}
-
-.auth-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    border-color: rgba(0, 0, 0, 0.1);
-}
-
-.user-btn {
-    background: #10b981;
-    border-color: rgba(16, 185, 129, 0.3);
-    color: white;
-    min-width: 160px;
-    justify-content: center;
-    font-weight: 500;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    pointer-events: auto;
+    font-family: 'pixel art', monospace;
 }
 
 .user-btn:hover {
-    background: #34d399;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+.user-btn.active {
+    border-color: #2563eb;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.2);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.user-avatar svg {
+    width: 18px;
+    height: 18px;
+}
+
+.user-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e1e1e;
+}
+
+.chevron {
+    width: 16px;
+    height: 16px;
+    color: #888;
+    transition: transform 0.2s ease;
+}
+
+.chevron.rotated {
+    transform: rotate(180deg);
 }
 
 .user-dropdown {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 10px);
     right: 0;
-    margin-top: 8px;
-    background: white;
-    border-radius: 12px;
-    padding: 16px;
-    min-width: 200px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    background: #fafafa;
+    border-radius: 16px;
+    min-width: 280px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
     pointer-events: auto;
-    z-index: 2;
+    z-index: 50;
+    overflow: hidden;
+    font-family: 'pixel art', monospace;
 }
 
-.user-info {
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+.dropdown-enter-active,
+.dropdown-leave-active {
+    transition: all 0.2s ease;
 }
 
-.user-info p {
-    margin: 4px 0;
-    font-size: 14px;
+.dropdown-enter-from,
+.dropdown-leave-to {
+    opacity: 0;
+    transform: translateY(-8px);
+}
+
+.dropdown-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.header-avatar {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+
+.header-avatar svg {
+    width: 24px;
+    height: 24px;
+}
+
+.header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.header-name {
+    font-size: 15px;
+    font-weight: 600;
     color: #1e1e1e;
 }
 
-.user-email {
-    color: #666;
+.header-email {
     font-size: 12px;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.user-country {
-    color: #666;
-    font-size: 12px;
-}
-
-.btn-logout {
-    width: 100%;
-    background: #ef4444;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.2s;
-}
-
-.btn-logout:hover {
-    background: #dc2626;
-}
-
-.level-info {
-    margin: 16px 0;
+.stats-section {
     padding: 12px;
-    background: #f9f9f9;
-    border-radius: 8px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.level-header {
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.stat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.stat-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.level-icon {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #d97706;
+}
+
+.pixels-icon {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #2563eb;
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.stat-label {
+    font-size: 11px;
+    color: #888;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e1e1e;
+}
+
+.stat-max {
+    font-size: 13px;
+    color: #888;
+    font-weight: 500;
+}
+
+.progress-section,
+.level-progress-section {
+    padding: 12px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.progress-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
 }
 
-.level-badge {
-    font-weight: 600;
-    font-size: 16px;
-    color: #2563eb;
-}
-
-.pixel-count {
-    font-size: 14px;
+.progress-label {
+    font-size: 12px;
     color: #666;
     font-weight: 500;
+}
+
+.progress-value {
+    font-size: 12px;
+    color: #1e1e1e;
+    font-weight: 600;
 }
 
 .pixel-progress-bar {
@@ -249,31 +411,32 @@ onUnmounted(() => {
     background: #e5e7eb;
     border-radius: 4px;
     overflow: hidden;
-    margin-bottom: 8px;
-}
-
-.regen-timer {
-    font-size: 12px;
-    color: #f59e0b;
-    font-weight: 500;
-    margin-bottom: 8px;
 }
 
 .pixel-progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #22c55e 0%, #10b981 100%);
+    border-radius: 4px;
     transition: width 0.3s ease;
 }
 
-.level-progress {
+.regen-timer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     margin-top: 8px;
+    font-size: 12px;
+    color: #f59e0b;
+    font-weight: 500;
 }
 
-.progress-text {
-    font-size: 12px;
-    color: #666;
-    display: block;
-    margin-bottom: 4px;
+.regen-timer svg {
+    width: 14px;
+    height: 14px;
+}
+
+.level-progress-section {
+    margin-top: 0;
 }
 
 .level-progress-bar {
@@ -287,6 +450,42 @@ onUnmounted(() => {
 .level-progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+    border-radius: 3px;
     transition: width 0.3s ease;
+}
+
+.xp-text {
+    display: block;
+    margin-top: 6px;
+    font-size: 11px;
+    color: #888;
+    text-align: right;
+}
+
+.btn-logout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: calc(100% - 24px);
+    margin: 12px;
+    padding: 12px;
+    background: #fee2e2;
+    color: #dc2626;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn-logout:hover {
+    background: #fecaca;
+}
+
+.btn-logout svg {
+    width: 18px;
+    height: 18px;
 }
 </style>

@@ -72,7 +72,7 @@ async function copyInviteLink() {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 50;
+    z-index: 100;
     pointer-events: auto;
 }
 
@@ -85,6 +85,7 @@ async function copyInviteLink() {
     max-width: 480px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
     pointer-events: auto;
+    font-family: 'pixel art', monospace;
 }
 
 .modal-close-btn {
@@ -147,7 +148,7 @@ async function copyInviteLink() {
 }
 
 .link-input {
-    color: rgba(17, 24, 39, 0.8);
+    color: #1e1e1e;
     min-width: 40px;
     flex: 1;
     font-size: 14px;
@@ -155,7 +156,9 @@ async function copyInviteLink() {
     border: none;
     outline: none;
     background: transparent;
-    padding: 0;
+    padding: 8px 0;
+    font-family: 'pixel art', monospace;
+    letter-spacing: -0.3px;
 }
 
 .copy-btn {
@@ -179,5 +182,32 @@ async function copyInviteLink() {
 .copy-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+    .modal-box {
+        width: 95%;
+        max-width: 100%;
+        border-radius: 12px;
+    }
+
+    .link-input-wrapper {
+        flex-direction: column;
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .link-input {
+        width: 100%;
+        text-align: center;
+        padding: 12px;
+        background: #f3f4f6;
+        border-radius: 8px;
+        font-size: 13px;
+    }
+
+    .copy-btn {
+        width: 100%;
+    }
 }
 </style>
