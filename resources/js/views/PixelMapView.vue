@@ -13,6 +13,7 @@
         <PaintButton 
             v-model="paintMode" 
             :pixelCount="pixelCount"
+            :pixelLimit="pixelLimit"
             :regenTimer="regenTimer"
             :disabled="isAuthenticated() && pixelCount !== null && pixelCount <= 0"
             :showHint="false"
@@ -58,6 +59,7 @@ const pixelInfo = ref('')
 const authRef = ref(null)
 const paintMode = ref(false)
 const pixelCount = ref(null)
+const pixelLimit = ref(null)
 const regenTimer = ref(null)
 
 const { cooldown } = usePixels()
@@ -69,6 +71,7 @@ let regenCountdownInterval = null
 async function fetchPixelStatus() {
     if (!isAuthenticated()) {
         pixelCount.value = null
+        pixelLimit.value = null
         regenTimer.value = null
         return
     }
@@ -76,6 +79,7 @@ async function fetchPixelStatus() {
     try {
         const { data } = await axios.get('/api/pixel-status')
         pixelCount.value = data.pixels_available
+        pixelLimit.value = data.pixel_limit
         regenTimer.value = data.time_until_regeneration
         
         if (data.pixels_available <= 0 && paintMode.value) {
@@ -123,6 +127,13 @@ onUnmounted(() => {
 function handlePixelPlaced(data) {
     if (data && typeof data.pixels_available === 'number') {
         pixelCount.value = data.pixels_available
+        if (data.pixel_limit) {
+            pixelLimit.value = data.pixel_limit
+        }
+        if (data.time_until_regeneration) {
+            regenTimer.value = data.time_until_regeneration
+            startRegenCountdown()
+        }
         if (data.pixels_available <= 0 && paintMode.value) {
             paintMode.value = false
         }

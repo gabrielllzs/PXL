@@ -10,7 +10,8 @@
                 <path d="M240-120q-45 0-89-22t-71-58q26 0 53-20.5t27-59.5q0-50 35-85t85-35q50 0 85 35t35 85q0 66-47 113t-113 47Zm230-240L360-470l358-358q11-11 27.5-11.5T774-828l54 54q12 12 12 28t-12 28L470-360Z"></path>
             </svg>
             <span class="paint-text">Paint</span>
-            <span v-if="regenTimer > 0" class="pixel-count-badge timer">{{ Math.ceil(regenTimer) }}s</span>
+            <span v-if="pixelCount !== null && pixelCount <= 0 && regenTimer > 0" class="pixel-count-badge timer">{{ formatTimer(regenTimer) }}</span>
+            <span v-else-if="pixelCount !== null && pixelLimit !== null" class="pixel-count-badge">{{ pixelCount }}/{{ pixelLimit }}</span>
             <span v-else-if="pixelCount !== null" class="pixel-count-badge">{{ pixelCount }}</span>
         </button>
 
@@ -35,6 +36,10 @@ const props = defineProps({
         type: Number,
         default: null
     },
+    pixelLimit: {
+        type: Number,
+        default: null
+    },
     regenTimer: {
         type: Number,
         default: null
@@ -53,7 +58,22 @@ const emit = defineEmits(['update:modelValue'])
 const isPaintMode = ref(props.modelValue)
 const showHintState = ref(false)
 
+function formatTimer(seconds) {
+    const s = Math.ceil(seconds)
+    if (s >= 60) {
+        const mins = Math.floor(s / 60)
+        const secs = s % 60
+        return `${mins}:${secs.toString().padStart(2, '0')}`
+    }
+    return `${s}s`
+}
+
 function togglePaintMode() {
+    // Don't allow opening if disabled
+    if (props.disabled && !isPaintMode.value) {
+        return
+    }
+    
     isPaintMode.value = !isPaintMode.value
     emit('update:modelValue', isPaintMode.value)
 
@@ -68,6 +88,14 @@ function togglePaintMode() {
 
 watch(() => props.modelValue, (newVal) => {
     isPaintMode.value = newVal
+})
+
+// Auto-close paint mode when disabled
+watch(() => props.disabled, (isDisabled) => {
+    if (isDisabled && isPaintMode.value) {
+        isPaintMode.value = false
+        emit('update:modelValue', false)
+    }
 })
 
 // Handle SPACE key to toggle paint mode
