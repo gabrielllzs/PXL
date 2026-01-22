@@ -1,32 +1,21 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { audioEnabled } from '../../composables/useAudio.js'
 
 defineProps({
-    hidden: {
-        type: Boolean,
-        default: false
-    }
+    hidden: { type: Boolean, default: false }
 })
 
 const isOpen = ref(false)
-const isAudioOn = ref(audioEnabled.value)
 
-watch(isAudioOn, (value) => {
-    audioEnabled.value = value
+// Two-way binding with audioEnabled
+const isAudioOn = computed({
+    get: () => audioEnabled.value,
+    set: (val) => { audioEnabled.value = val }
 })
 
-watch(audioEnabled, (value) => {
-    isAudioOn.value = value
-})
-
-function toggle() {
-    isOpen.value = !isOpen.value
-}
-
-function close() {
-    isOpen.value = false
-}
+const toggle = () => { isOpen.value = !isOpen.value }
+const close = () => { isOpen.value = false }
 </script>
 
 <template>
