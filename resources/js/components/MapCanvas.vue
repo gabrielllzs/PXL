@@ -69,6 +69,8 @@ let animationFrameId = null
 let captchaSessionVerified = false
 let lastCursorSendTime = 0
 let lastPaintTime = 0
+let lastPaintedX = null
+let lastPaintedY = null
 let urlUpdateTimeout = null
 let isNavigatingFromURL = false
 
@@ -170,6 +172,8 @@ function startPainting() {
 
 function stopPainting() {
     isPainting.value = false
+    lastPaintedX = null
+    lastPaintedY = null
 }
 
 function handleKeyDown(e) {
@@ -408,9 +412,14 @@ async function handleClick(mouseEvent) {
 }
 
 async function handlePaintWhileHolding(mouseEvent) {
+    // Skip if still on the same pixel
+    if (cursorX.value === lastPaintedX && cursorY.value === lastPaintedY) return
+    
     const now = Date.now()
     if (now - lastPaintTime < PAINT_INTERVAL) return
     lastPaintTime = now
+    lastPaintedX = cursorX.value
+    lastPaintedY = cursorY.value
     await placePixel(mouseEvent)
 }
 
