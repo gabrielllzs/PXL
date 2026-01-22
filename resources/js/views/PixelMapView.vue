@@ -5,7 +5,7 @@
             v-model="selectedColor" 
             :paintMode="paintMode"
             :pixelCount="pixelCount"
-            :disabled="isAuthenticated() && pixelCount !== null && pixelCount <= 0"
+            :disabled="isPaintDisabled"
             @close="paintMode = false"
             @zoomUp="handleZoomUp"
             @toggleEraser="handleToggleEraser"
@@ -15,7 +15,7 @@
             :pixelCount="pixelCount"
             :pixelLimit="pixelLimit"
             :regenTimer="regenTimer"
-            :disabled="isAuthenticated() && pixelCount !== null && pixelCount <= 0"
+            :disabled="isPaintDisabled"
             :showHint="false"
         />
         <CooldownInfo v-if="cooldown.active && !isAuthenticated()" :seconds="cooldown.remaining" />
@@ -27,14 +27,13 @@
         ref="mapCanvasRef"
         :selectedColor="selectedColor"
         :paintMode="paintMode"
-        @pixelHover="pixelInfo = $event"
         @verification-required="handleVerificationRequired"
         @pixel-placed="handlePixelPlaced"
     />
 </template>
 
 <script setup>
-import { ref, defineAsyncComponent, watch } from 'vue'
+import { ref, defineAsyncComponent, watch, computed } from 'vue'
 import {
     ColorPicker,
     CooldownInfo,
@@ -54,13 +53,19 @@ const MapCanvas = defineAsyncComponent(() => import('@/components/MapCanvas.vue'
 
 const selectedColor = ref('')
 const authRef = ref(null)
+const mapCanvasRef = ref(null)
 const paintMode = ref(false)
 const pixelCount = ref(null)
 const pixelLimit = ref(null)
 const regenTimer = ref(null)
 
 const { cooldown } = usePixels()
-const { isAuthenticated } = useAuth()
+const { isAuthenticated, user } = useAuth()
+
+// Computed to check if painting should be disabled
+const isPaintDisabled = computed(() => {
+    return isAuthenticated() && pixelCount.value !== null && pixelCount.value <= 0
+})
 
 let pixelStatusInterval = null
 let regenCountdownInterval = null
@@ -96,14 +101,19 @@ function startRegenCountdown() {
     }
     
     if (regenTimer.value > 0) {
-        regenCountdownInterval = setInterval(() => {
+        regenCountdownInterval = setInterval(async () => {
             if (regenTimer.value > 0) {
                 regenTimer.value = Math.max(0, regenTimer.value - 1)
             }
             if (regenTimer.value <= 0) {
                 clearInterval(regenCountdownInterval)
                 regenCountdownInterval = null
-                fetchPixelStatus()
+                // Fetch updated status - retry once if still 0 pixels
+                await fetchPixelStatus()
+                if (pixelCount.value <= 0 && regenTimer.value <= 0) {
+                    // Server might not have regenerated yet, retry after 1 second
+                    setTimeout(fetchPixelStatus, 1000)
+                }
             }
         }, 1000)
     }
@@ -119,6 +129,24 @@ onMounted(() => {
 onUnmounted(() => {
     if (pixelStatusInterval) clearInterval(pixelStatusInterval)
     if (regenCountdownInterval) clearInterval(regenCountdownInterval)
+})
+
+// Watch for auth state changes to fetch/clear pixel status
+watch(user, (newUser) => {
+    if (newUser) {
+        fetchPixelStatus()
+        if (!pixelStatusInterval) {
+            pixelStatusInterval = setInterval(fetchPixelStatus, 10000)
+        }
+    } else {
+        pixelCount.value = null
+        pixelLimit.value = null
+        regenTimer.value = null
+        if (pixelStatusInterval) {
+            clearInterval(pixelStatusInterval)
+            pixelStatusInterval = null
+        }
+    }
 })
 
 function handlePixelPlaced(data) {
