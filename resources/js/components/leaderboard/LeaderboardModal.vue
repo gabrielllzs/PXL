@@ -40,7 +40,8 @@ async function fetchLeaderboard(tab) {
                 .map((user, i) => ({
                     rank: i + 1,
                     name: user.username,
-                    pixels: user.pixels_placed || 0
+                    pixels: user.pixels_placed || 0,
+                    level: user.level || 1
                 }))
         }
 
@@ -150,7 +151,10 @@ function setTab(tab) {
                         </div>
                         <div class="col-name country-cell">
                             <span v-if="activeTab === 'country'" class="country-emoji">{{ entry.emoji || '' }}</span>
-                            <span class="country-name">{{ entry.name }}</span>
+                            <span class="country-name">
+                                {{ entry.name }}
+                                <span v-if="activeTab === 'player' && entry.level" class="level-badge">Lv.{{ entry.level }}</span>
+                            </span>
                         </div>
                         <div class="col-pixels">{{ entry.pixels }}</div>
                     </div>
@@ -388,6 +392,19 @@ function setTab(tab) {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.level-badge {
+    background: #2563eb;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .col-pixels {

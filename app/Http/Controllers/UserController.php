@@ -5,10 +5,18 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Group;
+use App\Services\LevelService;
 use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
+    protected LevelService $levelService;
+
+    public function __construct(LevelService $levelService)
+    {
+        $this->levelService = $levelService;
+    }
+
     public function showProfile()
     {
         $user = Auth::user();
@@ -27,10 +35,38 @@ class UserController extends Controller
     public function getUsersPixels()
     {
         $users = User::orderBy('pixels_placed', 'desc')
-            ->take(10)
-            ->get(['username', 'pixels_placed']);
+            ->take(15)
+            ->get(['username', 'pixels_placed', 'level']);
 
         return response()->json($users
         );
+    }
+
+    public function getPixelStatus()
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $user->refresh();
+        $this->levelService->updateUserLevel($user);
+        $user->refresh();
+
+        $pixelLimit = $this->levelService->getPixelLimit($user->level);
+        $regenerationTime = $this->levelService->getRegenerationTime($user->level);
+        $timeUntilRegen = $this->levelService->getTimeUntilRegeneration($user);
+        $levelProgress = $this->levelService->getLevelProgress($user);
+
+        return response()->json([
+            'level' => $user->level,
+            'pixels_available' => $user->pixels_available,
+            'pixel_limit' => $pixelLimit,
+            'regeneration_time' => $regenerationTime,
+            'time_until_regeneration' => $timeUntilRegen,
+            'level_progress' => $levelProgress,
+            'total_pixels_placed' => $user->pixels_placed,
+        ]);
     }
 }

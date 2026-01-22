@@ -19,6 +19,9 @@ class User extends Authenticatable
         'email_verification_code',
         'email_verification_code_expires_at',
         'pixels_placed',
+        'level',
+        'pixels_available',
+        'last_pixel_regeneration_time',
     ];
 
     protected $hidden = [
@@ -32,6 +35,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'last_pixel_regeneration_time' => 'datetime',
         ];
     }
 

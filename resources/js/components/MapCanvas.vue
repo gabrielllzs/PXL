@@ -6,14 +6,12 @@
         <div v-if="isLoading" class="loading-overlay">
             Loading World...
         </div>
-        <div class="custom-controls">
-            <div class="zoom-buttons">
-                <button class="button" @click="zoomIn()"><img src="../../images/zoomIn.svg" alt="zoom button" width="24" height="24"></button>
-                <button class="button" @click="zoomOut()"><img src="../../images/zoomOut.svg" alt="zoom button" width="24" height="24"></button>
-            </div>
-            <button class="button" @click="centerMap()"><img src="../../images/compass-icon.svg" alt="pixel art compass" width="24" height="24"></button>
-        </div>
-
+        <ZoomControls
+            :raised="paintMode"
+            @zoomIn="zoomIn"
+            @zoomOut="zoomOut"
+            @center="centerMap"
+        />
         <div id="hcaptcha-container"></div>
     </div>
 </template>
@@ -21,6 +19,7 @@
 <script setup>
 import { onMounted, ref} from 'vue'
 import axios from 'axios'
+import ZoomControls from '@/components/ui/ZoomControls.vue'
 import { useMap } from '../composables/useMap'
 import { usePixels } from '../composables/usePixels'
 import { useAuth } from '../composables/useAuth'
@@ -32,10 +31,14 @@ import { playPixelPlaceSound } from '../composables/useAudio.js'
 
 const isLoading = ref(true)
 
-const props = defineProps(
-    ['selectedColor']
-)
-const emit = defineEmits(['pixelHover', 'verificationRequired'])
+const props = defineProps({
+    selectedColor: String,
+    paintMode: {
+        type: Boolean,
+        default: false
+    }
+})
+const emit = defineEmits(['pixelHover', 'verificationRequired', 'pixelPlaced'])
 
 const { map, init, on, unproject, project,  zoomIn, zoomOut, centerMap, getBounds, getZoom, getCenter, setCenter } = useMap('map')
 const { stored, load, save, syncCooldown} = usePixels()
@@ -67,6 +70,12 @@ const displayY = ref(null)
 
 let lastCursorSendTime = 0
 const CURSOR_SEND_INTERVAL = 150
+
+const isSpaceHeld = ref(false)
+const isPainting = ref(false)
+let paintInterval = null
+let lastPaintTime = 0
+const PAINT_INTERVAL = 100 // Minimum time between paints when holding space (ms)
 
 async function sendCursorPosition(x, y) {
     if (!group.value?.id) {
@@ -123,6 +132,15 @@ onMounted(async () => {
 
     drawPixels()
 })
+
+// Cleanup on unmount
+import { onUnmounted } from 'vue'
+onUnmounted(() => {
+    stopPainting()
+    window.removeEventListener('keydown', handleKeyDown)
+    window.removeEventListener('keyup', handleKeyUp)
+})
+
 defineExpose({ zoomIn, zoomOut, centerMap })
 
 
@@ -177,6 +195,41 @@ function updateURL() {
     }, 300) // Update URL 300ms after movement stops
 }
 
+function startPainting() {
+    if (isPainting.value || !props.paintMode) return
+    isPainting.value = true
+}
+
+function stopPainting() {
+    isPainting.value = false
+    if (paintInterval) {
+        clearInterval(paintInterval)
+        paintInterval = null
+    }
+}
+
+function handleKeyDown(e) {
+    // Handle SPACE key for continuous painting
+    if (e.code === 'Space' && props.paintMode) {
+        // Don't prevent default if user is typing in an input
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            return
+        }
+        e.preventDefault()
+        if (!e.repeat) {
+            isSpaceHeld.value = true
+            startPainting()
+        }
+    }
+}
+
+function handleKeyUp(e) {
+    if (e.code === 'Space') {
+        isSpaceHeld.value = false
+        stopPainting()
+    }
+}
+
 function setupEvents(mapInstance) {
     on('move', () => {
         drawAll()
@@ -191,6 +244,10 @@ function setupEvents(mapInstance) {
     mapInstance.getCanvas().addEventListener('click', handleClick)
     mapInstance.getCanvas().addEventListener('mousemove', handleHover)
     mapInstance.getCanvas().addEventListener('mouseout', handleMouseOut)
+    
+    // Add keyboard listeners for SPACE key painting
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
 }
 
 function resizeCanvas() {
@@ -388,11 +445,11 @@ function animateHover() {
     animationFrameId = requestAnimationFrame(animateHover)
 }
 
-async function handleClick(mouseEvent) {
+async function placePixel(mouseEvent) {
     if (user.value && !isEmailVerified()) {
         showToast('Please verify your email before placing pixels', 'error')
         emit('verificationRequired')
-        return
+        return false
     }
 
     // Only require captcha for visitors (non-authenticated users)
@@ -401,7 +458,7 @@ async function handleClick(mouseEvent) {
 
     if (!isAuthenticated && !captchaSessionVerified) {
         token = await executeHCaptcha();
-        if (!token) return;
+        if (!token) return false;
     }
 
     const xPixel = mouseEvent.clientX;
@@ -413,19 +470,48 @@ async function handleClick(mouseEvent) {
     const y = Math.floor(worldPixel.y);
 
     try {
-        const ok = await save(x, y, props.selectedColor, token);
+        const result = await save(x, y, props.selectedColor, token);
 
-        if (ok) {
+        if (result && result.success) {
             captchaSessionVerified = true;
             drawAll();
             playPixelPlaceSound();
+            emit('pixelPlaced', {
+                pixels_available: result.pixels_available,
+                pixel_limit: result.pixel_limit,
+                level: result.level,
+            })
+            return true
         }
+        return false
     } catch (err) {
         if (err.type === 'email_not_verified') {
             showToast(err.message || 'Please verify your email', 'error')
             emit('verificationRequired')
+        } else if (err.type === 'no_pixels_available') {
+            stopPainting()
         }
+        return false
     }
+}
+
+async function handleClick(mouseEvent) {
+    if (!props.paintMode) {
+        return
+    }
+    
+    await placePixel(mouseEvent)
+}
+
+async function handlePaintWhileHolding(mouseEvent) {
+    const now = Date.now()
+    // Throttle painting to avoid too many requests
+    if (now - lastPaintTime < PAINT_INTERVAL) {
+        return
+    }
+    lastPaintTime = now
+    
+    await placePixel(mouseEvent)
 }
 
 function handleHover(mouseEvent) {
@@ -446,6 +532,11 @@ function handleHover(mouseEvent) {
     
     // Send cursor position to group members
     sendCursorPosition(cursorX.value, cursorY.value)
+
+    // If space is held and paint mode is active, paint while moving
+    if (isSpaceHeld.value && props.paintMode && isPainting.value) {
+        handlePaintWhileHolding(mouseEvent)
+    }
 
     if (animationFrameId === null) {
         animationFrameId = requestAnimationFrame(animateHover)
@@ -516,87 +607,4 @@ function handleMouseOut() {
     pointer-events: none;
 }
 
-.custom-controls {
-    position: absolute;
-    bottom: 50px;
-    right: 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    pointer-events: auto;
-}
-
-.custom-controls button {
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(0, 0, 0, 0.06);
-    border-radius: 12px;
-    padding: 8px;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.custom-controls button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    border-color: rgba(0, 0, 0, 0.1);
-    background: rgba(255, 255, 255, 1);
-}
-
-.custom-controls button:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-}
-
-.button img {
-    width: 24px;
-    height: 24px;
-    display: block;
-}
-
-.zoom-buttons {
-    display: flex;
-    flex-direction: column;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(0, 0, 0, 0.06);
-    border-radius: 12px;
-    width: 44px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.zoom-buttons button {
-    border: none;
-    background: transparent;
-    width: 100%;
-    height: 36px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-}
-
-.zoom-buttons button:first-child {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.zoom-buttons button:hover {
-    background: rgba(0, 0, 0, 0.05);
-}
-
-@media (max-width: 768px) {
-    .custom-controls {
-        bottom: 240px;
-    }
-}
 </style>

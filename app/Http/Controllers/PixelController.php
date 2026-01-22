@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\PixelPlaced;
 use App\Models\Pixel;
 use App\Services\PixelCounterService;
+use App\Services\LevelService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -14,10 +15,12 @@ class PixelController extends Controller
 {
 
     protected PixelCounterService $pixelCounter;
+    protected LevelService $levelService;
 
-    public function __construct(PixelCounterService $pixelCounter)
+    public function __construct(PixelCounterService $pixelCounter, LevelService $levelService)
     {
         $this->pixelCounter = $pixelCounter;
+        $this->levelService = $levelService;
     }
 
     public function index()
@@ -78,6 +81,21 @@ class PixelController extends Controller
                     'message' => 'Please verify your email before placing pixels.',
                 ], 403);
             }
+
+            // Check available pixels for authenticated users
+            $this->levelService->updateUserLevel($user);
+            $user->refresh();
+
+            if ($user->pixels_available <= 0) {
+                $timeUntilNext = $this->levelService->getTimeUntilRegeneration($user);
+                return response()->json([
+                    'error' => 'no_pixels_available',
+                    'message' => 'You have no pixels available. Please wait for them to regenerate.',
+                    'time_until_next' => $timeUntilNext,
+                    'pixels_available' => $user->pixels_available,
+                    'pixel_limit' => $this->levelService->getPixelLimit($user->level),
+                ], 429);
+            }
         }
 
         $visitorId = $request->input('visitorId');
@@ -125,6 +143,21 @@ class PixelController extends Controller
 
         $this->pixelCounter->addPixel($user, $clientIp);
 
+        $leveledUp = false;
+        if ($isAuthenticated && $user) {
+            $user->refresh();
+            
+            $newPixelCount = max(0, $user->pixels_available - 1);
+            $user->update([
+                'pixels_available' => $newPixelCount,
+                'last_pixel_regeneration_time' => now(),
+            ]);
+            
+            $user->refresh();
+            $result = $this->levelService->updateUserLevel($user, skipRegeneration: true);
+            $leveledUp = $result['leveled_up'] ?? false;
+            $user->refresh();
+        }
 
         // Zet een cooldown in de cache alleen voor visitors (niet voor geauthenticeerde gebruikers)
         if (!auth()->check()) {
@@ -138,10 +171,22 @@ class PixelController extends Controller
         // Trigger PixelPlaced event voor real-time updates
         event(new PixelPlaced($pixel->x, $pixel->y, $pixel->color));
 
-        return response()->json(array_merge(
+        $responseData = array_merge(
             $pixel->toArray(),
             ['cooldownDuration' => $cooldownSeconds]
-        ));
+        );
+
+        if ($isAuthenticated && $user) {
+            $responseData['level'] = $user->level;
+            $responseData['pixels_available'] = $user->pixels_available;
+            $responseData['pixel_limit'] = $this->levelService->getPixelLimit($user->level);
+            $responseData['leveled_up'] = $leveledUp;
+            if ($leveledUp) {
+                $responseData['old_level'] = $result['old_level'] ?? null;
+            }
+        }
+
+        return response()->json($responseData);
 
     }
 

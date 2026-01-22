@@ -2,6 +2,7 @@ import { reactive } from 'vue'
 import axios from 'axios'
 import FingerprintJS from '@fingerprintjs/fingerprintjs'
 import { useAuth } from './useAuth'
+import { useToast } from './useToast'
 
 let visitorId = null
 
@@ -50,7 +51,6 @@ export function usePixels() {
     async function save(x, y, color, captchaToken) {
         await initFingerprint()
 
-        // Skip cooldown check for authenticated users
         const { isAuthenticated } = useAuth()
         if (!isAuthenticated() && cooldown.active) return false
 
@@ -73,30 +73,46 @@ export function usePixels() {
                 stored.push({ x, y, color, id: response.data?.id })
             }
 
-            // Only start cooldown for non-authenticated users
             const { isAuthenticated } = useAuth()
             if (!isAuthenticated()) {
                 const cooldownDuration = response.data?.cooldownDuration || 10
                 startCooldown(cooldownDuration)
+            } else if (response.data?.leveled_up) {
+                const { showToast } = useToast()
+                showToast(`Level Up! You're now Level ${response.data.level}! 🎉`, 'success')
             }
-            return true
+            
+            return {
+                success: true,
+                pixels_available: response.data?.pixels_available,
+                pixel_limit: response.data?.pixel_limit,
+                level: response.data?.level,
+                leveled_up: response.data?.leveled_up,
+            }
         } catch (err) {
             if (err.response?.status === 419) {
-                // CSRF token expired - reload page to get fresh session
-                console.error('CSRF token expired, reloading page')
                 window.location.reload()
                 return false
             } else if (err.response?.status === 412) {
                 const remaining = err.response.data?.remaining ?? 1
                 startCooldown(remaining)
                 return false
-            } else if (err.response?.status === 403) {
+            } else if (err.response?.status === 429) {
                 const error = err.response.data?.error
-                if (error === 'email_not_verified') {
-                    // Return a special error code so the UI can handle it
+                if (error === 'no_pixels_available') {
+                    const { showToast } = useToast()
+                    const timeUntilNext = err.response.data?.time_until_next
+                    const message = timeUntilNext 
+                        ? `No pixels available. Next pixel in ${Math.ceil(timeUntilNext)}s`
+                        : 'No pixels available. Please wait for them to regenerate.'
+                    showToast(message, 'error')
+                    throw { type: 'no_pixels_available', message }
+                }
+                return false
+            } else if (err.response?.status === 403) {
+                if (err.response.data?.error === 'email_not_verified') {
                     throw { type: 'email_not_verified', message: err.response.data?.message || 'Please verify your email' }
                 }
-                console.error('Security Blocked');
                 return false;
             } else {
                 console.error('Unexpected error:', err)
@@ -107,7 +123,6 @@ export function usePixels() {
 
     async function syncCooldown() {
         const { isAuthenticated } = useAuth()
-        // Authenticated users have no cooldown, skip sync
         if (isAuthenticated()) return
         
         await initFingerprint()

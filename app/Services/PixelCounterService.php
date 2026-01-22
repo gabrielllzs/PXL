@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Country;
 use App\Models\User;
+use App\Services\LevelService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -11,10 +12,12 @@ class PixelCounterService
 {
 
     protected CountryIsoService $countryIsoService;
+    protected LevelService $levelService;
 
-    public function __construct(CountryIsoService $countryIsoService)
+    public function __construct(CountryIsoService $countryIsoService, LevelService $levelService)
     {
         $this->countryIsoService = $countryIsoService;
+        $this->levelService = $levelService;
     }
 
     public function addPixel(?User $user, ?string $ip = null)
@@ -42,6 +45,9 @@ class PixelCounterService
                 }
 
                 $user->increment('pixels_placed');
+                
+                // Update level (pixels_available is handled in PixelController)
+                $this->levelService->updateUserLevel($user);
 
                 if ($groupMember = $user->groupMember) {
                     $groupMember->increment('pixels_placed');
