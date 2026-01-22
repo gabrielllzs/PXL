@@ -11,24 +11,22 @@ const cooldown = reactive({ active: false, remaining: 0 })
 let cooldownTimer = null
 
 async function initFingerprint() {
-    if (!visitorId) {
-        const fp = await FingerprintJS.load()
-        const result = await fp.get()
-        visitorId = result.visitorId
-    }
+    if (visitorId) return
+    const fp = await FingerprintJS.load()
+    const result = await fp.get()
+    visitorId = result.visitorId
 }
 
 function startCooldown(seconds) {
     const s = Number.isFinite(seconds) ? Math.max(0, Math.round(seconds)) : 60
     cooldown.active = s > 0
     cooldown.remaining = s
-
+    
     if (cooldownTimer) clearInterval(cooldownTimer)
-
     if (!cooldown.active) return
-
+    
     cooldownTimer = setInterval(() => {
-        cooldown.remaining -= 1
+        cooldown.remaining--
         if (cooldown.remaining <= 0) {
             cooldown.active = false
             cooldown.remaining = 0
@@ -39,10 +37,13 @@ function startCooldown(seconds) {
 }
 
 export function usePixels() {
+    const { isAuthenticated } = useAuth()
+    const { showToast } = useToast()
+    
     async function load() {
         try {
-            const response = await axios.get('/api/map-data')
-            stored.splice(0, stored.length, ...response.data)
+            const { data } = await axios.get('/api/map-data')
+            stored.splice(0, stored.length, ...data)
         } catch (err) {
             console.error('Failed to load pixels:', err)
         }
@@ -50,21 +51,13 @@ export function usePixels() {
 
     async function save(x, y, color, captchaToken) {
         await initFingerprint()
-
-        const { isAuthenticated } = useAuth()
+        
         if (!isAuthenticated() && cooldown.active) return false
-
+        
         try {
-            const data = {
-                x,
-                y,
-                color,
-                visitorId,
-                captchaToken,
-            }
-
-            const response = await axios.post('/api/pixel', data)
-
+            const response = await axios.post('/api/pixel', { x, y, color, visitorId, captchaToken })
+            
+            // Update local store
             const existing = stored.find(p => p.x === x && p.y === y)
             if (existing) {
                 existing.color = color
@@ -72,13 +65,10 @@ export function usePixels() {
             } else {
                 stored.push({ x, y, color, id: response.data?.id })
             }
-
-            const { isAuthenticated } = useAuth()
+            
             if (!isAuthenticated()) {
-                const cooldownDuration = response.data?.cooldownDuration || 10
-                startCooldown(cooldownDuration)
+                startCooldown(response.data?.cooldownDuration || 10)
             } else if (response.data?.leveled_up) {
-                const { showToast } = useToast()
                 showToast(`Level Up! You're now Level ${response.data.level}! 🎉`, 'success')
             }
             
@@ -90,50 +80,37 @@ export function usePixels() {
                 leveled_up: response.data?.leveled_up,
             }
         } catch (err) {
-            if (err.response?.status === 419) {
+            const status = err.response?.status
+            const data = err.response?.data
+            
+            if (status === 419) {
                 window.location.reload()
-                return false
-            } else if (err.response?.status === 412) {
-                const remaining = err.response.data?.remaining ?? 1
-                startCooldown(remaining)
-                return false
-            } else if (err.response?.status === 429) {
-                const error = err.response.data?.error
-                if (error === 'no_pixels_available') {
-                    const { showToast } = useToast()
-                    const timeUntilNext = err.response.data?.time_until_next
-                    const message = timeUntilNext 
-                        ? `No pixels available. Next pixel in ${Math.ceil(timeUntilNext)}s`
-                        : 'No pixels available. Please wait for them to regenerate.'
-                    showToast(message, 'error')
-                    throw { type: 'no_pixels_available', message }
-                }
-                return false
-            } else if (err.response?.status === 403) {
-                if (err.response.data?.error === 'email_not_verified') {
-                    throw { type: 'email_not_verified', message: err.response.data?.message || 'Please verify your email' }
-                }
-                return false;
+            } else if (status === 412) {
+                startCooldown(data?.remaining ?? 1)
+            } else if (status === 429 && data?.error === 'no_pixels_available') {
+                const msg = data?.time_until_next
+                    ? `No pixels available. Next pixel in ${Math.ceil(data.time_until_next)}s`
+                    : 'No pixels available. Please wait for them to regenerate.'
+                showToast(msg, 'error')
+                throw { type: 'no_pixels_available', message: msg }
+            } else if (status === 403 && data?.error === 'email_not_verified') {
+                throw { type: 'email_not_verified', message: data?.message || 'Please verify your email' }
             } else {
                 console.error('Unexpected error:', err)
-                return false
             }
+            return false
         }
     }
 
     async function syncCooldown() {
-        const { isAuthenticated } = useAuth()
         if (isAuthenticated()) return
         
         await initFingerprint()
         try {
-            const res = await axios.get('/api/cooldown', {
-                params: { visitorId }
-            })
-            const remaining = res.data.remaining || 0
-            if (remaining > 0) startCooldown(remaining)
+            const { data } = await axios.get('/api/cooldown', { params: { visitorId } })
+            if (data.remaining > 0) startCooldown(data.remaining)
         } catch (err) {
-            console.error('Failed to sync cooldown (likely server or network issue):', err);
+            console.error('Failed to sync cooldown:', err)
         }
     }
 
