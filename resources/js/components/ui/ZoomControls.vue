@@ -47,7 +47,7 @@ const emit = defineEmits(['zoomIn', 'zoomOut', 'center'])
 }
 
 .zoom-controls.raised {
-    bottom: 220px;
+    bottom: 160px;
 }
 
 .zoom-buttons {
@@ -124,7 +124,7 @@ const emit = defineEmits(['zoomIn', 'zoomOut', 'center'])
     }
 
     .zoom-controls {
-        bottom: 160px;
+        bottom: 120px;
     }
 
     .zoom-controls.raised {
