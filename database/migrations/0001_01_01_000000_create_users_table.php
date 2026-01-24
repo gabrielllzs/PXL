@@ -18,6 +18,9 @@ return new class extends Migration
             $table->string('password');
             $table->string('country', 2)->nullable();
             $table->integer('pixels_placed')->default(0)->index();
+            $table->integer('level')->default(1);
+            $table->integer('pixels_available')->default(60);
+            $table->timestamp('last_pixel_regeneration_time')->nullable();
             $table->boolean('is_admin')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('email_verification_code', 6)->nullable();
