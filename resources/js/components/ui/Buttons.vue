@@ -161,7 +161,7 @@ function openLeaderboardModal() {
     }
 
     .btn-label {
-        diplay: none;
+        display: none;
     }
 }
 </style>
