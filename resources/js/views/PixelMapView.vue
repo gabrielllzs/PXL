@@ -33,6 +33,7 @@
         :paintMode="paintMode"
         @verification-required="handleVerificationRequired"
         @pixel-placed="handlePixelPlaced"
+        @custom-color-requires-auth="handleCustomColorRequiresAuth"
     />
 </template>
 
@@ -145,6 +146,10 @@ function handlePixelPlaced(data) {
 
 function handleVerificationRequired() {
     authRef.value?.showVerifyModal()
+}
+
+function handleCustomColorRequiresAuth() {
+    authRef.value?.openLogin?.()
 }
 
 function handleZoomUp() {

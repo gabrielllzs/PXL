@@ -42,7 +42,7 @@ const props = defineProps({
     paintMode: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['pixelHover', 'verificationRequired', 'pixelPlaced'])
+const emit = defineEmits(['pixelHover', 'verificationRequired', 'pixelPlaced', 'customColorRequiresAuth'])
 
 // Composables
 const { map, init, on, unproject, project, zoomIn, zoomOut, centerMap, getBounds, getZoom, getCenter, setCenter } = useMap('map')
@@ -402,6 +402,8 @@ async function placePixel(mouseEvent) {
             emit('verificationRequired')
         } else if (err.type === 'no_pixels_available') {
             stopPainting()
+        } else if (err.type === 'custom_color_requires_auth') {
+            emit('customColorRequiresAuth')
         }
         return false
     }

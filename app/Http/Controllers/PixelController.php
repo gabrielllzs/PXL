@@ -145,6 +145,25 @@ class PixelController extends Controller
 
         $visitorId = $request->input('visitorId');
 
+        // Non-authenticated users only use the fixed palette
+        if (! $isAuthenticated) {
+            $allowedColors = config('palette.visitor_allowed', []);
+
+            $inputColor = $request->input('color');
+            $normalizedColor = is_string($inputColor) ? strtoupper(trim($inputColor)) : '';
+
+            $allowedColorsNormalized = array_map(
+                fn ($allowedColor) => strtoupper(trim($allowedColor)),
+                $allowedColors
+            );
+
+            if (! in_array($normalizedColor, $allowedColorsNormalized, true)) {
+                return response()->json([
+                    'error' => 'custom_color_requires_auth',
+                    'message' => 'Sign in to use custom colors.',
+                ], 403);
+            }
+        }
 
 
         // Authenticated users have no cooldown - skip all cooldown checks

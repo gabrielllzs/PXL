@@ -105,6 +105,9 @@ export function usePixels() {
                 }
                 showToast(message, 'error')
                 throw { type: 'banned', message, reason: data?.reason, is_permanent: data?.is_permanent, banned_until: data?.banned_until }
+            } else if (status === 403 && data?.error === 'custom_color_requires_auth') {
+                showToast(data?.message || 'Sign in to use custom colors.', 'error')
+                throw { type: 'custom_color_requires_auth', message: data?.message }
             } else {
                 console.error('Unexpected error:', err)
             }

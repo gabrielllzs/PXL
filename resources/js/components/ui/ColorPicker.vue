@@ -1,8 +1,12 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, inject } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 
 const STORAGE_KEY = 'colorPicker:selectedColor'
 const CUSTOM_COLORS_KEY = 'colorPicker:customColors'
+
+const openLogin = inject('openLogin', null)
+const { isAuthenticated } = useAuth()
 
 const props = defineProps({
     modelValue: {
@@ -52,6 +56,10 @@ const colorInputRef = ref(null)
 const isEraser = ref(false)
 
 function openColorInput() {
+    if (!isAuthenticated()) {
+        openLogin?.()
+        return
+    }
     showColorInput.value = true
     if (colorInputRef.value) {
         setTimeout(() => colorInputRef.value?.click(), 100)
@@ -78,6 +86,11 @@ function selectColor(value) {
     if (isEraser.value) {
         isEraser.value = false
         emit('toggleEraser', false)
+    }
+    const isCustomColor = !palette.includes(value)
+    if (!isAuthenticated() && isCustomColor) {
+        openLogin?.()
+        return
     }
     showColorInput.value = false
     emit('update:modelValue', value)
