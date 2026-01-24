@@ -128,25 +128,6 @@ onUnmounted(() => {
                         </div>
                     </div>
                     
-                    <div class="progress-section">
-                        <div class="progress-header">
-                            <span class="progress-label">Pixel Capacity</span>
-                            <span class="progress-value">{{ Math.round((pixelStatus.pixels_available / pixelStatus.pixel_limit) * 100) }}%</span>
-                        </div>
-                        <div class="pixel-progress-bar">
-                            <div 
-                                class="pixel-progress-fill" 
-                                :style="{ width: `${(pixelStatus.pixels_available / pixelStatus.pixel_limit) * 100}%` }"
-                            ></div>
-                        </div>
-                        <div v-if="pixelStatus.time_until_regeneration > 0" class="regen-timer">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clip-rule="evenodd"/>
-                            </svg>
-                            Refill in {{ Math.ceil(pixelStatus.time_until_regeneration) }}s
-                        </div>
-                    </div>
-                    
                     <div v-if="pixelStatus.level_progress" class="level-progress-section">
                         <div class="progress-header">
                             <span class="progress-label">Progress to Level {{ pixelStatus.level_progress.next_level }}</span>
@@ -378,7 +359,6 @@ onUnmounted(() => {
     font-weight: 500;
 }
 
-.progress-section,
 .level-progress-section {
     padding: 12px;
     background: white;
@@ -405,39 +385,6 @@ onUnmounted(() => {
     font-weight: 600;
 }
 
-.pixel-progress-bar {
-    width: 100%;
-    height: 8px;
-    background: #e5e7eb;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.pixel-progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #22c55e 0%, #10b981 100%);
-    border-radius: 4px;
-    transition: width 0.3s ease;
-}
-
-.regen-timer {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 8px;
-    font-size: 12px;
-    color: #f59e0b;
-    font-weight: 500;
-}
-
-.regen-timer svg {
-    width: 14px;
-    height: 14px;
-}
-
-.level-progress-section {
-    margin-top: 0;
-}
 
 .level-progress-bar {
     width: 100%;

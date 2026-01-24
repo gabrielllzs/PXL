@@ -11,7 +11,7 @@ const MIN_AUDIO_INTERVAL = 50
 
 function initAudioPool() {
     if (audioPool.length > 0) return
-    
+
     for (let i = 0; i < POOL_SIZE; i++) {
         const audio = new Audio(pixelPlaceSound)
         audio.volume = 0.8
