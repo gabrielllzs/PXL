@@ -5,6 +5,8 @@ import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import AuthModal from '@/components/auth/AuthModal.vue'
 import VerifyEmailModal from '@/components/auth/VerifyEmailModal.vue'
+import ForgotPasswordModal from '@/components/auth/ForgotPasswordModal.vue'
+import EmailChangeModal from '@/components/auth/EmailChangeModal.vue'
 import UserMenu from '@/components/auth/UserMenu.vue'
 
 defineProps({
@@ -20,6 +22,8 @@ const { showToast } = useToast()
 const showAuthModal = ref(false)
 const authMode = ref('login')
 const showVerifyModal = ref(false)
+const showForgotPasswordModal = ref(false)
+const showEmailChangeModal = ref(false)
 const verificationEmail = ref('')
 const resendingCode = ref(false)
 
@@ -131,12 +135,24 @@ onMounted(checkAuth)
             :initial-mode="authMode"
             @success="handleAuthSuccess"
             @verify="handleAuthVerify"
+            @forgotPassword="showForgotPasswordModal = true"
         />
 
         <VerifyEmailModal
             v-model="showVerifyModal"
             :email="verificationEmail"
             @success="handleVerifySuccess"
+            @changeEmail="showEmailChangeModal = true"
+        />
+
+        <ForgotPasswordModal
+            v-model="showForgotPasswordModal"
+            @success="showAuthModal = false"
+        />
+
+        <EmailChangeModal
+            v-model="showEmailChangeModal"
+            @success="showVerifyModal = false"
         />
     </div>
 </template>
