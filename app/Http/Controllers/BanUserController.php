@@ -11,8 +11,9 @@ class BanUserController extends Controller
     public function ban(Request $request)
     {
         $validated = $request->validate([
-            'visitor_id' => 'required|string',
-            'ip_address' => 'required|string',
+            'user_id' => 'nullable|exists:users,id',
+            'visitor_id' => 'nullable|string',
+            'ip_address' => 'nullable|string',
             'reason' => 'required|string|max:500',
             'hide_pixels' => 'boolean',
             'is_permanent' => 'boolean',
@@ -21,8 +22,9 @@ class BanUserController extends Controller
 
         // Create banned user record
         $bannedUser = BannedUser::create([
-            'visitor_id' => $validated['visitor_id'],
-            'ip_address' => $validated['ip_address'],
+            'user_id' => $validated['user_id'] ?? null,
+            'visitor_id' => $validated['visitor_id'] ?? null,
+            'ip_address' => $validated['ip_address'] ?? null,
             'reason' => $validated['reason'],
             'banned' => true,
             'hide_pixels' => $validated['hide_pixels'] ?? false,
@@ -36,36 +38,24 @@ class BanUserController extends Controller
         ]);
     }
 
-    public function getBannedMetrics()
-    {
-        $now = now();
-
-        $total_records = Pixel::count();
-        $active_banned_count = BannedUser::where('banned', true)->count();
-        $permanent_count = BannedUser::where('is_permanent', true)->count();
-        $temporary_count = BannedUser::where('is_permanent', false)
-            ->whereNotNull('banned_until')
-            ->where('banned_until', '>', $now)
-            ->count();
-
-        $metrics = [
-            'current'   => $active_banned_count,
-            'permanent' => $permanent_count,
-            'temporary' => $temporary_count,
-            'total'     => $total_records
-        ];
-
-        return response()->json($metrics, 200);
-    }
-
     public function getBannedVisitors()
     {
-        $bannedVisitors = BannedUser::where('banned', true)->get();
+        $bannedVisitors = BannedUser::with('user:id,username,email')
+            ->where('banned', true)
+            ->get();
 
-        if ($bannedVisitors->isNotEmpty()) {
-            return response()->json($bannedVisitors, 200);
-        } else {
-            return response()->json(['message' => 'No banned visitors found'], 200);
-        }
+        return response()->json($bannedVisitors, 200);
+    }
+
+    public function unban(Request $request, $id)
+    {
+        $bannedUser = BannedUser::findOrFail($id);
+        
+        $bannedUser->save();
+
+        return response()->json([
+            'message' => 'User unbanned successfully',
+            'banned_user' => $bannedUser
+        ]);
     }
 }
