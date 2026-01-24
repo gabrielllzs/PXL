@@ -51,7 +51,7 @@ onMounted(async () => {
             <div id="main-panel-header">
                 <h2>//{{ activePage }}</h2>
                 <p v-if="user" class="user-status">
-                   {{ user.name }}
+                   {{ user.username }}
                 </p>
             </div>
             <div id="main-panel-content">
