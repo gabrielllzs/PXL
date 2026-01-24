@@ -13,6 +13,7 @@ class User extends Authenticatable
     protected $fillable = [
         'username',
         'email',
+        'new_email',
         'password',
         'country',
         'is_admin',
@@ -31,6 +32,7 @@ class User extends Authenticatable
         'email_verification_code',
         'email_verification_code_expires_at',
         'email_verified_at',
+        'new_email',
         'is_admin',
         'created_at',
         'updated_at',
