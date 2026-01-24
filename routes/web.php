@@ -33,6 +33,8 @@ Route::post('/login', [HandleAuthController::class, 'handleLogin']);
 Route::post('/register', [HandleAuthController::class, 'handleRegister'])->middleware('guest');
 Route::post('/verify-email', [HandleAuthController::class, 'verifyEmail'])->middleware('auth', 'throttle:5,1');
 Route::post('/resend-verification', [HandleAuthController::class, 'resendVerificationCode'])->middleware('auth' , 'throttle:3,1');
+Route::post('/forgot-password', [HandleAuthController::class, 'forgotPassword'])->middleware('throttle:3,1');
+Route::post('/reset-password', [HandleAuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 
 
 
@@ -52,6 +54,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/group/create', [GroupController::class, 'create']);
     Route::post('/group/join', [GroupController::class, 'joinGroup']);
     Route::post('/group/leave', [GroupController::class, 'leaveGroup']);
+    Route::post('/change-email', [HandleAuthController::class, 'changeEmail'])->middleware('throttle:3,1');
+    Route::post('/verify-email-change', [HandleAuthController::class, 'verifyEmailChange'])->middleware('throttle:5,1');
 });
 
 Route::middleware(['auth', 'admin'])->group(function () {
