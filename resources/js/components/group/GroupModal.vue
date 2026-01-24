@@ -1,12 +1,13 @@
 <script setup>
-import {computed, ref, watch} from 'vue'
+import {computed, ref, watch, inject} from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import GroupLinkModal from './GroupLinkModal.vue'
 import CreateGroupModal from './CreateGroupModal.vue'
 
-const { fetchGroup, group } = useAuth()
+const { fetchGroup, group, user, isAuthenticated } = useAuth()
 const { showToast } = useToast()
+const openLogin = inject('openLogin', null)
 
 const hasGroup = computed(() => group.value !== null)
 
@@ -118,6 +119,14 @@ async function joinGroupByCode(code) {
 }
 
 function openCreateModal() {
+    if (!isAuthenticated()) {
+        close()
+        if (openLogin) {
+            openLogin()
+        }
+        showToast('Please log in to create a group', 'info')
+        return
+    }
     showCreateModal.value = true
 }
 

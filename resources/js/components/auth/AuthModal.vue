@@ -52,6 +52,12 @@ async function handleLogin() {
     const result = await login(email.value, password.value, rememberMe.value)
     if (result.success) {
         showToast('Logged in successfully!', 'success')
+        // Check if we joined a group via invite code
+        if (result.inviteResult?.success) {
+            showToast(result.inviteResult.message || 'Joined group successfully!', 'success')
+        } else if (result.inviteResult?.error) {
+            showToast(result.inviteResult.error, 'error')
+        }
         emit('success')
         emit('update:modelValue', false)
     } else {
@@ -69,6 +75,12 @@ async function handleRegister() {
     )
     if (result.success) {
         showToast('Account created! Please verify your email.', 'success')
+        // Check if we joined a group via invite code (though they'll need to verify email first)
+        if (result.inviteResult?.success) {
+            showToast(result.inviteResult.message || 'Joined group successfully!', 'success')
+        } else if (result.inviteResult?.error) {
+            // Don't show error for invite - they can join after verification
+        }
         emit('verify', email.value)
         emit('update:modelValue', false)
     } else {

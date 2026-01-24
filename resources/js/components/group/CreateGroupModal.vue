@@ -1,7 +1,7 @@
 <script setup>
     import { ref, watch, nextTick } from 'vue'
     import { useToast } from '@/composables/useToast'
-    
+
     const emit = defineEmits(['update:modelValue', 'created'])
     const props = defineProps({
         modelValue: {
@@ -9,12 +9,12 @@
             default: false
         }
     })
-    
+
     const { showToast } = useToast()
     const groupName = ref('')
     const isCreating = ref(false)
     const nameInput = ref(null)
-    
+
     watch(() => props.modelValue, (isOpen) => {
         if (isOpen) {
             groupName.value = ''
@@ -25,17 +25,17 @@
             })
         }
     })
-    
+
     function close() {
         emit('update:modelValue', false)
     }
-    
+
 async function handleCreate() {
     if (!groupName.value.trim()) return
     isCreating.value = true
     try {
         const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-        const res = await fetch('/api/group/create', {
+        const res = await fetch('/group/create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -44,7 +44,25 @@ async function handleCreate() {
             },
             body: JSON.stringify({ name: groupName.value.trim() })
         })
-        if (!res.ok) throw new Error('Failed to create group')
+
+        if (!res.ok) {
+            let errorMessage = 'Could not create group'
+            try {
+                const data = await res.json()
+                if (data?.errors?.name) {
+                    errorMessage = Array.isArray(data.errors.name) ? data.errors.name[0] : data.errors.name
+                } else if (data?.error) {
+                    errorMessage = data.error
+                } else if (data?.message) {
+                    errorMessage = data.message
+                }
+            } catch (e) {
+                // If JSON parsing fails, use default message
+            }
+            showToast(errorMessage, 'error')
+            return
+        }
+
         showToast('Group created successfully', 'success')
         emit('created')
         close()
@@ -65,11 +83,11 @@ async function handleCreate() {
                 <div class="form-group">
                     <label class="label-text" for="group-name">Name</label>
                     <div class="input-wrapper">
-                        <input 
+                        <input
                             id="group-name"
-                            class="form-input" 
-                            type="text" 
-                            placeholder="Group Name" 
+                            class="form-input"
+                            type="text"
+                            placeholder="Group Name"
                             maxlength="16"
                             v-model="groupName"
                             :disabled="isCreating"

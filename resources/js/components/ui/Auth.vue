@@ -16,7 +16,7 @@ defineProps({
     }
 })
 
-const { user, loading, checkAuth, isEmailVerified } = useAuth()
+const { user, loading, checkAuth, isEmailVerified, checkInviteCodeOnLoad, processPendingInviteCode } = useAuth()
 const { showToast } = useToast()
 
 const showAuthModal = ref(false)
@@ -46,26 +46,41 @@ function openVerify(email) {
     showAuthModal.value = false
 }
 
-function handleAuthSuccess() {
+async function handleAuthSuccess() {
     showAuthModal.value = false
+    const inviteResult = await processPendingInviteCode()
+    if (inviteResult) {
+        if (inviteResult.success) {
+            showToast(inviteResult.message || 'Joined group successfully!', 'success')
+        } else {
+            showToast(inviteResult.error || 'Could not join group', 'error')
+        }
+    }
 }
 
 function handleAuthVerify(email) {
     openVerify(email)
 }
 
-// Expose function to open verify modal from outside
 async function showVerifyModalForUser() {
-    // Refresh auth state first to get latest user data
     await checkAuth()
     if (user.value?.email) {
         openVerify(user.value.email)
     }
 }
 
-function handleVerifySuccess() {
+async function handleVerifySuccess() {
     showVerifyModal.value = false
-    // Auth state will be refreshed by VerifyEmailModal
+    // Check for pending invite code after email verification
+    await checkAuth()
+    const inviteResult = await processPendingInviteCode()
+    if (inviteResult) {
+        if (inviteResult.success) {
+            showToast(inviteResult.message || 'Joined group successfully!', 'success')
+        } else if (inviteResult.error) {
+            showToast(inviteResult.error, 'error')
+        }
+    }
 }
 
 async function resendVerificationCode() {
@@ -93,10 +108,25 @@ async function resendVerificationCode() {
 
 defineExpose({
     showVerifyModal: showVerifyModalForUser,
-    isEmailVerified: () => !!user.value?.email_verified
+    isEmailVerified: () => !!user.value?.email_verified,
+    openLogin
 })
 
-onMounted(checkAuth)
+onMounted(async () => {
+    await checkAuth()
+    // Check for invite code in URL
+    const inviteResult = await checkInviteCodeOnLoad()
+    if (inviteResult) {
+        if (inviteResult.needsAuth) {
+            // Open login modal if not authenticated
+            openLogin()
+        } else if (inviteResult.success) {
+            showToast(inviteResult.message || 'Joined group successfully!', 'success')
+        } else if (inviteResult.error) {
+            showToast(inviteResult.error || 'Could not join group', 'error')
+        }
+    }
+})
 </script>
 
 <template>

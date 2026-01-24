@@ -33,7 +33,8 @@ export function useAuth() {
             }
 
             await checkAuth()
-            return { success: true }
+            const inviteResult = await processPendingInviteCode()
+            return { success: true, inviteResult }
         } catch {
             return { success: false, error: 'Login failed' }
         } finally {
@@ -58,13 +59,13 @@ export function useAuth() {
             }
 
             await checkAuth()
-            return { success: true }
+            const inviteResult = await processPendingInviteCode()
+            return { success: true, inviteResult }
         } catch (err) {
             if (err.response?.status === 422 && err.response?.data?.errors) {
-                // Laravel validation errors
                 const errors = err.response.data.errors
                 const errorMessages = []
-                
+
                 if (errors.username) {
                     errorMessages.push('Username already exists')
                 }
@@ -74,7 +75,7 @@ export function useAuth() {
                 if (errors.password) {
                     errorMessages.push(errors.password[0] || 'Invalid password')
                 }
-                
+
                 return {
                     success: false,
                     error: errorMessages.length > 0 ? errorMessages.join(', ') : 'Validation failed',
@@ -123,12 +124,103 @@ export function useAuth() {
                 group.value = null
                 return null
             }
-            // Other 
+            // Other
             group.value = null
             return null
         } finally {
             loading.value = false
         }
+    }
+
+    async function joinGroupByInviteCode(inviteCode) {
+        if (!inviteCode || !user.value) return { success: false, error: 'Not authenticated' }
+        if (group.value) return { success: false, error: 'Already in a group' }
+
+        loading.value = true
+        try {
+            const response = await axios.post('/group/join', {
+                invite_code: inviteCode
+            })
+
+            if (response.data) {
+                await fetchGroup()
+                // Remove invite code from URL
+                const url = new URL(window.location.href)
+                url.searchParams.delete('invite')
+                window.history.replaceState({}, '', url.toString())
+                return { success: true, message: response.data.message || 'Joined group successfully' }
+            }
+            return { success: false, error: 'Failed to join group' }
+        } catch (err) {
+            const errorMsg = err.response?.data?.error || 'Could not join group'
+            return { success: false, error: errorMsg }
+        } finally {
+            loading.value = false
+        }
+    }
+
+    function getInviteCodeFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search)
+        return urlParams.get('invite')
+    }
+
+    function storeInviteCode(inviteCode) {
+        if (inviteCode) {
+            sessionStorage.setItem('pending_invite_code', inviteCode)
+        }
+    }
+
+    function getStoredInviteCode() {
+        return sessionStorage.getItem('pending_invite_code')
+    }
+
+    function clearStoredInviteCode() {
+        sessionStorage.removeItem('pending_invite_code')
+    }
+
+    async function checkInviteCodeOnLoad() {
+        const urlParams = new URLSearchParams(window.location.search)
+        const inviteCode = urlParams.get('invite')
+
+        // Store invite code if present in URL
+        if (inviteCode) {
+            storeInviteCode(inviteCode)
+            // Remove from URL to keep it clean
+            const url = new URL(window.location.href)
+            url.searchParams.delete('invite')
+            window.history.replaceState({}, '', url.toString())
+        }
+
+        // If authenticated, try to join
+        if (user.value) {
+            const codeToUse = inviteCode || getStoredInviteCode()
+            if (codeToUse && !group.value) {
+                const result = await joinGroupByInviteCode(codeToUse)
+                if (result?.success) {
+                    clearStoredInviteCode()
+                }
+                return result
+            }
+        }
+
+        // Return invite code if not authenticated (so UI can open login)
+        if (inviteCode || getStoredInviteCode()) {
+            return { needsAuth: true, inviteCode: inviteCode || getStoredInviteCode() }
+        }
+
+        return null
+    }
+
+    async function processPendingInviteCode() {
+        const storedCode = getStoredInviteCode()
+        if (storedCode && user.value && !group.value) {
+            const result = await joinGroupByInviteCode(storedCode)
+            if (result?.success) {
+                clearStoredInviteCode()
+            }
+            return result
+        }
+        return null
     }
 
     return {
@@ -140,6 +232,10 @@ export function useAuth() {
         register,
         logout,
         fetchGroup,
+        joinGroupByInviteCode,
+        checkInviteCodeOnLoad,
+        processPendingInviteCode,
+        getStoredInviteCode,
         isAuthenticated: () => user.value !== null,
         isEmailVerified
     }

@@ -37,7 +37,7 @@
 </template>
 
 <script setup>
-import { ref, defineAsyncComponent, watch, computed, onMounted, onUnmounted } from 'vue'
+import { ref, defineAsyncComponent, watch, computed, onMounted, onUnmounted, provide, watchEffect } from 'vue'
 import { ColorPicker, CooldownInfo, Auth, SideMenu, Buttons, WelcomeModal } from '@/components/ui'
 import ToastContainer from '@/components/ToastContainer.vue'
 import PaintButton from '@/components/ui/PaintButton.vue'
@@ -58,6 +58,11 @@ const showWelcome = ref(false)
 
 const { cooldown } = usePixels()
 const { isAuthenticated, user } = useAuth()
+
+// Provide openLogin function from Auth component to child components
+provide('openLogin', () => {
+    authRef.value?.openLogin?.()
+})
 
 const isPaintDisabled = computed(() => 
     isAuthenticated() && pixelCount.value !== null && pixelCount.value <= 0

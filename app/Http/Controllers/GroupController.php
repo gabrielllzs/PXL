@@ -27,7 +27,7 @@ class GroupController extends Controller
     public function create(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:16',
+            'name' => ['required', 'string', 'max:16', 'unique:groups,name'],
         ]);
 
         $user = Auth::user();
