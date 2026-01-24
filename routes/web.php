@@ -21,6 +21,7 @@ Route::get('/feedback', function () { return view('feedback'); });
 Route::get('/api/map-data', [PixelController::class, 'index']);
 Route::post('/api/pixel', [PixelController::class, 'store']);
 Route::get('/api/cooldown', [PixelController::class, 'cooldown']);
+Route::post('/api/feedback', [FeedbackController::class, 'store']);
 
 Route::prefix('leaderboard')->group(function () {
     Route::get('/groups', [GroupController::class, 'index']);
@@ -58,4 +59,5 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/visitors', [PixelController::class, 'getVisitors']);
     Route::get('/banned-visitors', [BanUserController::class, 'getBannedVisitors']);
     Route::post('/ban-visitors', [BanUserController::class, 'ban']);
+    Route::get('/admin/feedback', [FeedbackController::class, 'index']);
 });
