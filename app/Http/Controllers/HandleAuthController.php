@@ -205,4 +205,191 @@ class HandleAuthController extends Controller
             'message' => 'Verification code sent successfully!',
         ]);
     }
+
+    public function changeEmail(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'error' => 'You must be logged in to change your email.',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'new_email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'password' => ['required'],
+        ]);
+
+        if ($validated['new_email'] === $user->email) {
+            return response()->json([
+                'success' => false,
+                'error' => 'This is already your current email address.',
+            ], 400);
+        }
+
+        if (!Hash::check($validated['password'], $user->password)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Invalid password.',
+            ], 400);
+        }
+
+        $verificationCode = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expiresAt = now()->addMinutes(15);
+
+        $user->email_verification_code = $verificationCode;
+        $user->email_verification_code_expires_at = $expiresAt;
+        $user->new_email = $validated['new_email'];
+        $user->save();
+
+        try {
+            Mail::to($validated['new_email'])->send(new EmailVerification($verificationCode, $user->username));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send email change verification: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to send verification email. Please try again later.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Verification code sent to your new email address.',
+        ]);
+    }
+
+    public function verifyEmailChange(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'error' => 'You must be logged in to verify email change.',
+            ], 401);
+        }
+
+        $request->validate([
+            'code' => ['required', 'string', 'size:6'],
+        ]);
+
+        if (!$user->email_verification_code || !$user->email_verification_code_expires_at || !$user->new_email) {
+            return response()->json([
+                'success' => false,
+                'error' => 'No email change request found.',
+            ], 400);
+        }
+
+        if (now()->isAfter($user->email_verification_code_expires_at)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Verification code has expired. Please request a new one.',
+            ], 400);
+        }
+
+        if ($user->email_verification_code !== $request->code) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Invalid verification code.',
+            ], 400);
+        }
+
+        $emailExists = User::where('email', $user->new_email)
+            ->where('id', '!=', $user->id)
+            ->exists();
+
+        if ($emailExists) {
+            return response()->json([
+                'success' => false,
+                'error' => 'This email address is already in use. Please request a change to a different email.',
+            ], 400);
+        }
+
+        $user->email = $user->new_email;
+        $user->new_email = null;
+        $user->email_verified = false;
+        $user->email_verification_code = null;
+        $user->email_verification_code_expires_at = null;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Email changed successfully! Please verify your new email.',
+        ]);
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email', 'exists:users,email'],
+        ]);
+
+        $user = User::where('email', $validated['email'])->first();
+
+        $resetCode = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expiresAt = now()->addMinutes(15);
+
+        $user->email_verification_code = $resetCode;
+        $user->email_verification_code_expires_at = $expiresAt;
+        $user->save();
+
+        try {
+            Mail::to($user->email)->send(new EmailVerification($resetCode, $user->username));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send password reset email: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to send reset code. Please try again later.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset code sent to your email.',
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email', 'exists:users,email'],
+            'code' => ['required', 'string', 'size:6'],
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ]);
+
+        $user = User::where('email', $validated['email'])->first();
+
+        if (!$user->email_verification_code || !$user->email_verification_code_expires_at) {
+            return response()->json([
+                'success' => false,
+                'error' => 'No reset code found. Please request a new one.',
+            ], 400);
+        }
+
+        if (now()->isAfter($user->email_verification_code_expires_at)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Reset code has expired. Please request a new one.',
+            ], 400);
+        }
+
+        if ($user->email_verification_code !== $validated['code']) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Invalid reset code.',
+            ], 400);
+        }
+
+        $user->password = Hash::make($validated['password']);
+        $user->email_verification_code = null;
+        $user->email_verification_code_expires_at = null;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset successfully!',
+        ]);
+    }
 }
