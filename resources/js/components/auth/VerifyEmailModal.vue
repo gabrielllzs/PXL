@@ -15,7 +15,7 @@ const props = defineProps({
     }
 })
 
-const emit = defineEmits(['update:modelValue', 'success'])
+const emit = defineEmits(['update:modelValue', 'success', 'changeEmail'])
 
 const { checkAuth, loading } = useAuth()
 const { showToast } = useToast()
@@ -94,6 +94,13 @@ function close() {
                         :disabled="resendingCode"
                     >
                         {{ resendingCode ? 'Sending...' : "Didn't receive code? Resend" }}
+                    </button>
+                    <button
+                        type="button"
+                        class="btn-link change-email-link"
+                        @click="$emit('changeEmail')"
+                    >
+                        Change email address
                     </button>
                 </div>
             </form>
@@ -187,6 +194,11 @@ function close() {
     flex-direction: column;
     gap: 12px;
     margin-top: 20px;
+}
+
+.change-email-link {
+    margin-top: 4px;
+    font-size: 13px;
 }
 
 .btn-primary {
