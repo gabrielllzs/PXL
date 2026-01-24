@@ -14,7 +14,7 @@ const props = defineProps({
     }
 })
 
-const emit = defineEmits(['update:modelValue', 'success', 'verify'])
+const emit = defineEmits(['update:modelValue', 'success', 'verify', 'forgotPassword'])
 
 const { login, register, loading } = useAuth()
 const { showToast } = useToast()
@@ -202,6 +202,16 @@ function close() {
                     <span class="checkbox-custom"></span>
                     <span class="checkbox-label">Remember me</span>
                 </label>
+                
+                <!-- Forgot password link (Login only) -->
+                <button 
+                    v-if="mode === 'login'" 
+                    type="button" 
+                    class="btn-link forgot-password"
+                    @click="$emit('forgotPassword')"
+                >
+                    Forgot password?
+                </button>
                 
                 <button type="submit" class="btn-primary" :class="mode" :disabled="loading">
                     <span v-if="!loading">{{ mode === 'login' ? 'Sign in' : 'Create account' }}</span>
@@ -570,6 +580,13 @@ function close() {
 
 .btn-link.register:hover {
     color: #059669;
+}
+
+.forgot-password {
+    margin-top: -8px;
+    margin-bottom: 4px;
+    text-align: center;
+    font-size: 13px;
 }
 
 @media (max-width: 640px) {
