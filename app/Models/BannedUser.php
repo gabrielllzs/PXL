@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class BannedUser extends Model
 {
     protected $fillable = [
+        'user_id',
         'visitor_id',
         'ip_address',
         'reason',
@@ -22,4 +23,9 @@ class BannedUser extends Model
         'banned_until' => 'datetime',
         'banned' => 'boolean',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
