@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\PixelPlaced;
+use App\Models\BannedUser;
 use App\Models\Pixel;
 use App\Models\User;
 use App\Services\PixelCounterService;
@@ -35,6 +36,27 @@ class PixelController extends Controller
         $user = auth()->user();
         $isAuthenticated = auth()->check();
 
+        if ($isAuthenticated && $user) {
+            $bannedUser = BannedUser::where('user_id', $user->id)
+                ->where(function ($query) {
+                    $query->where('is_permanent', true)
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('banned_until')
+                                ->where('banned_until', '>', now());
+                        });
+                })
+                ->first();
+
+            if ($bannedUser) {
+                return response()->json([
+                    'error' => 'banned',
+                    'reason' => $bannedUser->reason ?? 'You have been banned from placing pixels.',
+                    'is_permanent' => $bannedUser->is_permanent,
+                    'banned_until' => $bannedUser->banned_until ? $bannedUser->banned_until->toIso8601String() : null,
+                ], 403);
+            }
+        }
+
         $request->validate([
             'x' => 'required|integer',
             'y' => 'required|integer',
@@ -46,6 +68,29 @@ class PixelController extends Controller
                     ? 'nullable|string'
                     : 'required|string'),
         ]);
+
+        // Check if visitor is banned (after validation to ensure visitorId is present)
+        if (!$isAuthenticated) {
+            $visitorId = $request->input('visitorId');
+            $bannedVisitor = BannedUser::where('visitor_id', $visitorId)
+                ->where(function ($query) {
+                    $query->where('is_permanent', true)
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('banned_until')
+                                ->where('banned_until', '>', now());
+                        });
+                })
+                ->first();
+
+            if ($bannedVisitor) {
+                return response()->json([
+                    'error' => 'banned',
+                    'reason' => $bannedVisitor->reason ?? 'You have been banned from placing pixels.',
+                    'is_permanent' => $bannedVisitor->is_permanent,
+                    'banned_until' => $bannedVisitor->banned_until ? $bannedVisitor->banned_until->toIso8601String() : null,
+                ], 403);
+            }
+        }
 
         // Only check captcha for visitors
         if (!$isAuthenticated && !$request->session()->get('captcha_verified', false)) {

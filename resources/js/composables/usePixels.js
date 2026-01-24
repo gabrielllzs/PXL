@@ -95,6 +95,16 @@ export function usePixels() {
                 throw { type: 'no_pixels_available', message: msg }
             } else if (status === 403 && data?.error === 'email_not_verified') {
                 throw { type: 'email_not_verified', message: data?.message || 'Please verify your email' }
+            } else if (status === 403 && data?.error === 'banned') {
+                let message = data?.reason || 'You have been banned from placing pixels.'
+                if (data?.is_permanent) {
+                    message += ' (Permanent ban)'
+                } else if (data?.banned_until) {
+                    const expiryDate = new Date(data.banned_until)
+                    message += ` (Ban expires: ${expiryDate.toLocaleString()})`
+                }
+                showToast(message, 'error')
+                throw { type: 'banned', message, reason: data?.reason, is_permanent: data?.is_permanent, banned_until: data?.banned_until }
             } else {
                 console.error('Unexpected error:', err)
             }
