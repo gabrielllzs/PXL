@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('banned_users', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->string('visitor_id')->nullable();
             $table->string('ip_address')->nullable();
             $table->string('reason')->nullable();
@@ -23,6 +24,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['visitor_id', 'banned']);
+            $table->index(['user_id', 'banned']);
             $table->index('created_at');
         });
     }
