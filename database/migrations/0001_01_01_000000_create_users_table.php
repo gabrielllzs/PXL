@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('username')->unique();
             $table->string('email')->unique();
+            $table->string('new_email')->nullable();
             $table->string('password');
             $table->string('country', 2)->nullable();
             $table->integer('pixels_placed')->default(0)->index();
