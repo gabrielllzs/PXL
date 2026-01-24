@@ -26,8 +26,7 @@ async function handleSubmit() {
 
     loading.value = true
     try {
-        const endpoint = type.value === 'bug' ? '/api/bug-report' : '/api/suggestion'
-        await axios.post(endpoint, {
+        await axios.post('api/feedback', {
             email: email.value,
             username: username.value,
             message: message.value,
@@ -104,7 +103,7 @@ async function handleSubmit() {
                         <button type="submit" class="btn-primary" :disabled="loading || !message.trim()">
                             {{ loading ? 'Submitting...' : 'Submit' }}
                         </button>
-                        <a href="/public" class="btn-secondary">Back to Canvas</a>
+                        <a href="/" class="btn-secondary">Back to Canvas</a>
                     </div>
                 </form>
             </div>
