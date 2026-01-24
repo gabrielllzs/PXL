@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\PixelPlaced;
 use App\Models\Pixel;
+use App\Models\User;
 use App\Services\PixelCounterService;
 use App\Services\LevelService;
 use Illuminate\Http\Request;
@@ -146,13 +147,13 @@ class PixelController extends Controller
         $leveledUp = false;
         if ($isAuthenticated && $user) {
             $user->refresh();
-            
+
             $newPixelCount = max(0, $user->pixels_available - 1);
             $user->update([
                 'pixels_available' => $newPixelCount,
                 'last_pixel_regeneration_time' => now(),
             ]);
-            
+
             $user->refresh();
             $result = $this->levelService->updateUserLevel($user, skipRegeneration: true);
             $leveledUp = $result['leveled_up'] ?? false;
@@ -230,21 +231,27 @@ class PixelController extends Controller
         ];
     }
 
-    public function getVisitors()
+    public function getUsers()
     {
-        return Pixel::query()
-            ->select('visitor_id', 'ip_address', 'risk_score', 'created_at')
-            ->whereIn('id', function ($query) {
-                $query->selectRaw('MAX(id)')
-                    ->from('pixels')
-                    ->groupBy('visitor_id');
-            })
-            ->whereNotIn('visitor_id', function ($query) {
-                $query->select('visitor_id')
+        $users = User::select('id', 'username', 'email')->get();
+
+        $anonymousVisitors = Pixel::query()
+            ->whereNull('user_id')
+            ->whereNotIn('visitor_id', function ($q) {
+                $q->select('visitor_id')
                     ->from('banned_users')
                     ->where('banned', true);
             })
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->orderBy('id', 'desc')
+            ->get()
+            ->unique('visitor_id')
+            ->values();
+
+        return [
+            'users' => $users,
+            'anonymous_visitors' => $anonymousVisitors,
+        ];
+
+
     }
 }
