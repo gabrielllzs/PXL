@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('email');
             $table->string('username')->nullable();
             $table->text('message');
+            $table->boolean('is_hidden')->default(false);
             $table->enum('type', ['suggestion', 'bug'])->default('suggestion');
             $table->timestamps();
 

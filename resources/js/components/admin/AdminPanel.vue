@@ -1,18 +1,29 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import Dashboard from './Dashboard.vue'
 import UserBans from './UserBans.vue';
 import SupportTickets from "./SupportTickets.vue";
 
+const STORAGE_KEY = 'admin:activePage'
+const validPages = ['dashboard', 'user bans', 'Feedback tickets']
+
 const user = ref(null)
-const activePage = ref('dashboard')
+const activePage = ref(localStorage.getItem(STORAGE_KEY) || 'dashboard')
+
+// Validate stored page
+if (!validPages.includes(activePage.value)) {
+    activePage.value = 'dashboard'
+}
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+
+watch(activePage, (page) => {
+    localStorage.setItem(STORAGE_KEY, page)
+})
 
 onMounted(async () => {
     const response = await fetch('/api/me', { credentials: 'include' })
     if (response.ok) user.value = await response.json()
-
 })
 </script>
 
