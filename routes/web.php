@@ -56,7 +56,7 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/server/metrics', [ServerMetricsController::class, 'index']);
-    Route::get('/visitors', [PixelController::class, 'getVisitors']);
+    Route::get('/users', [PixelController::class, 'getUsers']);
     Route::get('/banned-visitors', [BanUserController::class, 'getBannedVisitors']);
     Route::post('/ban-visitors', [BanUserController::class, 'ban']);
     Route::get('/admin/feedback', [FeedbackController::class, 'index']);
