@@ -1,75 +1,83 @@
 <script setup>
+import { ref, computed, onMounted } from 'vue'
 
+const tickets = ref([])
+const loading = ref(true)
+const filter = ref('all')
+
+const filteredTickets = computed(() => {
+    if (filter.value === 'all') return tickets.value
+    return tickets.value.filter(ticket => ticket.type === filter.value)
+})
+
+const bugCount = computed(() => tickets.value.filter(ticket => ticket.type === 'bug').length)
+const suggestionCount = computed(() => tickets.value.filter(ticket => ticket.type === 'suggestion').length)
+
+onMounted(async () => {
+    try {
+        const res = await fetch('/admin/feedback')
+        if (res.ok) tickets.value = await res.json()
+    } catch (e) {
+        console.error('Failed to load tickets:', e)
+    } finally {
+        loading.value = false
+    }
+})
 </script>
+
 <template>
-    <div id="dashboard">
+    <div id="support-tickets">
         <div class="pixel-card">
             <h1>Support Tickets</h1>
-
             <div class="stat-row">
                 <div class="stat-item">
-                    <span class="label">TOTAL TICKETS</span>
-                    <span class="value">1,024</span>
+                    <span class="label">TOTAL</span>
+                    <span class="value">{{ tickets.length }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">BUGS</span>
+                    <span class="value bug">{{ bugCount }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">SUGGESTIONS</span>
+                    <span class="value suggestion">{{ suggestionCount }}</span>
                 </div>
             </div>
         </div>
-        <div v-if="metrics" class="metrics-grid">
 
-            <div class="pixel-card metric-card">
-                <h3>CPU Load</h3>
-                <div class="stat-row">
-                    <div class="stat-item">
-                        <span class="label">CURRENT</span>
-                        <span class="value">5</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="label">AVG / MAX</span>
-                        <span class="sub-value">Avg: {{ metrics.cpu.average }}%</span>
-                        <span class="sub-value">Max: {{ metrics.cpu.maximum  }}%</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="pixel-card metric-card">
-                <h3>Network In</h3>
-                <div class="stat-row">
-                    <div class="stat-item">
-                        <span class="label">CURRENT</span>
-                        <span class="value">{{ formatBytes(metrics.network_in.current) }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="label">PEAK</span>
-                        <span class="value">{{ formatBytes(metrics.network_in.maximum) }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="pixel-card metric-card">
-                <h3>Network Out</h3>
-                <div class="stat-row">
-                    <div class="stat-item">
-                        <span class="label">CURRENT</span>
-                        <span class="value">{{ formatBytes(metrics.network_out.current) }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="label">PEAK</span>
-                        <span class="value">{{ formatBytes(metrics.network_out.maximum) }}</span>
-                    </div>
-                </div>
-            </div>
-
+        <div class="filter-bar">
+            <button :class="{ active: filter === 'all' }" @click="filter = 'all'">All</button>
+            <button :class="{ active: filter === 'bug' }" @click="filter = 'bug'">Bugs</button>
+            <button :class="{ active: filter === 'suggestion' }" @click="filter = 'suggestion'">Suggestions</button>
         </div>
 
-        <div v-else class="pixel-card">
-            <p>Loading aws metrics...</p>
+        <div v-if="loading" class="pixel-card">
+            <p>Loading tickets...</p>
+        </div>
+
+        <div v-else-if="filteredTickets.length === 0" class="pixel-card">
+            <p>No tickets found.</p>
+        </div>
+
+        <div v-else class="tickets-list">
+            <div v-for="ticket in filteredTickets" :key="ticket.id" class="ticket-card">
+                <div class="ticket-header">
+                    <span class="ticket-type" :class="ticket.type">{{ ticket.type }}</span>
+                    <span class="ticket-date">{{ new Date(ticket.created_at).toLocaleString() }}</span>
+                </div>
+                <div class="ticket-info">
+                    <span class="ticket-email">{{ ticket.email }}</span>
+                    <span v-if="ticket.username" class="ticket-username">@{{ ticket.username }}</span>
+                </div>
+                <p class="ticket-message">{{ ticket.message }}</p>
+            </div>
         </div>
     </div>
 </template>
 
 <style scoped>
-#dashboard {
+#support-tickets {
     animation: fadeIn 0.3s ease-out;
-    margin: 0 auto;
 }
 
 .pixel-card {
@@ -81,24 +89,14 @@
     margin-bottom: 20px;
 }
 
-.metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-}
-
-.metric-card {
-    margin-bottom: 0; /* Override default margin for grid items */
-}
-
-h1, h3 {
+h1 {
     margin-top: 0;
     color: #e0e0e0;
 }
 
 .stat-row {
     display: flex;
-    justify-content: space-between;
+    gap: 40px;
     margin-top: 15px;
 }
 
@@ -119,9 +117,101 @@ h1, h3 {
     font-weight: bold;
 }
 
-.sub-value {
-    font-size: 0.9rem;
-    color: #bbb;
+.value.bug { color: #ff4d4d; }
+.value.suggestion { color: #4da6ff; }
+
+.filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.filter-bar button {
+    padding: 8px 16px;
+    background: #252525;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #888;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.filter-bar button:hover {
+    background: #333;
+    color: #fff;
+}
+
+.filter-bar button.active {
+    background: #444;
+    color: #fff;
+    border-color: #666;
+}
+
+.tickets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.ticket-card {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 16px;
+    color: white;
+}
+
+.ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.ticket-type {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.ticket-type.bug {
+    background: rgba(255, 77, 77, 0.2);
+    color: #ff4d4d;
+}
+
+.ticket-type.suggestion {
+    background: rgba(77, 166, 255, 0.2);
+    color: #4da6ff;
+}
+
+.ticket-date {
+    font-size: 12px;
+    color: #666;
+}
+
+.ticket-info {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 13px;
+}
+
+.ticket-email {
+    color: #aaa;
+}
+
+.ticket-username {
+    color: #888;
+}
+
+.ticket-message {
+    margin: 0;
+    color: #ddd;
+    line-height: 1.5;
+    white-space: pre-wrap;
 }
 
 @keyframes fadeIn {
