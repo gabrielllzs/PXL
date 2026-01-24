@@ -49,7 +49,12 @@ class GroupController extends Controller
             'role' => 'admin',
         ]);
 
-        return response()->json($group, 201);
+        return response()->json([
+            'id' => $group->id,
+            'name' => $group->name,
+            'pixels' => $group->pixels,
+            'invite_code' => $group->invite_code,
+        ], 201);
     }
 
     public function showMyGroup()
