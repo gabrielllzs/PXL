@@ -105,7 +105,7 @@ export function useAuth() {
     }
 
     function isEmailVerified() {
-        return !!user.value?.email_verified_at
+        return !!user.value?.email_verified
     }
 
     async function fetchGroup(){

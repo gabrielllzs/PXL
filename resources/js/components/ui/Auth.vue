@@ -89,7 +89,7 @@ async function resendVerificationCode() {
 
 defineExpose({
     showVerifyModal: showVerifyModalForUser,
-    isEmailVerified: () => user.value?.email_verified_at !== null
+    isEmailVerified: () => !!user.value?.email_verified
 })
 
 onMounted(checkAuth)

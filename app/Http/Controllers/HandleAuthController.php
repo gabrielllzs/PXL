@@ -122,7 +122,7 @@ class HandleAuthController extends Controller
             ], 401);
         }
 
-        if ($user->email_verified_at) {
+        if ($user->email_verified) {
             return response()->json([
                 'success' => false,
                 'error' => 'Email is already verified.',
@@ -151,6 +151,7 @@ class HandleAuthController extends Controller
         }
 
         // Verify the email
+        $user->email_verified = true;
         $user->email_verified_at = now();
         $user->email_verification_code = null;
         $user->email_verification_code_expires_at = null;
@@ -173,7 +174,7 @@ class HandleAuthController extends Controller
             ], 401);
         }
 
-        if ($user->email_verified_at) {
+        if ($user->email_verified) {
             return response()->json([
                 'success' => false,
                 'error' => 'Email is already verified.',

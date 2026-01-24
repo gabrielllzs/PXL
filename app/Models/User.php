@@ -18,6 +18,7 @@ class User extends Authenticatable
         'is_admin',
         'email_verification_code',
         'email_verification_code_expires_at',
+        'email_verified',
         'pixels_placed',
         'level',
         'pixels_available',
@@ -29,16 +30,37 @@ class User extends Authenticatable
         'remember_token',
         'email_verification_code',
         'email_verification_code_expires_at',
+        'email_verified_at',
+        'is_admin',
+        'created_at',
+        'updated_at',
     ];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'email_verified' => 'boolean',
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'last_pixel_regeneration_time' => 'datetime',
         ];
+    }
+
+
+    /**
+     * Get the attributes that should be visible in the model's array form.
+     * Only show is_admin if the current authenticated user is an admin.
+     */
+    public function toArray(): array
+    {
+        $array = parent::toArray();
+
+        if (auth()->check() && auth()->user()->isAdmin()) {
+            $array['is_admin'] = $this->is_admin;
+        }
+
+        return $array;
     }
 
     public function isAdmin(): bool

@@ -69,7 +69,6 @@ class PixelController extends Controller
                     : 'required|string'),
         ]);
 
-        // Check if visitor is banned (after validation to ensure visitorId is present)
         if (!$isAuthenticated) {
             $visitorId = $request->input('visitorId');
             $bannedVisitor = BannedUser::where('visitor_id', $visitorId)
@@ -121,7 +120,7 @@ class PixelController extends Controller
 
         // Check if authenticated user has verified their email
         if ($isAuthenticated) {
-            if (!$user->email_verified_at) {
+            if (!$user->email_verified) {
                 return response()->json([
                     'error' => 'email_not_verified',
                     'message' => 'Please verify your email before placing pixels.',
