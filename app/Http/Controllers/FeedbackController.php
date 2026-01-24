@@ -8,6 +8,11 @@ use Illuminate\Support\Facades\Log;
 
 class FeedbackController extends Controller
 {
+    public function index()
+    {
+        return Feedback::orderBy('created_at', 'desc')->get();
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -22,13 +27,6 @@ class FeedbackController extends Controller
             'username' => $validated['username'],
             'message' => $validated['message'],
             'type' => $validated['type'],
-        ]);
-
-        $logMessage = $validated['type'] === 'bug' ? 'Bug report submitted' : 'Suggestion submitted';
-        Log::info($logMessage, [
-            'feedback_id' => $feedback->id,
-            'email' => $feedback->email,
-            'type' => $feedback->type
         ]);
 
         return response()->json(['success' => true]);
