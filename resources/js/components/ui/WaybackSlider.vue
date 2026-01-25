@@ -94,7 +94,7 @@ function formatDate(date) {
     border-top: 2px solid rgba(0, 0, 0, 0.1);
     border-radius: 14px 14px 0 0;
     padding: 20px;
-    z-index: 3;
+    z-index: 2;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
     pointer-events: auto;
     box-sizing: border-box;

@@ -192,7 +192,7 @@ onMounted(async () => {
     position: fixed;
     top: 16px;
     right: 16px;
-    z-index: 2;
+    z-index: 3;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
