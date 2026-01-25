@@ -39,7 +39,9 @@ const MAP_POSITION_KEY = 'mapCanvas:position'
 
 const props = defineProps({
     selectedColor: String,
-    paintMode: { type: Boolean, default: false }
+    paintMode: { type: Boolean, default: false },
+    waybackActive: { type: Boolean, default: false },
+    waybackPixels: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['pixelHover', 'verificationRequired', 'pixelPlaced', 'customColorRequiresAuth'])
@@ -273,8 +275,11 @@ function drawPixels() {
     const minX = Math.floor(nw.x), maxX = Math.ceil(se.x)
     const minY = Math.floor(nw.y), maxY = Math.ceil(se.y)
 
+    // Use wayback pixels if active, otherwise use stored
+    const pixelsToDraw = props.waybackActive ? props.waybackPixels : stored
+    
     // Draw only visible pixels
-    for (const pixel of stored) {
+    for (const pixel of pixelsToDraw) {
         if (pixel.x >= minX && pixel.x <= maxX && pixel.y >= minY && pixel.y <= maxY) {
             const { screenX, screenY, width, height } = getCellScreenBounds(pixel.x, pixel.y)
             canvasRender.fillStyle = pixel.color
