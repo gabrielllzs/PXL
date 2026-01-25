@@ -2,6 +2,8 @@ import { ref } from 'vue'
 import axios from 'axios'
 
 const waybackHistory = ref([])
+const isActive = ref(false)
+const filteredPixels = ref([])
 
 export function useWayback() {
     async function loadWayback() {
@@ -14,33 +16,34 @@ export function useWayback() {
     }
 
     function filterByDate(targetDate) {
-        if (!waybackHistory.value.length) return []
+        if (!waybackHistory.value.length) {
+            filteredPixels.value = []
+            return []
+        }
 
         // Filter entries where created_at <= targetDate
         const filtered = waybackHistory.value.filter(entry => {
             const entryDate = new Date(entry.created_at)
             return entryDate <= targetDate
         })
-
-        // Group by x,y and get the most recent for each coordinate
-        const pixelMap = new Map()
         
-        filtered.forEach(entry => {
-            const key = `${entry.x},${entry.y}`
-            const existing = pixelMap.get(key)
-            
-            if (!existing || new Date(entry.created_at) > new Date(existing.created_at)) {
-                pixelMap.set(key, entry)
-            }
-        })
+        filteredPixels.value = filtered
+        return filtered
+    }
 
-        // Convert map back to array
-        return Array.from(pixelMap.values())
+    function setActive(active) {
+        isActive.value = active
+        if (!active) {
+            filteredPixels.value = []
+        }
     }
 
     return {
         waybackHistory,
+        isActive,
+        filteredPixels,
         loadWayback,
-        filterByDate
+        filterByDate,
+        setActive
     }
 }
