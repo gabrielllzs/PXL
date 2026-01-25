@@ -31,6 +31,13 @@
             :mapZoom="mapZoom"
             @navigateToLocation="handleNavigateToLocation"
         />
+        <WaybackControls
+            v-model="waybackActive"
+            :currentTime="waybackTime"
+            :minTime="minTime"
+            :maxTime="maxTime"
+            @timeChange="handleWaybackTimeChange"
+        />
         <ToastContainer />
         <WelcomeModal 
             v-model="showWelcome" 
@@ -41,6 +48,8 @@
         ref="mapCanvasRef"
         :selectedColor="selectedColor"
         :paintMode="paintMode"
+        :waybackActive="waybackIsActive"
+        :waybackPixels="waybackPixels"
         @verification-required="handleVerificationRequired"
         @pixel-placed="handlePixelPlaced"
         @custom-color-requires-auth="handleCustomColorRequiresAuth"
@@ -55,8 +64,9 @@ import PaintButton from '@/components/ui/PaintButton.vue'
 import { usePixels } from '@/composables/usePixels'
 import { useAuth } from '@/composables/useAuth'
 import { useSavedLocations } from '@/composables/useSavedLocations'
+import { useWayback } from '@/composables/useWayback'
 import axios from 'axios'
-
+import WaybackControls from '@/components/ui/WaybackControls.vue'
 const MapCanvas = defineAsyncComponent(() => import('@/components/MapCanvas.vue'))
 
 const selectedColor = ref('')
@@ -67,10 +77,14 @@ const pixelCount = ref(null)
 const pixelLimit = ref(null)
 const regenTimer = ref(null)
 const showWelcome = ref(false)
-
+const waybackActive = ref(false)
+const waybackTime = ref(null)
+const minTime = ref(null)
+const maxTime = ref(new Date())
 const { cooldown } = usePixels()
 const { isAuthenticated, user } = useAuth()
 const { loadByKey } = useSavedLocations()
+const { waybackHistory, isActive: waybackIsActive, filteredPixels: waybackPixels, loadWayback, filterByDate, setActive: setWaybackActive } = useWayback()
 
 const mapCenter = ref(null)
 const mapZoom = ref(null)
@@ -137,6 +151,16 @@ function startPolling() {
 
 onMounted(async () => { 
     if (isAuthenticated()) startPolling()
+    
+    // Load wayback history
+    await loadWayback()
+    if (waybackHistory.value.length) {
+        const firstEntry = waybackHistory.value[0]
+        const lastEntry = waybackHistory.value[waybackHistory.value.length - 1]
+        minTime.value = new Date(firstEntry.created_at)
+        maxTime.value = new Date(lastEntry.created_at)
+        waybackTime.value = maxTime.value
+    }
     
     // Check for shared location link in query parameter
     const urlParams = new URLSearchParams(window.location.search)
@@ -212,6 +236,11 @@ function handleNavigateToLocation(location) {
     if (mapCanvasRef.value && location) {
         mapCanvasRef.value.navigateToLocation?.(location)
     }
+}
+
+function handleWaybackTimeChange(newTime) {
+    waybackTime.value = newTime
+    filterByDate(newTime)
 }
 </script>
 
