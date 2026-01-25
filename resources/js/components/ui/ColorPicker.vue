@@ -151,7 +151,14 @@ watch(
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" class="hint-icon">
                     <path d="M419-80q-28 0-52.5-12T325-126L107-403l19-20q20-21 48-25t52 11l74 45v-328q0-17 11.5-28.5T340-760q17 0 29 11.5t12 28.5v472l-97-60 104 133q6 7 14 11t17 4h221q33 0 56.5-23.5T720-240v-160q0-17-11.5-28.5T680-440H461v-80h219q50 0 85 35t35 85v160q0 66-47 113T640-80H419ZM167-620q-13-22-20-47.5t-7-52.5q0-83 58.5-141.5T340-920q83 0 141.5 58.5T540-720q0 27-7 52.5T513-620l-69-40q8-14 12-28.5t4-31.5q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 17 4 31.5t12 28.5l-69 40Zm335 280Z"></path>
                 </svg>
-                <span><b>Click</b> <span class="touchscreen-hidden">or hold <kbd>SPACE</kbd></span> to paint.</span>
+                <!-- Desktop text -->
+                <span class="desktop-hint">
+                    <b>Click</b> or hold <span class="kbd">SPACE</span> to paint.
+                </span>
+                <!-- Mobile text -->
+                <span class="mobile-hint">
+                    <b>Click</b> to paint.
+                </span>
             </div>
 
             <!-- Header with controls -->
@@ -269,7 +276,7 @@ watch(
     flex-direction: column;
     pointer-events: auto;
     max-height: 40vh;
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* Hint Banner */
@@ -279,35 +286,57 @@ watch(
     left: 50%;
     transform: translateX(-50%);
     background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(8px);
-    border: 2px solid rgba(0, 0, 0, 0.15);
-    border-radius: 20px;
-    padding: 8px 14px;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    border-radius: 9999px;
+    padding: 8px 16px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 12px;
+    gap: 6px;
+    font-size: 13px;
     color: #1a1a1a;
     white-space: nowrap;
     pointer-events: none;
     font-family: 'pixel art', monospace;
+    user-select: none;
+    line-height: 1.2;
+    width: max-content;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .hint-icon {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    flex-shrink: 0;
 }
 
-.paint-hint-banner kbd {
+.paint-hint-banner .kbd {
     background: rgba(0, 0, 0, 0.1);
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 10px;
     font-weight: 600;
+    font-family: 'pixel art', monospace;
 }
 
-.touchscreen-hidden {
+.mobile-hint {
+    display: inline;
+}
+
+.desktop-hint {
     display: none;
+}
+
+@media (min-width: 769px) {
+    .mobile-hint {
+        display: none;
+    }
+    
+    .desktop-hint {
+        display: inline;
+    }
 }
 
 /* Header */
@@ -390,7 +419,7 @@ watch(
 }
 
 .palette-label {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.5px;
     text-transform: uppercase;
