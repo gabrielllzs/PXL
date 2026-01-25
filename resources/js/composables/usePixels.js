@@ -61,9 +61,8 @@ export function usePixels() {
             const existing = stored.find(p => p.x === x && p.y === y)
             if (existing) {
                 existing.color = color
-                if (response.data?.id) existing.id = response.data.id
             } else {
-                stored.push({ x, y, color, id: response.data?.id })
+                stored.push({ x, y, color })
             }
             
             if (!isAuthenticated()) {
