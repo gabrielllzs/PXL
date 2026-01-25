@@ -66,7 +66,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useSavedLocations } from '@/composables/useSavedLocations'
 import { useWayback } from '@/composables/useWayback'
 import axios from 'axios'
-import WaybackControls from '@/components/ui/WaybackControls.vue'
+import WaybackControls from '@/components/ui/WaybackSlider.vue'
 const MapCanvas = defineAsyncComponent(() => import('@/components/MapCanvas.vue'))
 
 const selectedColor = ref('')
