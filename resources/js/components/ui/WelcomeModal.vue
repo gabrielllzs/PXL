@@ -443,16 +443,14 @@ function getYouTubeThumbnail(url) {
     .modal-content {
         width: 100%;
         height: 100%;
-        border-radius: 0;
+        border-radius: 18px;
         display: flex;
         flex-direction: column;
-        padding: 24px 20px;
-        padding-top: 80px;
-        padding-bottom: 40px;
+        padding: 24px 40px;
     }
 
     .modal-close {
-        top: 40px;
+        top: 20px;
         right: 20px;
         width: 44px;
         height: 44px;
@@ -462,7 +460,6 @@ function getYouTubeThumbnail(url) {
 
     .welcome-content {
         flex: 1;
-        overflow-y: auto;
     }
 
     .play-button {

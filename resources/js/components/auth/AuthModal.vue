@@ -576,6 +576,7 @@ function close() {
     font-weight: 600;
     padding: 0;
     transition: color 0.2s;
+    font-family: 'pixel art', monospace;
 }
 
 .btn-link.login {
@@ -596,9 +597,11 @@ function close() {
 
 .forgot-password {
     margin-top: -8px;
+    margin-top: 8px;
     margin-bottom: 4px;
     text-align: center;
     font-size: 13px;
+    font-family: 'pixel art', monospace;
 }
 
 @media (max-width: 640px) {
@@ -615,6 +618,7 @@ function close() {
 
     .modal-close {
         top: 40px;
+        top: 80px;
         right: 20px;
         width: 44px;
         height: 44px;

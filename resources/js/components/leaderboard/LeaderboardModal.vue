@@ -296,6 +296,7 @@ function setTab(tab) {
     cursor: pointer;
     border-radius: 10px;
     transition: all 0.2s;
+    font-family: 'pixel art', monospace;
 }
 
 .tab-icon {
