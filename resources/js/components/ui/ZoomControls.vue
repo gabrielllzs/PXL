@@ -128,7 +128,7 @@ const emit = defineEmits(['zoomIn', 'zoomOut', 'center'])
     }
 
     .zoom-controls.raised {
-        bottom: 360px;
+        bottom: 280px;
     }
 }
 </style>
