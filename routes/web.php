@@ -12,6 +12,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\CursorController;
 use App\Http\Controllers\SavedLocationController;
+use App\Http\Controllers\WaybackController;
 use Illuminate\Http\Request;
 
 
@@ -24,6 +25,7 @@ Route::post('/api/pixel', [PixelController::class, 'store']);
 Route::get('/api/cooldown', [PixelController::class, 'cooldown']);
 Route::post('/api/feedback', [FeedbackController::class, 'store']);
 Route::get('/location/{key}', [SavedLocationController::class, 'showByKey']);
+Route::get('/api/wayback', [WaybackController::class, 'index']);
 
 Route::prefix('leaderboard')->group(function () {
     Route::get('/groups', [GroupController::class, 'index']);
