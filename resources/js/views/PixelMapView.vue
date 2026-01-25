@@ -1,6 +1,11 @@
 <template>
     <div id="overlayContainer" :class="{ 'picker-open': paintMode }">
-        <SideMenu :hidden="paintMode" />
+        <SideMenu 
+            :hidden="paintMode"
+            :mapCenter="mapCenter"
+            :mapZoom="mapZoom"
+            @navigateToLocation="handleNavigateToLocation"
+        />
         <ColorPicker 
             v-model="selectedColor" 
             :paintMode="paintMode"
@@ -20,7 +25,12 @@
         />
         <CooldownInfo v-if="cooldown.active && !isAuthenticated()" :seconds="cooldown.remaining" />
         <Auth ref="authRef" :hidden="paintMode" />
-        <Buttons :hidden="paintMode" />
+        <Buttons 
+            :hidden="paintMode"
+            :mapCenter="mapCenter"
+            :mapZoom="mapZoom"
+            @navigateToLocation="handleNavigateToLocation"
+        />
         <ToastContainer />
         <WelcomeModal 
             v-model="showWelcome" 
@@ -44,6 +54,7 @@ import ToastContainer from '@/components/ToastContainer.vue'
 import PaintButton from '@/components/ui/PaintButton.vue'
 import { usePixels } from '@/composables/usePixels'
 import { useAuth } from '@/composables/useAuth'
+import { useSavedLocations } from '@/composables/useSavedLocations'
 import axios from 'axios'
 
 const MapCanvas = defineAsyncComponent(() => import('@/components/MapCanvas.vue'))
@@ -59,6 +70,10 @@ const showWelcome = ref(false)
 
 const { cooldown } = usePixels()
 const { isAuthenticated, user } = useAuth()
+const { loadByKey } = useSavedLocations()
+
+const mapCenter = ref(null)
+const mapZoom = ref(null)
 
 // Provide openLogin function from Auth component to child components
 provide('openLogin', () => {
@@ -120,7 +135,40 @@ function startPolling() {
     if (!pixelStatusInterval) pixelStatusInterval = setInterval(fetchPixelStatus, 10000)
 }
 
-onMounted(() => { if (isAuthenticated()) startPolling() })
+onMounted(async () => { 
+    if (isAuthenticated()) startPolling()
+    
+    // Check for shared location link in query parameter
+    const urlParams = new URLSearchParams(window.location.search)
+    const locationKey = urlParams.get('location')
+    if (locationKey) {
+        const location = await loadByKey(locationKey)
+        if (location) {
+            // Wait for map to be ready
+            setTimeout(() => {
+                handleNavigateToLocation({
+                    longitude: parseFloat(location.longitude),
+                    latitude: parseFloat(location.latitude),
+                    zoom: location.zoom ? parseFloat(location.zoom) : null
+                })
+                // Clean up URL by removing query parameter
+                const newUrl = window.location.pathname
+                window.history.replaceState({}, '', newUrl)
+            }, 500)
+        }
+    }
+    
+    // Update map center/zoom periodically
+    const updateMapState = () => {
+        if (mapCanvasRef.value) {
+            mapCenter.value = mapCanvasRef.value.getCenter?.() || null
+            mapZoom.value = mapCanvasRef.value.getZoom?.() || null
+        }
+    }
+    const mapStateInterval = setInterval(updateMapState, 1000)
+    onUnmounted(() => clearInterval(mapStateInterval))
+})
+
 onUnmounted(clearIntervals)
 
 watch(user, (newUser) => {
@@ -158,6 +206,12 @@ function handleZoomUp() {
 
 function handleToggleEraser(isEraser) {
     if (isEraser) selectedColor.value = 'transparent'
+}
+
+function handleNavigateToLocation(location) {
+    if (mapCanvasRef.value && location) {
+        mapCanvasRef.value.navigateToLocation?.(location)
+    }
 }
 </script>
 
