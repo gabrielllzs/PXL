@@ -11,6 +11,7 @@ use App\Services\LevelService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use App\Models\PixelHistory;
 use Illuminate\Support\Facades\Log;
 
 class PixelController extends Controller
@@ -200,10 +201,15 @@ class PixelController extends Controller
                 'color' => $request->color ?? 'black',
                 'visitor_id' => $visitorId,
                 'user_id' => $isAuthenticated && $user ? $user->id : null,
-                'risk_score' => 0,
                 'ip_address' => $clientIp,
             ]
         );
+
+        $pixelHistory = PixelHistory::create([
+            'x' => $request->x,
+            'y' => $request->y,
+            'color' => $request->color ?? 'black',
+        ]);
 
         $this->pixelCounter->addPixel($user, $clientIp);
 
