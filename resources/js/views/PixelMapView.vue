@@ -1,13 +1,13 @@
 <template>
     <div id="overlayContainer" :class="{ 'picker-open': paintMode }">
-        <SideMenu 
+        <SideMenu
             :hidden="paintMode"
             :mapCenter="mapCenter"
             :mapZoom="mapZoom"
             @navigateToLocation="handleNavigateToLocation"
         />
-        <ColorPicker 
-            v-model="selectedColor" 
+        <ColorPicker
+            v-model="selectedColor"
             :paintMode="paintMode"
             :pixelCount="pixelCount"
             :disabled="isPaintDisabled"
@@ -15,8 +15,8 @@
             @zoomUp="handleZoomUp"
             @toggleEraser="handleToggleEraser"
         />
-        <PaintButton 
-            v-model="paintMode" 
+        <PaintButton
+            v-model="paintMode"
             :pixelCount="pixelCount"
             :pixelLimit="pixelLimit"
             :regenTimer="regenTimer"
@@ -25,11 +25,13 @@
         />
         <CooldownInfo v-if="cooldown.active && !isAuthenticated()" :seconds="cooldown.remaining" />
         <Auth ref="authRef" :hidden="paintMode" />
-        <Buttons 
+        <Buttons
             :hidden="paintMode"
             :mapCenter="mapCenter"
             :mapZoom="mapZoom"
+            :waybackActive="waybackActive"
             @navigateToLocation="handleNavigateToLocation"
+            @toggleWayback="waybackActive = !waybackActive; setWaybackActive(waybackActive)"
         />
         <WaybackControls
             v-model="waybackActive"
@@ -39,8 +41,8 @@
             @timeChange="handleWaybackTimeChange"
         />
         <ToastContainer />
-        <WelcomeModal 
-            v-model="showWelcome" 
+        <WelcomeModal
+            v-model="showWelcome"
             videoUrl="https://www.youtube.com/watch?v=YOUR_VIDEO_ID"
         />
     </div>
@@ -53,11 +55,12 @@
         @verification-required="handleVerificationRequired"
         @pixel-placed="handlePixelPlaced"
         @custom-color-requires-auth="handleCustomColorRequiresAuth"
+        @disable-paint-mode="paintMode = false"
     />
 </template>
 
 <script setup>
-import { ref, defineAsyncComponent, watch, computed, onMounted, onUnmounted, provide, watchEffect } from 'vue'
+import { ref, defineAsyncComponent, watch, computed, onMounted, onUnmounted, provide } from 'vue'
 import { ColorPicker, CooldownInfo, Auth, SideMenu, Buttons, WelcomeModal } from '@/components/ui'
 import ToastContainer from '@/components/ToastContainer.vue'
 import PaintButton from '@/components/ui/PaintButton.vue'
@@ -80,7 +83,7 @@ const showWelcome = ref(false)
 const waybackActive = ref(false)
 const waybackTime = ref(null)
 const minTime = ref(null)
-const maxTime = ref(new Date())
+const maxTime = ref(null)
 const { cooldown } = usePixels()
 const { isAuthenticated, user } = useAuth()
 const { loadByKey } = useSavedLocations()
@@ -94,7 +97,7 @@ provide('openLogin', () => {
     authRef.value?.openLogin?.()
 })
 
-const isPaintDisabled = computed(() => 
+const isPaintDisabled = computed(() =>
     isAuthenticated() && pixelCount.value !== null && pixelCount.value <= 0
 )
 
@@ -112,13 +115,13 @@ function clearIntervals() {
 
 async function fetchPixelStatus() {
     if (!isAuthenticated()) { clearPixelStatus(); return }
-    
+
     try {
         const { data } = await axios.get('/api/pixel-status')
         pixelCount.value = data.pixels_available
         pixelLimit.value = data.pixel_limit
         regenTimer.value = data.time_until_regeneration
-        
+
         if (data.pixels_available <= 0 && paintMode.value) paintMode.value = false
         startRegenCountdown()
     } catch (err) {
@@ -129,7 +132,7 @@ async function fetchPixelStatus() {
 function startRegenCountdown() {
     if (regenCountdownInterval) { clearInterval(regenCountdownInterval); regenCountdownInterval = null }
     if (regenTimer.value <= 0) return
-    
+
     regenCountdownInterval = setInterval(async () => {
         regenTimer.value = Math.max(0, regenTimer.value - 1)
         if (regenTimer.value <= 0) {
@@ -149,19 +152,9 @@ function startPolling() {
     if (!pixelStatusInterval) pixelStatusInterval = setInterval(fetchPixelStatus, 10000)
 }
 
-onMounted(async () => { 
+onMounted(async () => {
     if (isAuthenticated()) startPolling()
-    
-    // Load wayback history
-    await loadWayback()
-    if (waybackHistory.value.length) {
-        const firstEntry = waybackHistory.value[0]
-        const lastEntry = waybackHistory.value[waybackHistory.value.length - 1]
-        minTime.value = new Date(firstEntry.created_at)
-        maxTime.value = new Date(lastEntry.created_at)
-        waybackTime.value = maxTime.value
-    }
-    
+
     // Check for shared location link in query parameter
     const urlParams = new URLSearchParams(window.location.search)
     const locationKey = urlParams.get('location')
@@ -181,7 +174,7 @@ onMounted(async () => {
             }, 500)
         }
     }
-    
+
     // Update map center/zoom periodically
     const updateMapState = () => {
         if (mapCanvasRef.value) {
@@ -206,7 +199,7 @@ watch(user, (newUser) => {
 
 function handlePixelPlaced(data) {
     if (!data || typeof data.pixels_available !== 'number') return
-    
+
     pixelCount.value = data.pixels_available
     if (data.pixel_limit) pixelLimit.value = data.pixel_limit
     if (data.time_until_regeneration) {
