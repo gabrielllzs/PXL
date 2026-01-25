@@ -16,10 +16,14 @@ const props = defineProps({
     mapZoom: {
         type: Number,
         default: null
+    },
+    waybackActive: {
+        type: Boolean,
+        default: false
     }
 })
 
-const emit = defineEmits(['navigateToLocation'])
+const emit = defineEmits(['navigateToLocation', 'toggleWayback'])
 
 const showGroupModal = ref(false)
 const showLeaderboardModal = ref(false)
@@ -35,6 +39,10 @@ function openLeaderboardModal() {
 
 function openSavedLocationsModal() {
     showSavedLocationsModal.value = true
+}
+
+function toggleWayback() {
+    emit('toggleWayback')
 }
 
 function handleNavigateToLocation(location) {
@@ -86,7 +94,8 @@ function handleNavigateToLocation(location) {
 
         <button
             class="action-btn wayback-btn"
-            @click="openWaybackModal"
+            :class="{ 'active': waybackActive }"
+            @click="toggleWayback"
             title="Wayback"
         >
             <span class="btn-icon">
@@ -105,13 +114,6 @@ function handleNavigateToLocation(location) {
         :mapCenter="mapCenter"
         :mapZoom="mapZoom"
         @navigateToLocation="handleNavigateToLocation"
-    />
-    <WaybackModal
-        v-model="showWaybackModal"
-        :currentTime="waybackTime"
-        :minTime="minTime"
-        :maxTime="maxTime"
-        @timeChange="handleWaybackTimeChange"
     />
 </template>
 
@@ -193,6 +195,20 @@ function handleNavigateToLocation(location) {
 
 .locations-btn:hover .btn-icon {
     background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
+}
+
+.wayback-btn .btn-icon {
+    background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+    color: #be185d;
+}
+
+.wayback-btn:hover .btn-icon {
+    background: linear-gradient(135deg, #fbcfe8 0%, #f9a8d4 100%);
+}
+
+.wayback-btn.active .btn-icon {
+    background: linear-gradient(135deg, #f9a8d4 0%, #f472b6 100%);
+    box-shadow: 0 0 0 2px rgba(190, 24, 93, 0.3);
 }
 
 .btn-label {
