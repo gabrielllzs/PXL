@@ -83,6 +83,19 @@ function handleNavigateToLocation(location) {
             </span>
             <span class="btn-label">Locations</span>
         </button>
+
+        <button
+            class="action-btn wayback-btn"
+            @click="openWaybackModal"
+            title="Wayback"
+        >
+            <span class="btn-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12a3 3 0 100-6 3 3 0 000 6z"/>
+                </svg>
+            </span>
+            <span class="btn-label">Wayback</span>
+        </button>
     </div>
 
     <GroupModal v-model="showGroupModal" />
@@ -92,6 +105,13 @@ function handleNavigateToLocation(location) {
         :mapCenter="mapCenter"
         :mapZoom="mapZoom"
         @navigateToLocation="handleNavigateToLocation"
+    />
+    <WaybackModal
+        v-model="showWaybackModal"
+        :currentTime="waybackTime"
+        :minTime="minTime"
+        :maxTime="maxTime"
+        @timeChange="handleWaybackTimeChange"
     />
 </template>
 
