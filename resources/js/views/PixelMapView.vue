@@ -242,6 +242,22 @@ function handleWaybackTimeChange(newTime) {
     waybackTime.value = newTime
     filterByDate(newTime)
 }
+watch(waybackActive, async (active) => {
+    setWaybackActive(active)
+    if (active) {
+        // Load wayback history every time it's activated
+        await loadWayback()
+        if (waybackHistory.value.length) {
+            const firstEntry = waybackHistory.value[0]
+            const lastEntry = waybackHistory.value[waybackHistory.value.length - 1]
+            minTime.value = new Date(firstEntry.created_at)
+            maxTime.value = new Date(lastEntry.created_at)
+            waybackTime.value = maxTime.value
+            // Filter pixels for current time
+            filterByDate(waybackTime.value)
+        }
+    }
+})
 </script>
 
 <style scoped>
