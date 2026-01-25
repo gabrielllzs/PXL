@@ -241,10 +241,12 @@ class PixelController extends Controller
         // Trigger PixelPlaced event voor real-time updates
         event(new PixelPlaced($pixel->x, $pixel->y, $pixel->color));
 
-        $responseData = array_merge(
-            $pixel->toArray(),
-            ['cooldownDuration' => $cooldownSeconds]
-        );
+        $responseData = [
+            'x' => $pixel->x,
+            'y' => $pixel->y,
+            'color' => $pixel->color,
+            'cooldownDuration' => $cooldownSeconds,
+        ];
 
         if ($isAuthenticated && $user) {
             $responseData['level'] = $user->level;
