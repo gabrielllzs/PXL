@@ -18,7 +18,7 @@ export function useWayback() {
     function filterByDate(targetDate) {
         if (!waybackHistory.value.length) {
             filteredPixels.value = []
-            return []
+            return
         }
 
         // Filter entries where created_at <= targetDate
@@ -28,7 +28,6 @@ export function useWayback() {
         })
         
         filteredPixels.value = filtered
-        return filtered
     }
 
     function setActive(active) {
