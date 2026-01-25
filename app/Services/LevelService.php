@@ -26,10 +26,10 @@ class LevelService
         if ($level <= 10) {
             return 60 + (($level - 1) * 2);
         } elseif ($level <= 25) {
-            $base = 60 + (9 * 2);
+            $base = 78 ;
             return $base + (($level - 10) * 3);
         } else {
-            $base = 60 + (9 * 2) + (14 * 3);
+            $base = 120;
             return $base + (($level - 25) * 4);
         }
     }
