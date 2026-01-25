@@ -28,7 +28,7 @@ class PixelController extends Controller
 
     public function index()
     {
-        return Pixel::select('id', 'x', 'y', 'color', 'created_at', 'updated_at')->get();
+        return Pixel::select('x', 'y', 'color')->get();
     }
 
     public function store(Request $request)
