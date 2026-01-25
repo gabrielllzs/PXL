@@ -1,12 +1,24 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { audioEnabled } from '../../composables/useAudio.js'
+import { useSavedLocations } from '../../composables/useSavedLocations.js'
+import { useAuth } from '../../composables/useAuth.js'
+import { useToast } from '../../composables/useToast.js'
+import SaveLocationModal from './SaveLocationModal.vue'
 
-defineProps({
-    hidden: { type: Boolean, default: false }
+const props = defineProps({
+    hidden: { type: Boolean, default: false },
+    mapCenter: { type: Object, default: null },
+    mapZoom: { type: Number, default: null }
 })
 
+const emit = defineEmits(['navigateToLocation'])
+
 const isOpen = ref(false)
+const showSaveModal = ref(false)
+const { locations, loading, load, remove, getShareUrl } = useSavedLocations()
+const { isAuthenticated, user } = useAuth()
+const { showToast } = useToast()
 
 // Two-way binding with audioEnabled
 const isAudioOn = computed({
@@ -16,6 +28,53 @@ const isAudioOn = computed({
 
 const toggle = () => { isOpen.value = !isOpen.value }
 const close = () => { isOpen.value = false }
+
+async function handleDelete(id, event) {
+    event.stopPropagation()
+    await remove(id)
+}
+
+function handleNavigate(location) {
+    emit('navigateToLocation', {
+        longitude: parseFloat(location.longitude),
+        latitude: parseFloat(location.latitude),
+        zoom: location.zoom ? parseFloat(location.zoom) : null
+    })
+    close()
+}
+
+async function handleShare(location, event) {
+    event.stopPropagation()
+    const url = getShareUrl(location)
+    if (url) {
+        await navigator.clipboard.writeText(url)
+        showToast('Share link copied!', 'success')
+    }
+}
+
+function openSaveModal() {
+    if (!isAuthenticated()) {
+        showToast('Please sign in to save locations', 'error')
+        return
+    }
+    showSaveModal.value = true
+}
+
+function handleSaved() {
+    showSaveModal.value = false
+}
+
+watch([isOpen, user], async ([newIsOpen, newUser]) => {
+    if (newIsOpen && newUser) {
+        await load()
+    }
+})
+
+onMounted(async () => {
+    if (isAuthenticated()) {
+        await load()
+    }
+})
 </script>
 
 <template>
@@ -122,6 +181,77 @@ const close = () => { isOpen.value = false }
                 <div class="menu-section">
                     <h3 class="section-title">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="section-icon">
+                            <path fill-rule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                        </svg>
+                        Saved Locations
+                    </h3>
+                    <div class="saved-locations">
+                        <button @click="openSaveModal" class="save-location-btn" :disabled="loading">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" d="M12 3.75a.75.75 0 01.75.75v6.75h6.75a.75.75 0 010 1.5h-6.75v6.75a.75.75 0 01-1.5 0v-6.75H4.5a.75.75 0 010-1.5h6.75V4.5a.75.75 0 01.75-.75z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Save Current Location</span>
+                        </button>
+
+                        <div v-if="loading" class="loading-state">
+                            <span>Loading...</span>
+                        </div>
+
+                        <div v-else-if="!isAuthenticated()" class="auth-prompt">
+                            <p>Sign in to save and access locations</p>
+                        </div>
+
+                        <div v-else-if="locations.length === 0" class="empty-state">
+                            <p>No saved locations yet</p>
+                            <p class="hint">Save your current location to get started</p>
+                        </div>
+
+                        <div v-else class="locations-list">
+                            <div
+                                v-for="location in locations"
+                                :key="location.id"
+                                class="location-item"
+                                @click="handleNavigate(location)"
+                            >
+                                <div class="location-info">
+                                    <div class="location-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </div>
+                                    <div class="location-details">
+                                        <strong>{{ location.name || 'Unnamed Location' }}</strong>
+                                        <span>{{ parseFloat(location.latitude).toFixed(4) }}, {{ parseFloat(location.longitude).toFixed(4) }}</span>
+                                    </div>
+                                </div>
+                                <div class="location-actions">
+                                    <button
+                                        @click="handleShare(location, $event)"
+                                        class="action-btn share-btn"
+                                        title="Copy share link"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M15.75 4.5a3 3 0 11.825 2.066l-8.421 4.679a3.002 3.002 0 010 1.51l8.421 4.679a3 3 0 11-.729 1.31l-8.421-4.678a3 3 0 110-4.132l8.421-4.679a3 3 0 01-.096-.755z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </button>
+                                    <button
+                                        @click="handleDelete(location.id, $event)"
+                                        class="action-btn delete-btn"
+                                        title="Delete location"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 013.878.512.75.75 0 11-.256 1.478l-.209-.035-1.005 13.07a3 3 0 01-2.991 2.77H8.084a3 3 0 01-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 01-.256-1.478A48.567 48.567 0 017.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 013.369 0c1.603.051 2.815 1.387 2.815 2.951zm-6.136-1.452a51.196 51.196 0 013.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 00-6 0v-.113c0-.794.609-1.428 1.364-1.452zm-.355 5.945a.75.75 0 10-1.5.058l.347 9a.75.75 0 101.499-.058l-.346-9zm5.48.058a.75.75 0 101.499.058l-.347 9a.75.75 0 00-1.499-.058l.347-9z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-section">
+                    <h3 class="section-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="section-icon">
                             <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6zm4.5 7.5a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0v-2.25a.75.75 0 01.75-.75zm3.75-1.5a.75.75 0 00-1.5 0v4.5a.75.75 0 001.5 0V12zm2.25-3a.75.75 0 01.75.75v6.75a.75.75 0 01-1.5 0V9.75A.75.75 0 0113.5 9zm3.75-1.5a.75.75 0 00-1.5 0v9a.75.75 0 001.5 0v-9z" clip-rule="evenodd"/>
                         </svg>
                         Quick Links
@@ -138,6 +268,14 @@ const close = () => { isOpen.value = false }
                         </a>
                     </div>
                 </div>
+
+                <SaveLocationModal
+                    v-model="showSaveModal"
+                    :longitude="mapCenter?.lng || 0"
+                    :latitude="mapCenter?.lat || 0"
+                    :zoom="mapZoom"
+                    @saved="handleSaved"
+                />
             </div>
 
             <div class="menu-footer">
@@ -522,6 +660,177 @@ const close = () => { isOpen.value = false }
     width: 16px;
     height: 16px;
     color: #ccc;
+}
+
+.saved-locations {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.save-location-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: white;
+    border: 2px dashed rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    text-decoration: none;
+    color: #1e1e1e;
+    transition: all 0.2s;
+    cursor: pointer;
+    font-family: 'pixel art', monospace;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.save-location-btn:hover:not(:disabled) {
+    background: #f5f5f5;
+    border-color: #2563eb;
+    border-style: solid;
+    color: #2563eb;
+}
+
+.save-location-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.save-location-btn svg {
+    width: 20px;
+    height: 20px;
+    color: #666;
+}
+
+.save-location-btn:hover:not(:disabled) svg {
+    color: #2563eb;
+}
+
+.loading-state,
+.auth-prompt,
+.empty-state {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-size: 13px;
+}
+
+.empty-state .hint {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #999;
+}
+
+.locations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.location-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.location-item:hover {
+    background: #f5f5f5;
+    transform: translateX(4px);
+}
+
+.location-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.location-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #dbeafe;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.location-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.location-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.location-details strong {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e1e1e;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.location-details span {
+    font-size: 11px;
+    color: #666;
+    font-family: monospace;
+}
+
+.location-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.action-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #666;
+}
+
+.action-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #1e1e1e;
+}
+
+.action-btn.delete-btn:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.action-btn.share-btn:hover {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.action-btn svg {
+    width: 16px;
+    height: 16px;
 }
 
 .menu-footer {
