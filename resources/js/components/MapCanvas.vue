@@ -76,11 +76,11 @@ let isNavigatingFromURL = false
 
 async function sendCursorPosition(x, y) {
     if (!group.value?.id) return
-    
+
     const now = Date.now()
     if (now - lastCursorSendTime < CURSOR_SEND_INTERVAL) return
     lastCursorSendTime = now
-    
+
     try {
         await axios.post('/api/cursor/move', { x, y })
     } catch {
@@ -102,7 +102,7 @@ onMounted(async () => {
     const savedPos = getSavedPosition()
 
     const [mapInstance] = await Promise.all([init(), load(), syncCooldown()])
-    
+
     isLoading.value = false
     setupCanvas()
     setupEvents(mapInstance)
@@ -126,13 +126,18 @@ onUnmounted(() => {
     window.removeEventListener('keyup', handleKeyUp)
 })
 
-defineExpose({ zoomIn, zoomOut, centerMap })
+function navigateToLocation(location) {
+    if (!map.value || !location) return
+    setCenter([location.longitude, location.latitude], location.zoom || 11)
+}
+
+defineExpose({ zoomIn, zoomOut, centerMap, getCenter, getZoom, navigateToLocation})
 
 
 function setupCanvas() {
     const container = document.getElementById('map')
     const { clientWidth: w, clientHeight: h } = container
-    
+
     // Setup both canvases with shared dimensions
     ;[canvas.value, hoverCanvas.value].forEach((c, i) => {
         c.width = w
@@ -141,19 +146,19 @@ function setupCanvas() {
         c.style.pointerEvents = 'none'
         if (i === 1) c.style.zIndex = '1'
     })
-    
+
     canvasRender = canvas.value.getContext('2d')
     hoverCanvasRender = hoverCanvas.value.getContext('2d')
 }
 
 function savePosition() {
     if (isNavigatingFromURL || !map.value) return
-    
+
     clearTimeout(urlUpdateTimeout)
     urlUpdateTimeout = setTimeout(() => {
         const center = getCenter()
         if (!center) return
-        
+
         const worldPx = lngLatToWorldPx({ lng: center.lng, lat: center.lat }, ZOOM)
         try {
             localStorage.setItem(MAP_POSITION_KEY, JSON.stringify({
@@ -202,12 +207,12 @@ function setupEvents(mapInstance) {
     on('move', () => { drawPixels(); savePosition() })
     on('zoom', () => { drawPixels(); savePosition() })
     on('resize', resizeCanvas)
-    
+
     const mapCanvas = mapInstance.getCanvas()
     mapCanvas.addEventListener('click', handleClick)
     mapCanvas.addEventListener('mousemove', handleHover)
     mapCanvas.addEventListener('mouseout', handleMouseOut)
-    
+
     window.addEventListener('keydown', handleKeyDown)
     window.addEventListener('keyup', handleKeyUp)
 }
@@ -215,7 +220,7 @@ function setupEvents(mapInstance) {
 function resizeCanvas() {
     const container = document.getElementById('map')
     const { clientWidth: w, clientHeight: h } = container
-    
+
     canvas.value.width = w
     canvas.value.height = h
     hoverCanvas.value.width = w
@@ -254,20 +259,20 @@ function getCellScreenBounds(x, y) {
 
 function drawPixels() {
     if (!canvasRender || !canvas.value) return
-    
+
     canvasRender.clearRect(0, 0, canvas.value.width, canvas.value.height)
-    
+
     if (getZoom() < MIN_ZOOM) return
-    
+
     const bounds = getBounds()
     if (!bounds) return
-    
+
     // Get visible world pixel coordinates
     const nw = lngLatToWorldPx(bounds.getNorthWest(), ZOOM)
     const se = lngLatToWorldPx(bounds.getSouthEast(), ZOOM)
     const minX = Math.floor(nw.x), maxX = Math.ceil(se.x)
     const minY = Math.floor(nw.y), maxY = Math.ceil(se.y)
-    
+
     // Draw only visible pixels
     for (const pixel of stored) {
         if (pixel.x >= minX && pixel.x <= maxX && pixel.y >= minY && pixel.y <= maxY) {
@@ -280,24 +285,24 @@ function drawPixels() {
 
 function drawGroupCursors() {
     if (!hoverCanvasRender || !hoverCanvas.value) return
-    
+
     const now = Date.now()
-    
+
     // Clean up old cursors and draw active ones
     for (const [username, cursor] of Object.entries(groupCursors)) {
         if (now - cursor.lastSeen > CURSOR_TIMEOUT) {
             delete groupCursors[username]
             continue
         }
-        
+
         // Skip own cursor
         if (cursor.username === user.value?.username) continue
-        
+
         try {
             const { screenX, screenY, width, height } = getCellScreenBounds(cursor.x, cursor.y)
             const cx = screenX + width / 2
             const cy = screenY + height / 2
-            
+
             // Draw cursor circle
             hoverCanvasRender.strokeStyle = '#3b82f6'
             hoverCanvasRender.fillStyle = 'rgba(59, 130, 246, 0.2)'
@@ -306,7 +311,7 @@ function drawGroupCursors() {
             hoverCanvasRender.arc(cx, cy, 8, 0, Math.PI * 2)
             hoverCanvasRender.fill()
             hoverCanvasRender.stroke()
-            
+
             // Draw username
             hoverCanvasRender.fillStyle = '#3b82f6'
             hoverCanvasRender.font = '12px sans-serif'
@@ -325,15 +330,15 @@ function clearHoverCanvas() {
 
 function drawHoverPreview(x, y) {
     if (!hoverCanvasRender || !hoverCanvas.value) return
-    
+
     clearHoverCanvas()
     drawGroupCursors()
-    
+
     if (x != null && y != null) {
         const { screenX, screenY, width, height } = getCellScreenBounds(x, y)
         const scale = 1.0 + Math.sin(animationPulse.value) * 0.1
         const sw = width * scale, sh = height * scale
-        
+
         hoverCanvasRender.fillStyle = props.selectedColor
         hoverCanvasRender.fillRect(
             Math.round(screenX + (width - sw) / 2),
@@ -351,14 +356,14 @@ function animateHover() {
         drawGroupCursors()
         return
     }
-    
+
     const followSpeed = 0.1
     displayX.value += (cursorX.value - displayX.value) * followSpeed
     displayY.value += (cursorY.value - displayY.value) * followSpeed
-    
+
     animationPulse.value += 0.025
     drawHoverPreview(displayX.value, displayY.value)
-    
+
     animationFrameId = requestAnimationFrame(animateHover)
 }
 
@@ -368,22 +373,22 @@ async function placePixel(mouseEvent) {
         emit('verificationRequired')
         return false
     }
-    
+
     // Only require captcha for visitors (non-authenticated users)
     let token = null
     if (!user.value && !captchaSessionVerified) {
         token = await executeHCaptcha()
         if (!token) return false
     }
-    
+
     const lngLat = unproject([mouseEvent.clientX, mouseEvent.clientY])
     const worldPixel = lngLatToWorldPx(lngLat, ZOOM)
     const x = Math.floor(worldPixel.x)
     const y = Math.floor(worldPixel.y)
-    
+
     try {
         const result = await save(x, y, props.selectedColor, token)
-        
+
         if (result?.success) {
             captchaSessionVerified = true
             drawPixels()
@@ -416,7 +421,7 @@ async function handleClick(mouseEvent) {
 async function handlePaintWhileHolding(mouseEvent) {
     // Skip if still on the same pixel
     if (cursorX.value === lastPaintedX && cursorY.value === lastPaintedY) return
-    
+
     const now = Date.now()
     if (now - lastPaintTime < PAINT_INTERVAL) return
     lastPaintTime = now
@@ -428,22 +433,22 @@ async function handlePaintWhileHolding(mouseEvent) {
 function handleHover(mouseEvent) {
     const lngLat = unproject([mouseEvent.clientX, mouseEvent.clientY])
     const worldPixel = lngLatToWorldPx(lngLat, ZOOM)
-    
+
     cursorX.value = Math.floor(worldPixel.x)
     cursorY.value = Math.floor(worldPixel.y)
-    
+
     if (displayX.value == null) {
         displayX.value = cursorX.value
         displayY.value = cursorY.value
     }
-    
+
     sendCursorPosition(cursorX.value, cursorY.value)
-    
+
     // Paint while holding space
     if (isSpaceHeld.value && props.paintMode && isPainting.value) {
         handlePaintWhileHolding(mouseEvent)
     }
-    
+
     if (animationFrameId === null) {
         animationFrameId = requestAnimationFrame(animateHover)
     }
