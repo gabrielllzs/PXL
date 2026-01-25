@@ -9,7 +9,7 @@ class WaybackController extends Controller
 {
     public function index()
     {
-        return PixelHistory::orderBy('created_at', 'desc')->get();
+        return PixelHistory::orderBy('created_at', 'asc')->get();
     }
 
 }
