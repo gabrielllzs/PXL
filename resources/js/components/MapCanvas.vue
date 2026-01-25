@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import axios from 'axios'
 import ZoomControls from '@/components/ui/ZoomControls.vue'
 import { useMap } from '../composables/useMap'
@@ -44,7 +44,7 @@ const props = defineProps({
     waybackPixels: { type: Array, default: () => [] }
 })
 
-const emit = defineEmits(['pixelHover', 'verificationRequired', 'pixelPlaced', 'customColorRequiresAuth'])
+const emit = defineEmits(['pixelHover', 'verificationRequired', 'pixelPlaced', 'customColorRequiresAuth', 'disablePaintMode'])
 
 // Composables
 const { map, init, on, unproject, project, zoomIn, zoomOut, centerMap, getBounds, getZoom, getCenter, setCenter } = useMap('map')
@@ -119,6 +119,20 @@ onMounted(async () => {
         })
     }
 
+    drawPixels()
+})
+
+// Watch wayback pixels to redraw when they change
+watch(() => props.waybackPixels, () => {
+    if (props.waybackActive) {
+        drawPixels()
+    }
+})
+
+watch(() => props.waybackActive, (active) => {
+    if (active && props.paintMode) {
+        emit('disablePaintMode')
+    }
     drawPixels()
 })
 
@@ -277,8 +291,7 @@ function drawPixels() {
 
     // Use wayback pixels if active, otherwise use stored
     const pixelsToDraw = props.waybackActive ? props.waybackPixels : stored
-    
-    // Draw only visible pixels
+
     for (const pixel of pixelsToDraw) {
         if (pixel.x >= minX && pixel.x <= maxX && pixel.y >= minY && pixel.y <= maxY) {
             const { screenX, screenY, width, height } = getCellScreenBounds(pixel.x, pixel.y)
@@ -373,6 +386,10 @@ function animateHover() {
 }
 
 async function placePixel(mouseEvent) {
+    if (props.waybackActive) {
+        return false
+    }
+    
     if (user.value && !isEmailVerified()) {
         showToast('Please verify your email before placing pixels', 'error')
         emit('verificationRequired')
