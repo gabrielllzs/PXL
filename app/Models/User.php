@@ -97,4 +97,9 @@ class User extends Authenticatable
         return $this->belongsTo(Country::class, 'country', 'country_code');
     }
 
+    public function savedLocations()
+    {
+        return $this->hasMany(SavedLocation::class);
+    }
+
 }
