@@ -11,6 +11,7 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\CursorController;
+use App\Http\Controllers\SavedLocationController;
 use Illuminate\Http\Request;
 
 
@@ -22,6 +23,7 @@ Route::get('/api/map-data', [PixelController::class, 'index']);
 Route::post('/api/pixel', [PixelController::class, 'store']);
 Route::get('/api/cooldown', [PixelController::class, 'cooldown']);
 Route::post('/api/feedback', [FeedbackController::class, 'store']);
+Route::get('/location/{key}', [SavedLocationController::class, 'showByKey']);
 
 Route::prefix('leaderboard')->group(function () {
     Route::get('/groups', [GroupController::class, 'index']);
@@ -56,6 +58,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/group/leave', [GroupController::class, 'leaveGroup']);
     Route::post('/change-email', [HandleAuthController::class, 'changeEmail'])->middleware('throttle:3,1');
     Route::post('/verify-email-change', [HandleAuthController::class, 'verifyEmailChange'])->middleware('throttle:5,1');
+    Route::get('/saved-locations', [SavedLocationController::class, 'index']);
+    Route::post('/saved-locations', [SavedLocationController::class, 'store']);
+    Route::delete('/saved-locations/{id}', [SavedLocationController::class, 'destroy']);
 });
 
 Route::middleware(['auth', 'admin'])->group(function () {
