@@ -9,28 +9,27 @@ class CursorController extends Controller
 {
     public function move(Request $request)
     {
-        $request->validate([
-            'x' => 'required|integer',
-            'y' => 'required|integer',
-        ]);
+        // Ultra-cheap validation
+        $x = (int) $request->input('x');
+        $y = (int) $request->input('y');
 
-        $user = auth()->user();
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        if ($x === null || $y === null) {
+            return response()->noContent(422);
         }
 
-        $group = $user->group ?? null;
-        if (!$group) {
-            return response()->json(['error' => 'Not in a group'], 400);
+        $user = $request->user();
+        if (!$user || !$user->group_id) {
+            return response()->noContent(403);
         }
 
-        event(new GroupCursorMoved(
-            $request->input('x'),
-            $request->input('y'),
+        broadcast(new GroupCursorMoved(
+            $x,
+            $y,
             $user->username,
-            $group->id
-        ));
+            $user->group_id
+        ))->toOthers();
 
-        return response()->json(['success' => true]);
+        // No JSON, no serialization
+        return response()->noContent();
     }
 }
