@@ -305,7 +305,11 @@ class PixelController extends Controller
     public function getUsers()
     {
         $users = User::select('id', 'username', 'email')->get();
+        // Get all user IDs that have active bans
+        // Get all visitor IDs that have active bans
+        // Get users excluding those with active bans
 
+        // Get anonymous visitors excluding those with active bans
         $anonymousVisitors = Pixel::query()
             ->whereNull('user_id')
             ->whereNotIn('visitor_id', function ($q) {
