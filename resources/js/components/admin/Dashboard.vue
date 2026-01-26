@@ -151,6 +151,7 @@ onUnmounted(() => {
 #dashboard {
     animation: fadeIn 0.3s ease-out;
     margin: 0 auto;
+    font-family: 'pixel art', monospace;
 }
 
 .pixel-card {

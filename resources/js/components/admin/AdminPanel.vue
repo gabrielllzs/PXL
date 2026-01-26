@@ -45,11 +45,6 @@ function toggleSidebar() {
             </div>
             <div id="side-panel-content">
                 <ul>
-                    <li>
-                        <a href="/" class="menu-link">
-                            <span>> Return to Homepage</span>
-                        </a>
-                    </li>
                     <li   :class="{ active: activePage === 'dashboard' }" @click="activePage = 'dashboard'">
                         <span>> Dashboard</span>
                     </li>
@@ -60,12 +55,9 @@ function toggleSidebar() {
                         <span>> Support Tickets</span>
                     </li>
                     <li>
-                        <form method="POST" action="/logout">
-                            <input type="hidden" name="_token" :value="csrfToken" />
-                            <button type="submit" class="logout-btn">
-                                > Logout
-                            </button>
-                        </form>
+                        <a href="/" class="menu-link">
+                            <span>>Return</span>
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -98,9 +90,10 @@ function toggleSidebar() {
 <style scoped>
 .container {
     display: flex;
-    height: 100vh;
-    width: 100vw;
+    height: 100%;
+    width: 100%;
     position: relative;
+    font-family: 'pixel art', monospace;
 }
 
 #side-panel {
@@ -126,7 +119,8 @@ function toggleSidebar() {
 
 #side-panel-content {
     padding: 20px 0;
-    height: calc(100% - 60px);
+    margin-bottom: 20px;
+    height: 90%;
     display: flex;
 }
 
@@ -136,6 +130,7 @@ function toggleSidebar() {
     display: flex;
     flex-direction: column;
     width: 100%;
+    height: 100%;
 }
 
 #side-panel-content li {
@@ -166,18 +161,6 @@ function toggleSidebar() {
     width: 100%;
 }
 
-.logout-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: inherit;
-    padding: 0;
-    width: 100%;
-    text-align: left;
-    color: inherit;
-}
-
 /* Main Panel */
 #main-panel {
     flex-grow: 1;
@@ -206,6 +189,7 @@ function toggleSidebar() {
     color: #333;
     align-items: center;
     justify-content: center;
+    font-family: 'pixel art', monospace;
 }
 
 .menu-toggle svg {

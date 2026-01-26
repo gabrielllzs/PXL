@@ -184,6 +184,7 @@ async function unbanUser(banId) {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    font-family: 'pixel art', monospace;
 }
 
 .pixel-card {
@@ -216,6 +217,7 @@ h1 {
     cursor: pointer;
     font-weight: bold;
     transition: background-color 0.2s;
+    font-family: 'pixel art', monospace;
 }
 
 .ban-btn:hover {
@@ -278,6 +280,7 @@ h1 {
     font-size: 14px;
     width: 100%;
     box-sizing: border-box;
+    font-family: 'pixel art', monospace;
 }
 
 .search-input:focus {
@@ -294,6 +297,7 @@ h1 {
     cursor: pointer;
     font-size: 14px;
     transition: all 0.2s;
+    font-family: 'pixel art', monospace;
 }
 
 .clear-btn:hover {
@@ -392,6 +396,7 @@ tbody tr:hover {
     font-size: 12px;
     font-weight: bold;
     transition: background-color 0.2s;
+    font-family: 'pixel art', monospace;
 }
 
 .unban-btn:hover {

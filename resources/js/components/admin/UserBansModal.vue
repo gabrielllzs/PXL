@@ -309,6 +309,7 @@ async function submitBan() {
     justify-content: center;
     z-index: 1000;
     animation: fadeIn 0.2s ease-out;
+    font-family: 'pixel art', monospace;
 }
 
 .modal-content {
@@ -352,6 +353,7 @@ async function submitBan() {
     justify-content: center;
     border-radius: 4px;
     transition: all 0.2s;
+    font-family: 'pixel art', monospace;
 }
 
 .close-btn:hover {
@@ -386,7 +388,7 @@ async function submitBan() {
     border-radius: 4px;
     color: white;
     font-size: 14px;
-    font-family: inherit;
+    font-family: 'pixel art', monospace;
 }
 
 .form-group input:focus,
@@ -458,6 +460,7 @@ async function submitBan() {
     font-weight: bold;
     cursor: pointer;
     transition: all 0.2s;
+    font-family: 'pixel art', monospace;
 }
 
 .btn-cancel:hover {
@@ -474,6 +477,7 @@ async function submitBan() {
     font-weight: bold;
     cursor: pointer;
     transition: all 0.2s;
+    font-family: 'pixel art', monospace;
 }
 
 .btn-submit:hover {
@@ -495,6 +499,7 @@ async function submitBan() {
     cursor: pointer;
     font-size: 12px;
     transition: all 0.2s;
+    font-family: 'pixel art', monospace;
 }
 
 .picker-toggle-btn:hover {
@@ -523,7 +528,7 @@ async function submitBan() {
     border: 1px solid #444;
     border-radius: 4px;
     color: white;
-    font-family: inherit;
+    font-family: 'pixel art', monospace;
     box-sizing: border-box;
     flex-shrink: 0;
 }
@@ -569,14 +574,14 @@ async function submitBan() {
 .visitor-id {
     font-size: 12px;
     color: #bbb;
-    font-family: monospace;
+    font-family: 'pixel art', monospace;
     word-break: break-all;
 }
 
 .visitor-ip {
     font-size: 11px;
     color: #888;
-    font-family: monospace;
+    font-family: 'pixel art', monospace;
     word-break: break-all;
 }
 
@@ -610,6 +615,7 @@ async function submitBan() {
     transition: all 0.2s;
     white-space: nowrap;
     flex-shrink: 0;
+    font-family: 'pixel art', monospace;
 }
 
 .select-btn:hover {
@@ -644,6 +650,7 @@ async function submitBan() {
     font-size: 12px;
     margin-left: auto;
     transition: all 0.2s;
+    font-family: 'pixel art', monospace;
 }
 
 .clear-selection-btn:hover {

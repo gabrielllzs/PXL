@@ -119,6 +119,7 @@ async function handleSubmit() {
     justify-content: center;
     padding: 20px;
     background: #f9f9f9;
+    font-family: 'pixel art', monospace;
 }
 
 .form-container {
@@ -155,7 +156,7 @@ async function handleSubmit() {
     border: 2px solid rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     font-size: 14px;
-    font-family: inherit;
+    font-family: 'pixel art', monospace;
     box-sizing: border-box;
 }
 
@@ -185,6 +186,7 @@ async function handleSubmit() {
     cursor: pointer;
     transition: all 0.2s;
     font-size: 14px;
+    font-family: 'pixel art', monospace;
 }
 
 .type-btn:hover {
@@ -214,6 +216,7 @@ async function handleSubmit() {
     transition: all 0.2s;
     text-decoration: none;
     display: inline-block;
+    font-family: 'pixel art', monospace;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -238,6 +241,7 @@ async function handleSubmit() {
     text-decoration: none;
     display: inline-block;
     text-align: center;
+    font-family: 'pixel art', monospace;
 }
 
 .btn-secondary:hover {

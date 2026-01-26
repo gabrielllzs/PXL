@@ -78,6 +78,7 @@ onMounted(async () => {
 <style scoped>
 #support-tickets {
     animation: fadeIn 0.3s ease-out;
+    font-family: 'pixel art', monospace;
 }
 
 .pixel-card {
@@ -136,6 +137,7 @@ h1 {
     cursor: pointer;
     font-weight: bold;
     transition: all 0.2s;
+    font-family: 'pixel art', monospace;
 }
 
 .filter-bar button:hover {
