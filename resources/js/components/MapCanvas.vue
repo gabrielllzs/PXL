@@ -24,7 +24,7 @@ import { useMap } from '../composables/useMap'
 import { usePixels } from '../composables/usePixels'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
-import { initRealtimePixels, groupCursors } from '../composables/realtimePixels'
+import { initRealtimePixels, groupCursors, smoothedCursorPosition, removeSmoothedCursorPosition } from '../composables/realtimePixels'
 import { lngLatToWorldPx, worldPxToLngLat } from '../composables/useWorldConversion'
 import { executeHCaptcha } from '../composables/usecaptcha.js'
 import { playPixelPlaceSound } from '../composables/useAudio.js'
@@ -32,7 +32,7 @@ import { playPixelPlaceSound } from '../composables/useAudio.js'
 // Constants
 const ZOOM = 10
 const MIN_ZOOM = 9.5
-const CURSOR_SEND_INTERVAL = 150
+const CURSOR_SEND_INTERVAL = 250
 const PAINT_INTERVAL = 100
 const CURSOR_TIMEOUT = 3000
 const MAP_POSITION_KEY = 'mapCanvas:position'
@@ -78,6 +78,8 @@ let isNavigatingFromURL = false
 
 async function sendCursorPosition(x, y) {
     if (!group.value?.id) return
+
+    if (x === lastSentX && y === lastSentY) return
 
     const now = Date.now()
     if (now - lastCursorSendTime < CURSOR_SEND_INTERVAL) return
@@ -310,6 +312,7 @@ function drawGroupCursors() {
     for (const [username, cursor] of Object.entries(groupCursors)) {
         if (now - cursor.lastSeen > CURSOR_TIMEOUT) {
             delete groupCursors[username]
+            removeSmoothedCursorPosition(username)
             continue
         }
 
@@ -317,7 +320,8 @@ function drawGroupCursors() {
         if (cursor.username === user.value?.username) continue
 
         try {
-            const { screenX, screenY, width, height } = getCellScreenBounds(cursor.x, cursor.y)
+            const position = smoothedCursorPosition(username, cursor.x, cursor.y)
+            const { screenX, screenY, width, height } = getCellScreenBounds(position.x, position.y)
             const cx = screenX + width / 2
             const cy = screenY + height / 2
 
@@ -332,7 +336,7 @@ function drawGroupCursors() {
 
             // Draw username
             hoverCanvasRender.fillStyle = '#3b82f6'
-            hoverCanvasRender.font = '12px sans-serif'
+            hoverCanvasRender.font = '12px "pixel art"'
             hoverCanvasRender.textAlign = 'center'
             hoverCanvasRender.textBaseline = 'bottom'
             hoverCanvasRender.fillText(cursor.username, cx, cy - 12)
@@ -389,7 +393,7 @@ async function placePixel(mouseEvent) {
     if (props.waybackActive) {
         return false
     }
-    
+
     if (user.value && !isEmailVerified()) {
         showToast('Please verify your email before placing pixels', 'error')
         emit('verificationRequired')

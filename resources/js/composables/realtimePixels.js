@@ -6,6 +6,9 @@ import { useAuth } from "./useAuth.js";
 
 export const groupCursors = reactive({})
 
+// Store smooth positions for each cursor
+const smoothPositions = {}
+
 window.Pusher = Pusher
 
 export async function initRealtimePixels(drawAll) {
@@ -43,18 +46,15 @@ export async function initRealtimePixels(drawAll) {
 
         if (!group.value?.id) {
             if (import.meta.env.DEV || (typeof window !== 'undefined' && window.__DEBUG_CURSORS)) {
-                console.warn("[GroupCursor] Not in a group, skipping private channel subscription")
             }
         } else {
             if (import.meta.env.DEV || (typeof window !== 'undefined' && window.__DEBUG_CURSORS)) {
-                console.log("[GroupCursor] Subscribing to private channel group." + group.value.id)
             }
             let hasReceivedOnce = false
             window.Echo.private(`group.${group.value.id}`)
                 .listen('.GroupCursorMoved', (e) => {
                     if (!hasReceivedOnce && (import.meta.env.DEV || (typeof window !== 'undefined' && window.__DEBUG_CURSORS))) {
                         hasReceivedOnce = true
-                        console.log("[GroupCursor] Receiving cursor events (connected)")
                     }
                     groupCursors[e.username] = {
                         x: e.x,
@@ -68,4 +68,21 @@ export async function initRealtimePixels(drawAll) {
     } catch (err) {
         console.warn("Failed to init realtime pixels:", err)
     }
+}
+
+export function smoothedCursorPosition(username, targetX, targetY) {
+    if (!smoothPositions[username]) {
+        smoothPositions[username] = { x: targetX, y: targetY }
+    }
+
+    const pos = smoothPositions[username]
+
+    pos.x = smoothValue(pos.x, targetX, 0.1)
+    pos.y = smoothValue(pos.y, targetY, 0.1)
+
+    return { x: pos.x, y: pos.y }
+}
+
+export function removeSmoothedCursorPosition(username) {
+    delete smoothPositions[username]
 }
