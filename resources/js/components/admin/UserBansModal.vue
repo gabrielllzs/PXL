@@ -1,5 +1,8 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 const props = defineProps({
     open: { type: Boolean, default: false }
@@ -117,17 +120,20 @@ function close() {
 
 async function submitBan() {
     if (!banForm.value.reason.trim()) {
-        return alert('Reason is required')
+        showToast('Reason is required', 'error')
+        return
     }
 
     const hasUser = !!banForm.value.user_id
     const hasVisitor = !!(banForm.value.visitor_id?.trim() || banForm.value.ip_address?.trim())
     if (!hasUser && !hasVisitor) {
-        return alert('Please provide a user (use Browse) or Visitor ID / IP Address')
+        showToast('Please provide a user (use Browse) or Visitor ID / IP Address', 'error')
+        return
     }
 
     if (!banForm.value.is_permanent && !banForm.value.banned_until) {
-        return alert('Please select an end date for temporary ban')
+        showToast('Please select an end date for temporary ban', 'error')
+        return
     }
 
     const form = new FormData()
@@ -143,17 +149,24 @@ async function submitBan() {
     }
 
     try {
-        await fetch('/ban-visitors', {
+        const response = await fetch('/ban-visitors', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
             },
             body: form
         })
-        emit('banned')
-        close()
+
+        if (response.ok) {
+            const target = banForm.value.username || banForm.value.visitor_id || banForm.value.ip_address || 'User'
+            showToast(`${target} banned successfully`, 'success')
+            emit('banned')
+            close()
+        } else {
+            showToast('Failed to ban user', 'error')
+        }
     } catch (e) {
-        alert('Error banning user: ' + (e.message || 'Unknown error'))
+        showToast('Error banning user: ' + (e.message || 'Unknown error'), 'error')
     }
 }
 </script>

@@ -67,7 +67,7 @@ onMounted(async () => {
                 </div>
                 <div class="ticket-info">
                     <span class="ticket-email">{{ ticket.email }}</span>
-                    <span v-if="ticket.username" class="ticket-username">@{{ ticket.username }}</span>
+                    <span v-if="ticket.username" class="ticket-username">{{ ticket.username }}</span>
                 </div>
                 <p class="ticket-message">{{ ticket.message }}</p>
             </div>
@@ -98,6 +98,7 @@ h1 {
     display: flex;
     gap: 40px;
     margin-top: 15px;
+    flex-wrap: wrap;
 }
 
 .stat-item {
@@ -217,6 +218,94 @@ h1 {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+    #support-tickets {
+        width: 100%;
+    }
+
+    .pixel-card {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .stat-row {
+        gap: 20px;
+    }
+
+    .stat-item {
+        flex: 1;
+        min-width: 100px;
+    }
+
+    .filter-bar {
+        flex-wrap: wrap;
+    }
+
+    .filter-bar button {
+        flex: 1;
+        min-width: 80px;
+    }
+
+    .ticket-card {
+        padding: 12px;
+    }
+
+    .ticket-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .ticket-info {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .pixel-card {
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+
+    h1 {
+        font-size: 1.3rem;
+    }
+
+    .stat-row {
+        gap: 12px;
+    }
+
+    .stat-item {
+        min-width: 80px;
+    }
+
+    .value {
+        font-size: 1.2rem;
+    }
+
+    .label {
+        font-size: 0.65rem;
+    }
+
+    .filter-bar button {
+        padding: 6px 12px;
+        font-size: 14px;
+    }
+
+    .ticket-card {
+        padding: 10px;
+    }
+
+    .ticket-message {
+        font-size: 13px;
+    }
 }
 </style>
 

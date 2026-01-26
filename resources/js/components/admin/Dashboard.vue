@@ -1,11 +1,14 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 const metrics = ref(null)
 const loading = ref(true)
 
 const CACHE_KEY = 'lightsail_metrics'
 const CACHE_TTL = 60000
+const UPDATE_INTERVAL = 60000 // 1 minute
+
+let metricsInterval = null
 
 const formatBytes = bytes => {
     if (!bytes) return '0 B'
@@ -35,9 +38,7 @@ const setCache = data => {
     localStorage.setItem(`${CACHE_KEY}_time`, Date.now())
 }
 
-onMounted(async () => {
-    loading.value = true
-
+async function fetchMetrics() {
     const cached = getCache()
     if (cached) {
         metrics.value = cached
@@ -47,15 +48,37 @@ onMounted(async () => {
 
     try {
         const metricsData = await fetch('/server/metrics')
-        if (!metricsData.ok) return
+        if (!metricsData.ok) {
+            loading.value = false
+            return
+        }
 
         const { data } = await metricsData.json()
         metrics.value = data
         setCache(data)
+    } catch (error) {
+        console.error('Error fetching metrics:', error)
     } finally {
         loading.value = false
     }
-});
+}
+
+onMounted(async () => {
+    loading.value = true
+    await fetchMetrics()
+    
+    // Set up interval to update metrics every minute
+    metricsInterval = setInterval(() => {
+        fetchMetrics()
+    }, UPDATE_INTERVAL)
+})
+
+onUnmounted(() => {
+    if (metricsInterval) {
+        clearInterval(metricsInterval)
+        metricsInterval = null
+    }
+})
 </script>
 
 <template>
@@ -143,6 +166,66 @@ onMounted(async () => {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
+}
+
+@media (max-width: 768px) {
+    #dashboard {
+        width: 100%;
+    }
+
+    .pixel-card {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .metrics-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .stat-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .stat-item {
+        width: 100%;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    h3 {
+        font-size: 1.1rem;
+    }
+
+    .value {
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .pixel-card {
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+
+    h1 {
+        font-size: 1.3rem;
+    }
+
+    h3 {
+        font-size: 1rem;
+    }
+
+    .value {
+        font-size: 1.2rem;
+    }
+
+    .label {
+        font-size: 0.65rem;
+    }
 }
 
 .metric-card {

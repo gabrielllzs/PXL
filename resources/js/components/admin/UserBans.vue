@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import UserBansModal from './UserBansModal.vue'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 const banned = ref([])
 const loading = ref(true)
@@ -44,6 +47,30 @@ function closeBanModal() {
 function onBanned() {
     loadBanned()
 }
+
+async function unbanUser(banId) {
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        const response = await fetch(`/unban/${banId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            credentials: 'include'
+        })
+
+        if (response.ok) {
+            showToast('User unbanned successfully', 'success')
+            loadBanned()
+        } else {
+            showToast('Failed to unban user', 'error')
+        }
+    } catch (error) {
+        console.error('Error unbanning user:', error)
+        showToast('Error unbanning user', 'error')
+    }
+}
 </script>
 
 <template>
@@ -70,7 +97,8 @@ function onBanned() {
             </div>
         </div>
 
-        <div class="pixel-card">
+        <div class="pixel-card search-card">
+            <h2 class="card-title">Search Banned Users</h2>
             <div class="search-controls">
                 <input
                     v-model="searchQuery"
@@ -86,42 +114,52 @@ function onBanned() {
                     Clear
                 </button>
             </div>
+        </div>
 
+        <div class="pixel-card table-card">
             <div v-if="loading" class="loading">
                 <p>Loading...</p>
             </div>
 
-            <table v-else-if="filteredBanned.length">
-                <thead>
-                    <tr>
-                        <th>User / Visitor</th>
-                        <th>IP Address</th>
-                        <th>Reason</th>
-                        <th>Type</th>
-                        <th>Banned At</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="ban in filteredBanned" :key="ban.id">
-                        <td class="id">
-                            <template v-if="ban.user_id && ban.user">
-                                <span class="badge-user">{{ ban.user.username }}</span>
-                            </template>
-                            <template v-else>
-                                {{ ban.visitor_id || '-' }}
-                            </template>
-                        </td>
-                        <td class="ip-address">{{ ban.ip_address || '-' }}</td>
-                        <td class="reason">{{ ban.reason }}</td>
-                        <td class="type">
-                            <span :class="ban.is_permanent ? 'badge-permanent' : 'badge-temporary'">
-                                {{ ban.is_permanent ? 'Permanent' : 'Temporary' }}
-                            </span>
-                        </td>
-                        <td class="date">{{ new Date(ban.created_at).toLocaleString() }}</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div v-else-if="filteredBanned.length" class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User / Visitor</th>
+                            <th>IP Address</th>
+                            <th>Reason</th>
+                            <th>Type</th>
+                            <th>Banned At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="ban in filteredBanned" :key="ban.id">
+                            <td class="id">
+                                <template v-if="ban.user_id && ban.user">
+                                    <span class="badge-user">{{ ban.user.username }}</span>
+                                </template>
+                                <template v-else>
+                                    {{ ban.visitor_id || '-' }}
+                                </template>
+                            </td>
+                            <td class="ip-address">{{ ban.ip_address || '-' }}</td>
+                            <td class="reason">{{ ban.reason }}</td>
+                            <td class="type">
+                                <span :class="ban.is_permanent ? 'badge-permanent' : 'badge-temporary'">
+                                    {{ ban.is_permanent ? 'Permanent' : 'Temporary' }}
+                                </span>
+                            </td>
+                            <td class="date">{{ new Date(ban.created_at).toLocaleString() }}</td>
+                            <td class="actions">
+                                <button class="unban-btn" @click="unbanUser(ban.id)" title="Unban User">
+                                    Unban
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
             <div v-else-if="searchQuery" class="empty-state">
                 <p>No banned users match your search.</p>
@@ -188,6 +226,7 @@ h1 {
     display: flex;
     gap: 30px;
     margin-top: 15px;
+    flex-wrap: wrap;
 }
 
 .stat-item {
@@ -207,21 +246,38 @@ h1 {
     font-weight: bold;
 }
 
+.search-card {
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.card-title {
+    margin: 0 0 16px 0;
+    color: #e0e0e0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
 .search-controls {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
     align-items: center;
+    width: 100%;
+    min-width: 0;
 }
 
 .search-input {
     flex: 1;
+    min-width: 0;
     padding: 10px 15px;
     background: #252525;
     border: 1px solid #444;
     border-radius: 4px;
     color: white;
     font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .search-input:focus {
@@ -251,12 +307,19 @@ h1 {
     color: #888;
 }
 
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 table {
     width: 100%;
     border-collapse: separate;
     background: #1e1e1e;
     border-radius: 8px;
     overflow: hidden;
+    min-width: 700px;
 }
 
 thead {
@@ -315,6 +378,26 @@ tbody tr:hover {
     font-weight: bold;
 }
 
+.actions {
+    white-space: nowrap;
+}
+
+.unban-btn {
+    padding: 6px 12px;
+    background-color: #22c55e;
+    border: none;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.unban-btn:hover {
+    background-color: #16a34a;
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -323,6 +406,146 @@ tbody tr:hover {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    #user-bans {
+        width: 100%;
+    }
+
+    .pixel-card {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .ban-btn {
+        width: 100%;
+    }
+
+    .stat-row {
+        gap: 20px;
+    }
+
+    .stat-item {
+        flex: 1;
+        min-width: 100px;
+    }
+
+    .search-card {
+        padding: 16px;
+        box-sizing: border-box;
+    }
+
+    .card-title {
+        font-size: 1rem;
+        margin-bottom: 12px;
+    }
+
+    .search-controls {
+        flex-direction: column;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .search-input {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+
+    .clear-btn {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .table-card {
+        padding: 12px;
+        overflow-x: auto;
+    }
+
+    .unban-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    table {
+        min-width: 600px;
+    }
+
+    th, td {
+        padding: 10px 12px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pixel-card {
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+
+    h1 {
+        font-size: 1.3rem;
+    }
+
+    .stat-row {
+        gap: 12px;
+    }
+
+    .stat-item {
+        min-width: 80px;
+    }
+
+    .value {
+        font-size: 1.2rem;
+    }
+
+    .label {
+        font-size: 0.65rem;
+    }
+
+    .search-card {
+        padding: 12px;
+        box-sizing: border-box;
+    }
+
+    .card-title {
+        font-size: 0.9rem;
+    }
+
+    .search-input {
+        padding: 8px 12px;
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+
+    .table-card {
+        padding: 10px;
+    }
+
+    table {
+        min-width: 500px;
+    }
+
+    th, td {
+        padding: 8px 10px;
+        font-size: 10px;
+    }
+
+    .unban-btn {
+        padding: 4px 8px;
+        font-size: 10px;
     }
 }
 </style>
