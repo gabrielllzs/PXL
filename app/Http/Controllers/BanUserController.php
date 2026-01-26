@@ -51,6 +51,8 @@ class BanUserController extends Controller
     {
         $bannedUser = BannedUser::findOrFail($id);
         
+        $bannedUser->banned = false;
+        $bannedUser->is_permanent = false;
         $bannedUser->save();
 
         return response()->json([
