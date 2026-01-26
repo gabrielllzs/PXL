@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Events\PixelPlaced;
 use App\Models\BannedUser;
 use App\Models\Pixel;
-use App\Models\User;
 use App\Services\PixelCounterService;
 use App\Services\LevelService;
 use Illuminate\Http\Request;
@@ -39,6 +38,7 @@ class PixelController extends Controller
 
         if ($isAuthenticated && $user) {
             $bannedUser = BannedUser::where('user_id', $user->id)
+                ->where('banned', true)
                 ->where(function ($query) {
                     $query->where('is_permanent', true)
                         ->orWhere(function ($q) {
@@ -73,6 +73,7 @@ class PixelController extends Controller
         if (!$isAuthenticated) {
             $visitorId = $request->input('visitorId');
             $bannedVisitor = BannedUser::where('visitor_id', $visitorId)
+                ->where('banned', true)
                 ->where(function ($query) {
                     $query->where('is_permanent', true)
                         ->orWhere(function ($q) {
@@ -302,31 +303,4 @@ class PixelController extends Controller
         ];
     }
 
-    public function getUsers()
-    {
-        $users = User::select('id', 'username', 'email')->get();
-        // Get all user IDs that have active bans
-        // Get all visitor IDs that have active bans
-        // Get users excluding those with active bans
-
-        // Get anonymous visitors excluding those with active bans
-        $anonymousVisitors = Pixel::query()
-            ->whereNull('user_id')
-            ->whereNotIn('visitor_id', function ($q) {
-                $q->select('visitor_id')
-                    ->from('banned_users')
-                    ->where('banned', true);
-            })
-            ->orderBy('id', 'desc')
-            ->get()
-            ->unique('visitor_id')
-            ->values();
-
-        return [
-            'users' => $users,
-            'anonymous_visitors' => $anonymousVisitors,
-        ];
-
-
-    }
 }

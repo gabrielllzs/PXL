@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\BannedUser;
-use Illuminate\Http\Request;
 use App\Models\Pixel;
+use App\Models\User;
+use Illuminate\Http\Request;
 
 class BanUserController extends Controller
 {
@@ -59,5 +60,53 @@ class BanUserController extends Controller
             'message' => 'User unbanned successfully',
             'banned_user' => $bannedUser
         ]);
+    }
+
+    public function getUsers()
+    {
+        // Get all user IDs that have active bans
+        $bannedUserIds = BannedUser::where('banned', true)
+            ->where(function ($query) {
+                $query->where('is_permanent', true)
+                    ->orWhere(function ($q) {
+                        $q->whereNotNull('banned_until')
+                            ->where('banned_until', '>', now());
+                    });
+            })
+            ->whereNotNull('user_id')
+            ->pluck('user_id')
+            ->toArray();
+
+        // Get all visitor IDs that have active bans
+        $bannedVisitorIds = BannedUser::where('banned', true)
+            ->where(function ($query) {
+                $query->where('is_permanent', true)
+                    ->orWhere(function ($q) {
+                        $q->whereNotNull('banned_until')
+                            ->where('banned_until', '>', now());
+                    });
+            })
+            ->whereNotNull('visitor_id')
+            ->pluck('visitor_id')
+            ->toArray();
+
+        // Get users excluding those with active bans
+        $users = User::select('id', 'username', 'email')
+            ->whereNotIn('id', $bannedUserIds)
+            ->get();
+
+        // Get anonymous visitors excluding those with active bans
+        $anonymousVisitors = Pixel::query()
+            ->whereNull('user_id')
+            ->whereNotIn('visitor_id', $bannedVisitorIds)
+            ->orderBy('id', 'desc')
+            ->get()
+            ->unique('visitor_id')
+            ->values();
+
+        return [
+            'users' => $users,
+            'anonymous_visitors' => $anonymousVisitors,
+        ];
     }
 }
