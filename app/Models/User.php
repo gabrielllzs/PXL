@@ -102,4 +102,9 @@ class User extends Authenticatable
         return $this->hasMany(SavedLocation::class);
     }
 
+    public function getGroupIdAttribute()
+    {
+        return $this->groupMember?->group_id;
+    }
+
 }
