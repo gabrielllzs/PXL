@@ -6,8 +6,13 @@ import { useAuth } from "./useAuth.js";
 
 export const groupCursors = reactive({})
 
-// Store smooth positions for each cursor
 const smoothPositions = {}
+
+function smoothValue(current, target, ) {
+    const followspeed = 0.1
+
+    return current + (target - current) * followspeed
+}
 
 window.Pusher = Pusher
 
@@ -77,8 +82,8 @@ export function smoothedCursorPosition(username, targetX, targetY) {
 
     const pos = smoothPositions[username]
 
-    pos.x = smoothValue(pos.x, targetX, 0.1)
-    pos.y = smoothValue(pos.y, targetY, 0.1)
+    pos.x = smoothValue(pos.x, targetX)
+    pos.y = smoothValue(pos.y, targetY)
 
     return { x: pos.x, y: pos.y }
 }

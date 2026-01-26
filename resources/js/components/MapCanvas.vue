@@ -70,6 +70,8 @@ let hoverCanvasRender = null
 let animationFrameId = null
 let captchaSessionVerified = false
 let lastCursorSendTime = 0
+let lastSentX = null
+let lastSentY = null
 let lastPaintTime = 0
 let lastPaintedX = null
 let lastPaintedY = null
@@ -84,6 +86,8 @@ async function sendCursorPosition(x, y) {
     const now = Date.now()
     if (now - lastCursorSendTime < CURSOR_SEND_INTERVAL) return
     lastCursorSendTime = now
+    lastSentX = x
+    lastSentY = y
 
     try {
         await axios.post('/api/cursor/move', { x, y })
