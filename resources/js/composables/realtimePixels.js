@@ -8,7 +8,7 @@ export const groupCursors = reactive({})
 
 const smoothPositions = {}
 
-function smoothValue(current, target, ) {
+function smoothValue(current, target) {
     const followspeed = 0.1
 
     return current + (target - current) * followspeed
