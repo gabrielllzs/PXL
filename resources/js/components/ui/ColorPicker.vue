@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, inject } from 'vue'
+import { ref, watch, inject, onMounted, onUnmounted, nextTick } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 
 const STORAGE_KEY = 'colorPicker:selectedColor'
@@ -7,6 +7,9 @@ const CUSTOM_COLORS_KEY = 'colorPicker:customColors'
 
 const openLogin = inject('openLogin', null)
 const { isAuthenticated } = useAuth()
+
+const colorPickerRef = ref(null)
+const height = ref(0)
 
 const props = defineProps({
     modelValue: {
@@ -141,11 +144,89 @@ watch(
         } catch (e) {}
     }
 )
+
+// Track height changes
+let resizeObserver = null
+
+function measureAndSetHeight() {
+    if (colorPickerRef.value) {
+        const measuredHeight = colorPickerRef.value.offsetHeight || colorPickerRef.value.clientHeight
+        if (measuredHeight > 0 && measuredHeight !== height.value) {
+            height.value = measuredHeight
+            document.documentElement.style.setProperty('--color-picker-height', `${measuredHeight}px`)
+        }
+    }
+}
+
+function setupResizeObserver() {
+    if (resizeObserver) {
+        resizeObserver.disconnect()
+        resizeObserver = null
+    }
+    
+    if (!colorPickerRef.value) return
+    
+    // Initial measurement
+    measureAndSetHeight()
+    
+    resizeObserver = new ResizeObserver(entries => {
+        for (const entry of entries) {
+            const newHeight = entry.contentRect.height
+            if (newHeight > 0 && newHeight !== height.value) {
+                height.value = newHeight
+                document.documentElement.style.setProperty('--color-picker-height', `${newHeight}px`)
+            }
+        }
+    })
+    resizeObserver.observe(colorPickerRef.value)
+    
+    // Also measure after a short delay to catch any layout changes
+    nextTick(() => {
+        measureAndSetHeight()
+    })
+}
+
+watch(() => props.paintMode, async (newValue) => {
+    if (newValue) {
+        await nextTick()
+        // Wait for transition to start (transition is 0.25s)
+        setTimeout(() => {
+            setupResizeObserver()
+        }, 100)
+        setTimeout(() => {
+            if (colorPickerRef.value && props.paintMode) {
+                setupResizeObserver()
+            }
+        }, 300)
+    } else {
+        if (resizeObserver) {
+            resizeObserver.disconnect()
+            resizeObserver = null
+        }
+        height.value = 0
+        document.documentElement.style.setProperty('--color-picker-height', '0px')
+    }
+}, { immediate: true })
+
+onMounted(() => {
+    if (props.paintMode) {
+        nextTick(() => {
+            setupResizeObserver()
+        })
+    }
+})
+
+onUnmounted(() => {
+    if (resizeObserver) {
+        resizeObserver.disconnect()
+        resizeObserver = null
+    }
+})
 </script>
 
 <template>
     <Transition name="slide-up">
-        <div v-if="paintMode" id="colorPicker" @click.stop>
+        <div v-if="paintMode" id="colorPicker" ref="colorPickerRef" @click.stop>
             <div class="paint-hint-banner">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" class="hint-icon">
                     <path d="M419-80q-28 0-52.5-12T325-126L107-403l19-20q20-21 48-25t52 11l74 45v-328q0-17 11.5-28.5T340-760q17 0 29 11.5t12 28.5v472l-97-60 104 133q6 7 14 11t17 4h221q33 0 56.5-23.5T720-240v-160q0-17-11.5-28.5T680-440H461v-80h219q50 0 85 35t35 85v160q0 66-47 113T640-80H419ZM167-620q-13-22-20-47.5t-7-52.5q0-83 58.5-141.5T340-920q83 0 141.5 58.5T540-720q0 27-7 52.5T513-620l-69-40q8-14 12-28.5t4-31.5q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 17 4 31.5t12 28.5l-69 40Zm335 280Z"></path>

@@ -1,5 +1,5 @@
 <script setup>
-defineProps({
+const props = defineProps({
     raised: {
         type: Boolean,
         default: false
@@ -47,8 +47,9 @@ const emit = defineEmits(['zoomIn', 'zoomOut', 'center'])
 }
 
 .zoom-controls.raised {
-    bottom: 220px;
+    bottom: calc(var(--color-picker-height, 0px) + 12px);
 }
+
 
 .zoom-buttons {
     display: flex;
@@ -123,12 +124,12 @@ const emit = defineEmits(['zoomIn', 'zoomOut', 'center'])
         display: none;
     }
 
-    .zoom-controls {
+    .zoom-controls:not(.raised) {
         bottom: 120px;
     }
 
     .zoom-controls.raised {
-        bottom: 340px;
+        bottom: calc(var(--color-picker-height, 0px) + 12px);
     }
 }
 </style>
