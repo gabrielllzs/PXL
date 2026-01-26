@@ -63,9 +63,16 @@ function openColorInput() {
         openLogin?.()
         return
     }
-    showColorInput.value = true
     if (colorInputRef.value) {
-        setTimeout(() => colorInputRef.value?.click(), 100)
+        nextTick(() => {
+            requestAnimationFrame(() => {
+                try {
+                    colorInputRef.value?.click()
+                } catch (e) {
+                    console.warn('Programmatic click failed, using label fallback')
+                }
+            })
+        })
     }
 }
 
@@ -242,7 +249,7 @@ onUnmounted(() => {
             <div class="picker-header">
                 <div class="header-title">
                     <h2>Paint pixel <span class="color-preview" :style="{ background: modelValue }"></span></h2>
-                    <button class="header-btn color-picker-btn" @click="openColorInput" title="Color Picker">
+                    <button class="header-btn color-picker-btn" @click.stop="openColorInput" title="Color Picker">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" class="icon">
                             <path d="M120-120v-190l358-358-58-56 58-56 76 76 124-124q5-5 12.5-8t15.5-3q8 0 15 3t13 8l94 94q5 6 8 13t3 15q0 8-3 15.5t-8 12.5L705-555l76 78-57 57-56-58-358 358H120Zm80-80h78l332-334-76-76-334 332v78Zm447-410 96-96-37-37-96 96 37 37Zm0 0-37-37 37 37Z"></path>
                         </svg>
@@ -290,25 +297,34 @@ onUnmounted(() => {
                                     aria-label="Delete color"
                                 >×</button>
                             </div>
-                            <div
+                            <label
                                 v-if="customColors.length < 8"
                                 class="swatch add-color-btn"
-                                @click.stop="openColorInput"
                                 :class="{ active: showColorInput }"
+                                for="custom-color-input"
                             >
                                 <span class="add-icon">+</span>
-                            </div>
+                            </label>
                         </div>
                     </div>
                 </div>
 
+                <input
+                    type="color"
+                    id="custom-color-input"
+                    v-model="newColor"
+                    @input="addCustomColor"
+                    @change="addCustomColor"
+                    ref="colorInputRef"
+                    class="color-input-hidden"
+                />
                 <div v-if="showColorInput" class="color-input-container">
                     <input
                         type="color"
                         v-model="newColor"
                         @input="addCustomColor"
+                        @change="addCustomColor"
                         class="color-input"
-                        ref="colorInputRef"
                     />
                 </div>
             </div>
@@ -565,6 +581,7 @@ onUnmounted(() => {
     justify-content: center;
     background: rgba(0, 0, 0, 0.06);
     border: 2px dashed rgba(0, 0, 0, 0.2);
+    cursor: pointer;
 }
 
 .add-color-btn:hover {
@@ -582,6 +599,15 @@ onUnmounted(() => {
     font-size: 20px;
     color: rgba(0, 0, 0, 0.5);
     font-weight: 700;
+}
+
+.color-input-hidden {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    overflow: hidden;
 }
 
 /* Color Input */
