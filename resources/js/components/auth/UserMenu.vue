@@ -458,6 +458,7 @@ onUnmounted(() => {
     font-weight: 600;
     font-size: 14px;
     transition: all 0.2s;
+    font-family: 'pixel art', monospace;
 }
 
 .btn-logout:hover {
