@@ -14,8 +14,6 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
-const dontShowAgain = ref(false)
-
 const STORAGE_KEY = 'pxl_welcome_dismissed'
 
 onMounted(() => {
@@ -27,9 +25,8 @@ onMounted(() => {
 })
 
 function close() {
-    if (dontShowAgain.value) {
-        localStorage.setItem(STORAGE_KEY, 'true')
-    }
+    // Automatically remember dismissal
+    localStorage.setItem(STORAGE_KEY, 'true')
     emit('update:modelValue', false)
 }
 
@@ -171,7 +168,7 @@ function getYouTubeThumbnail(url) {
                         <div class="feature-item">
                             <div class="feature-icon save">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M19.5 21a3 3 0 003-3V9a3 3 0 00-3-3h-1.586l-1.5-1.5H9.086l-1.5 1.5H5.25A3 3 0 002.25 9v9a3 3 0 003 3h14.25zM9 12.75a3 3 0 106 0 3 3 0 00-6 0z" clip-rule="evenodd"/>
+                                    <path fill-rule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
                                 </svg>
                             </div>
                             <div class="feature-text">
@@ -217,12 +214,6 @@ function getYouTubeThumbnail(url) {
                 </div>
             </div>
 
-            <label class="checkbox-group">
-                <input v-model="dontShowAgain" type="checkbox" />
-                <span class="checkbox-custom"></span>
-                <span class="checkbox-label">Don't show this again</span>
-            </label>
-
             <button class="btn-primary" @click="close">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                     <path fill-rule="evenodd" d="M9.315 7.584C12.195 3.883 16.615 1.5 21.75 1.5a.75.75 0 01.75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 019.75 22.5a.75.75 0 01-.75-.75v-4.131A15.838 15.838 0 016.382 15H2.25a.75.75 0 01-.75-.75 6.75 6.75 0 017.815-6.666zM15 6.75a2.25 2.25 0 100 4.5 2.25 2.25 0 000-4.5z" clip-rule="evenodd"/>
@@ -254,7 +245,7 @@ function getYouTubeThumbnail(url) {
     background: #fafafa;
     border-radius: 20px;
     padding: 32px;
-    max-width: 520px;
+    max-width: 700px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
@@ -512,53 +503,6 @@ function getYouTubeThumbnail(url) {
 .feature-text span {
     color: #888;
     font-size: 12px;
-}
-
-.checkbox-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    user-select: none;
-    margin-bottom: 16px;
-}
-
-.checkbox-group input[type="checkbox"] {
-    display: none;
-}
-
-.checkbox-custom {
-    width: 20px;
-    height: 20px;
-    border: 2px solid rgba(0, 0, 0, 0.15);
-    border-radius: 6px;
-    background: white;
-    position: relative;
-    transition: all 0.2s;
-    flex-shrink: 0;
-}
-
-.checkbox-group input:checked + .checkbox-custom {
-    background: #ea580c;
-    border-color: #ea580c;
-}
-
-.checkbox-group input:checked + .checkbox-custom::after {
-    content: '';
-    position: absolute;
-    left: 6px;
-    top: 2px;
-    width: 5px;
-    height: 10px;
-    border: solid white;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-}
-
-.checkbox-label {
-    font-size: 14px;
-    color: #666;
-    font-weight: 500;
 }
 
 .btn-primary {

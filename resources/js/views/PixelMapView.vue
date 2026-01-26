@@ -45,6 +45,16 @@
             v-model="showWelcome"
             videoUrl="https://www.youtube.com/watch?v=YOUR_VIDEO_ID"
         />
+        <button
+            v-if="!paintMode"
+            class="info-button"
+            @click="showWelcome = true"
+            title="Info & Help"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm9-3.75a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H12a.75.75 0 01-.75-.75V8.25zm-3 6.75a.75.75 0 01.75-.75h6a.75.75 0 010 1.5h-6a.75.75 0 01-.75-.75zm.75-2.25a.75.75 0 00-.75.75v2.25a.75.75 0 00.75.75h6a.75.75 0 00.75-.75V12a.75.75 0 00-.75-.75h-6z" clip-rule="evenodd"/>
+            </svg>
+        </button>
     </div>
     <MapCanvas
         ref="mapCanvasRef"
@@ -260,5 +270,57 @@ watch(waybackActive, async (active) => {
     width: 100%;
     height: 100%;
     pointer-events: none;
+}
+
+.info-button {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #1a1a1a;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: auto;
+    font-family: 'pixel art', monospace;
+    z-index: 1;
+}
+
+.info-button:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    border-color: rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 1);
+}
+
+.info-button:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.info-button svg {
+    width: 24px;
+    height: 24px;
+}
+
+@media (max-width: 640px) {
+    .info-button {
+        bottom: 12px;
+        left: 12px;
+        width: 44px;
+        height: 44px;
+    }
+    
+    .info-button svg {
+        width: 22px;
+        height: 22px;
+    }
 }
 </style>
