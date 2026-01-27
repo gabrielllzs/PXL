@@ -92,6 +92,12 @@ export function usePixels() {
                     : 'No pixels available. Please wait for them to regenerate.'
                 showToast(msg, 'error')
                 throw { type: 'no_pixels_available', message: msg }
+            } else if (status === 429 && data?.error === 'ip_rate_limited') {
+                const msg = data?.message || 'You haev been placing pixels too quickly. And have been rate limited.'
+                const retrySec = data?.retry_after
+                if (Number.isFinite(retrySec) && retrySec > 0) startCooldown(retrySec)
+                showToast(msg, 'error')
+                throw { type: 'ip_rate_limited', message: msg }
             } else if (status === 403 && data?.error === 'email_not_verified') {
                 throw { type: 'email_not_verified', message: data?.message || 'Please verify your email' }
             } else if (status === 403 && data?.error === 'banned') {

@@ -10,6 +10,7 @@ use App\Services\LevelService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\RateLimiter;
 use App\Models\PixelHistory;
 use Illuminate\Support\Facades\Log;
 
@@ -168,11 +169,19 @@ class PixelController extends Controller
         }
 
 
-        // Authenticated users have no cooldown - skip all cooldown checks
-        if(!$isAuthenticated) {
-            // Visitors have cooldown - check cache and database
-            $cacheKey = "cooldown:visitor:{$visitorId}";
+        if (! $isAuthenticated) {
+            // Abuse-preventie: max 24 pixelplaatsingen per IP per minuut (gelijk IP ≠ gedeelde cooldown)
+            $ipLimitKey = 'pixel-guest-ip:' . $clientIp;
+            if (RateLimiter::tooManyAttempts($ipLimitKey, 24)) {
+                return response()->json([
+                    'error' => 'ip_rate_limited',
+                    'message' => 'Te veel plaatsingen vanaf dit adres. Probeer het over een minuut opnieuw.',
+                    'retry_after' => RateLimiter::availableIn($ipLimitKey),
+                ], 429);
+            }
 
+            // Per-guest 10s cooldown (visitorId);zelfde IP mag meerdere guests hebben
+            $cacheKey = "cooldown:visitor:{$visitorId}";
             if (Cache::has($cacheKey)) {
                 $remaining = Cache::get($cacheKey);
                 return response()->json([
@@ -181,7 +190,7 @@ class PixelController extends Controller
                 ], 412);
             }
 
-            $cooldownCheck = $this->cooldown($request);
+            $cooldownCheck = $this->cooldownByVisitor($request);
             $remaining = $cooldownCheck['remaining'];
 
             if ($remaining > 0) {
@@ -230,11 +239,12 @@ class PixelController extends Controller
             $user->refresh();
         }
 
-        // Zet een cooldown in de cache alleen voor visitors (niet voor geauthenticeerde gebruikers)
-        if (!auth()->check()) {
+        // Cooldown alleen voor guests (per visitorId), niet voor ingelogde gebruikers
+        if (! auth()->check()) {
             $cooldownSeconds = 10;
             $cacheKey = "cooldown:visitor:{$visitorId}";
             Cache::put($cacheKey, $cooldownSeconds, $cooldownSeconds);
+            RateLimiter::hit('pixel-guest-ip:' . $clientIp, 60);
         } else {
             $cooldownSeconds = 0;
         }
@@ -265,39 +275,59 @@ class PixelController extends Controller
 
     public function cooldown(Request $request)
     {
-        // Authenticated users have no cooldown
         if (auth()->check()) {
-            return [
+            return response()->json([
                 'cooldown' => false,
                 'remaining' => 0,
                 'hasReduction' => true,
                 'cooldownDuration' => 10,
+            ]);
+        }
+
+        $result = $this->cooldownByVisitor($request);
+
+        return response()->json([
+            'cooldown' => $result['cooldown'],
+            'remaining' => $result['remaining'],
+            'hasReduction' => false,
+            'cooldownDuration' => $result['cooldownDuration'],
+            'elapsed' => $result['elapsed'] ?? null,
+        ]);
+    }
+
+    private function cooldownByVisitor(Request $request): array
+    {
+        $visitorId = $request->input('visitorId');
+        $cooldownSeconds = 10;
+        $cacheKey = "cooldown:visitor:{$visitorId}";
+
+        if (Cache::has($cacheKey)) {
+            $remaining = (int) Cache::get($cacheKey);
+            return [
+                'cooldown' => $remaining > 0,
+                'remaining' => $remaining,
+                'cooldownDuration' => $cooldownSeconds,
+                'elapsed' => $cooldownSeconds - $remaining,
             ];
         }
 
-        $visitorId = $request->input('visitorId');
-        $cooldownSeconds = 10;
+        $last = Pixel::where('visitor_id', $visitorId)->latest()->first();
 
-        $query = Pixel::where('visitor_id', $visitorId);
-
-        $last = $query->latest()->first();
-
-        if (!$last) {
+        if (! $last) {
             return [
                 'cooldown' => false,
                 'remaining' => 0,
-                'hasReduction' => auth()->check(),
                 'cooldownDuration' => $cooldownSeconds,
+                'elapsed' => null,
             ];
         }
 
-        $elapsed = $last->created_at->diffInSeconds(now());
+        $elapsed = (int) $last->created_at->diffInSeconds(now());
         $remaining = max(0, $cooldownSeconds - $elapsed);
 
         return [
             'cooldown' => $remaining > 0,
             'remaining' => $remaining,
-            'hasReduction' => auth()->check(),
             'cooldownDuration' => $cooldownSeconds,
             'elapsed' => $elapsed,
         ];
