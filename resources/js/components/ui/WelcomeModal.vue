@@ -5,12 +5,10 @@ const props = defineProps({
     modelValue: {
         type: Boolean,
         default: false
-    },
-    videoUrl: {
-        type: String,
-        default: 'https://www.youtube.com/watch?v=123'
     }
 })
+
+const videoUrl = 'https://youtu.be/jb_9IquS7UM'
 
 const emit = defineEmits(['update:modelValue'])
 
@@ -31,12 +29,11 @@ function close() {
 }
 
 function openVideo() {
-    window.open(props.videoUrl, '_blank', 'noopener,noreferrer')
+    window.open(videoUrl, '_blank', 'noopener,noreferrer')
 }
 
-function getYouTubeThumbnail(url) {
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/)
-    return match ? `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg` : null
+function getYouTubeThumbnail() {
+    return `https://i.ytimg.com/vi/jb_9IquS7UM/hqdefault.jpg?sqp=-oaymwFBCNACELwBSFryq4qpAzMIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB8AEB-AHUBoAC0gOKAgwIABABGDsgTyhyMA8=&rs=AOn4CLAHLWVaJK195AVFFph-iKTqgOCk2g`
 }
 </script>
 
@@ -57,14 +54,13 @@ function getYouTubeThumbnail(url) {
             </div>
 
             <div class="welcome-content">
-                <div class="video-section" @click="openVideo">
-                    <div class="video-thumbnail">
-                        <img
-                            v-if="getYouTubeThumbnail(videoUrl)"
-                            :src="getYouTubeThumbnail(videoUrl)"
-                            alt="Video thumbnail"
-                            @error="$event.target.style.display='none'"
-                        />
+                    <div class="video-section" @click="openVideo">
+                        <div class="video-thumbnail">
+                            <img
+                                :src="getYouTubeThumbnail()"
+                                alt="Video thumbnail"
+                                @error="$event.target.style.display='none'"
+                            />
                         <div class="play-button">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                 <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd"/>

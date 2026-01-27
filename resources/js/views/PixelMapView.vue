@@ -43,7 +43,6 @@
         <ToastContainer />
         <WelcomeModal
             v-model="showWelcome"
-            videoUrl="https://www.youtube.com/watch?v=YOUR_VIDEO_ID"
         />
         <button
             v-if="!paintMode"
