@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <link id="favicon" rel="icon" href="/favicon/favicon-0.png">
+    <link rel="icon" href="/favicon/favicon-0.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Feedback - Pixel Place</title>
