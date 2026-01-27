@@ -21,7 +21,7 @@ const banForm = ref({
     visitor_id: '',
     ip_address: '',
     reason: '',
-    hide_pixels: false,
+    // hide_pixels: false,
     is_permanent: true,
     banned_until: ''
 })
@@ -84,7 +84,7 @@ function resetForm() {
         visitor_id: '',
         ip_address: '',
         reason: '',
-        hide_pixels: false,
+        // hide_pixels: false,
         is_permanent: true,
         banned_until: ''
     }
@@ -142,7 +142,7 @@ async function submitBan() {
     if (banForm.value.visitor_id?.trim()) form.append('visitor_id', banForm.value.visitor_id)
     if (banForm.value.ip_address?.trim()) form.append('ip_address', banForm.value.ip_address)
     form.append('reason', banForm.value.reason)
-    form.append('hide_pixels', banForm.value.hide_pixels ? 1 : 0)
+    // form.append('hide_pixels', banForm.value.hide_pixels ? 1 : 0)
     form.append('is_permanent', banForm.value.is_permanent ? 1 : 0)
 
     if (!banForm.value.is_permanent) {
@@ -259,12 +259,12 @@ async function submitBan() {
                         />
                     </div>
 
-                    <div class="form-group checkbox-group">
+                    <!-- <div class="form-group checkbox-group">
                         <label>
                             <input v-model="banForm.hide_pixels" type="checkbox" />
                             <span>Hide user's pixels</span>
                         </label>
-                    </div>
+                    </div> -->
 
                     <div class="form-group">
                         <label>Ban Duration</label>

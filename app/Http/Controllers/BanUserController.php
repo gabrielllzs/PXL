@@ -18,7 +18,7 @@ class BanUserController extends Controller
             'visitor_id' => 'nullable|string',
             'ip_address' => 'nullable|string',
             'reason' => 'required|string|max:500',
-            'hide_pixels' => 'boolean',
+            // 'hide_pixels' => 'boolean',
             'is_permanent' => 'boolean',
             'banned_until' => 'nullable|date',
         ]);
@@ -38,7 +38,7 @@ class BanUserController extends Controller
             'ip_address' => $validated['ip_address'] ?? null,
             'reason' => $validated['reason'],
             'banned' => true,
-            'hide_pixels' => $validated['hide_pixels'] ?? false,
+            // 'hide_pixels' => $validated['hide_pixels'] ?? false,
             'is_permanent' => $validated['is_permanent'] ?? false,
             'banned_until' => $validated['is_permanent'] ? null : $validated['banned_until'],
         ]);
