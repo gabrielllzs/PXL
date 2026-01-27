@@ -51,7 +51,7 @@ Route::post('/feedback', [FeedbackController::class, 'store']);
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [HandleAuthController::class, 'handleLogout']);
-    Route::get('/api/me', function () {return auth()->check() ? Auth::user() : null;});
+    Route::get('/api/me', [UserController::class, 'getCurrentUser']);
     Route::get('/api/pixel-status', [UserController::class, 'getPixelStatus']);
     Route::post('/api/cursor/move', [CursorController::class, 'move']);
     Route::get('/group', [GroupController::class, 'showMyGroup']);

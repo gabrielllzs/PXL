@@ -69,4 +69,22 @@ class UserController extends Controller
             'total_pixels_placed' => $user->pixels_placed,
         ]);
     }
+    public function getCurrentUser()
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json(null);
+        }
+
+        return response()->json([
+            'id' => $user->id,
+            'username' => $user->username,
+            'email' => $user->email, // Needed for verification UI, safe as it's user's own data
+            'level' => $user->level,
+            'pixels_placed' => $user->pixels_placed,
+            'email_verified' => $user->email_verified,
+            'country' => $user->country,
+        ]);
+    }
 }
