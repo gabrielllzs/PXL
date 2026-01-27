@@ -12,7 +12,7 @@ class GroupController extends Controller
     public function index()
     {
         // leaderboard
-        $groups = Group::with('members')->get();
+        $groups = Group::get();
 
         return response()->json(
             $groups->map(function ($group) {
