@@ -27,7 +27,8 @@ class UserController extends Controller
             'group' => $user->group ? [
                 'name' => $user->group->name,
                 'total_group_pixels' => $user->group->members()->sum('group_pixels'),
-            ] : null,
+            ] : null
+        
         ]);
     }
 
@@ -72,19 +73,25 @@ class UserController extends Controller
     public function getCurrentUser()
     {
         $user = Auth::user();
-        
+
         if (!$user) {
             return response()->json(null);
         }
 
-        return response()->json([
+        $response = [
             'id' => $user->id,
             'username' => $user->username,
-            'email' => $user->email, // Needed for verification UI, safe as it's user's own data
+            'email' => $user->email,
             'level' => $user->level,
             'pixels_placed' => $user->pixels_placed,
             'email_verified' => $user->email_verified,
             'country' => $user->country,
-        ]);
+        ];
+
+        if ($user->is_admin) {
+            $response['is_admin'] = true;
+        }
+
+        return response()->json($response);
     }
 }
