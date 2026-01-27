@@ -11,6 +11,8 @@ class BanUserController extends Controller
 {
     public function ban(Request $request)
     {
+
+
         $validated = $request->validate([
             'user_id' => 'nullable|exists:users,id',
             'visitor_id' => 'nullable|string',
@@ -21,10 +23,18 @@ class BanUserController extends Controller
             'banned_until' => 'nullable|date',
         ]);
 
+        $visitorId = $validated['visitor_id'] ?? null;
+        if ($validated['user_id'] && !$visitorId) {
+            $user = User::find($validated['user_id']);
+            if ($user && $user->visitor_id) {
+                $visitorId = $user->visitor_id;
+            }
+        }
+
         // Create banned user record
         $bannedUser = BannedUser::create([
             'user_id' => $validated['user_id'] ?? null,
-            'visitor_id' => $validated['visitor_id'] ?? null,
+            'visitor_id' => $visitorId,
             'ip_address' => $validated['ip_address'] ?? null,
             'reason' => $validated['reason'],
             'banned' => true,
@@ -91,7 +101,7 @@ class BanUserController extends Controller
             ->toArray();
 
         // Get users excluding those with active bans
-        $users = User::select('id', 'username', 'email')
+        $users = User::select('id', 'username', 'email', 'visitor_id')
             ->whereNotIn('id', $bannedUserIds)
             ->get();
 

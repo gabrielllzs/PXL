@@ -35,6 +35,7 @@ const filteredVisitors = computed(() => {
             user_id: user.id,
             username: user.username,
             email: user.email,
+            visitor_id: user.visitor_id || null,
             id: `user-${user.id}`
         })
     })
@@ -95,7 +96,7 @@ function selectVisitor(item) {
     if (item.type === 'user') {
         banForm.value.user_id = item.user_id
         banForm.value.username = item.username || ''
-        banForm.value.visitor_id = ''
+        banForm.value.visitor_id = item.visitor_id || ''
         banForm.value.ip_address = ''
     } else {
         banForm.value.user_id = null
