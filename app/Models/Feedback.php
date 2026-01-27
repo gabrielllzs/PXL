@@ -11,6 +11,7 @@ class Feedback extends Model
         'username',
         'message',
         'type',
+        'is_hidden',
     ];
 
     protected $casts = [

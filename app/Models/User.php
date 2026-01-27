@@ -16,6 +16,7 @@ class User extends Authenticatable
         'new_email',
         'password',
         'country',
+        'visitor_id',
         'is_admin',
         'email_verification_code',
         'email_verification_code_expires_at',

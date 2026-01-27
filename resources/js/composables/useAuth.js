@@ -1,9 +1,24 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import FingerprintJS from '@fingerprintjs/fingerprintjs'
 
 const user = ref(null)
 const group = ref(null)
 const loading = ref(false)
+let visitorId = null
+
+async function initFingerprint() {
+    if (visitorId) return visitorId
+    try {
+        const fp = await FingerprintJS.load()
+        const result = await fp.get()
+        visitorId = result.visitorId
+        return visitorId
+    } catch (err) {
+        console.error('Failed to initialize fingerprint:', err)
+        return null
+    }
+}
 
 export function useAuth() {
 
@@ -45,12 +60,16 @@ export function useAuth() {
     async function register(username, email, password, passwordConfirmation, country = null) {
         loading.value = true
         try {
+            // Initialize fingerprint to get visitorId
+            const currentVisitorId = await initFingerprint()
+            
             const response = await axios.post('/register', {
                 username,
                 email,
                 password,
                 password_confirmation: passwordConfirmation,
-                country
+                country,
+                visitorId: currentVisitorId
             })
 
             if (response.data.csrf_token) {

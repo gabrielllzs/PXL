@@ -8,10 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Pixel extends Model
 {
-    protected $fillable = ['x', 'y', 'color', 'visitor_id', 'user_id', 'risk_score', 'ip_address'];
+    protected $fillable = ['x', 'y', 'color', 'visitor_id', 'user_id', 'ip_address', 'hidden'];
 
     protected $casts = [
-        'risk_score' => 'integer',
+        'hidden' => 'boolean',
     ];
 
     public function user()

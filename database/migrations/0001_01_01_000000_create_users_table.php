@@ -23,6 +23,7 @@ return new class extends Migration
             $table->integer('pixels_available')->default(60);
             $table->timestamp('last_pixel_regeneration_time')->nullable();
             $table->boolean('is_admin')->default(false);
+            $table->boolean('email_verified')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('email_verification_code', 6)->nullable();
             $table->timestamp('email_verification_code_expires_at')->nullable();

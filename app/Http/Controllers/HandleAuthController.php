@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\EmailVerification;
 use App\Models\User;
+use App\Models\BannedUser;
 use App\Services\CountryIsoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -58,7 +59,37 @@ class HandleAuthController extends Controller
             'username' => ['required', 'string', 'max:255', 'unique:users'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Password::defaults()],
+            'visitorId' => ['nullable', 'string'],
         ]);
+
+        // Check if visitorId is banned
+        if (!empty($validated['visitorId'])) {
+            $bannedVisitor = BannedUser::where('visitor_id', $validated['visitorId'])
+                ->where('banned', true)
+                ->where(function ($query) {
+                    $query->where('is_permanent', true)
+                        ->orWhere(function ($q) {
+                            $q->whereNotNull('banned_until')
+                                ->where('banned_until', '>', now());
+                        });
+                })
+                ->first();
+
+            if ($bannedVisitor) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'error' => 'banned',
+                        'message' => $bannedVisitor->reason ?? 'You have been banned from creating an account.',
+                        'is_permanent' => $bannedVisitor->is_permanent,
+                        'banned_until' => $bannedVisitor->banned_until ? $bannedVisitor->banned_until->toIso8601String() : null,
+                    ], 403);
+                }
+
+                return back()->withErrors([
+                    'email' => $bannedVisitor->reason ?? 'You have been banned from creating an account.',
+                ]);
+            }
+        }
 
         $country = $this->countryIsoService->getCountries($clientIp);
 
@@ -70,6 +101,7 @@ class HandleAuthController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'country' => $country,
+            'visitor_id' => $validated['visitorId'] ?? null,
             'email_verification_code' => $verificationCode,
             'email_verification_code_expires_at' => $expiresAt,
         ]);
