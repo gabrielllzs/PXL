@@ -24,6 +24,8 @@ export function useMap(containerId = 'map') {
             bearing: 0,
             pitch: 0,
             maxPitch: 0,
+            // Increase tile cache to preload more tiles around viewport
+            maxTileCacheSize: 500, // Default is usually 50, increase for better preloading
         })
         map.value.touchZoomRotate.disableRotation()
         return map.value

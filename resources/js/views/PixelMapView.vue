@@ -62,7 +62,7 @@
         :selectedColor="selectedColor"
         :paintMode="paintMode"
         :waybackActive="waybackIsActive"
-        :waybackPixels="waybackPixels"
+        :waybackTime="waybackTime"
         @verification-required="handleVerificationRequired"
         @pixel-placed="handlePixelPlaced"
         @custom-color-requires-auth="handleCustomColorRequiresAuth"
@@ -98,7 +98,7 @@ const maxTime = ref(null)
 const { cooldown } = usePixels()
 const { isAuthenticated, user } = useAuth()
 const { loadByKey } = useSavedLocations()
-const { waybackHistory, isActive: waybackIsActive, filteredPixels: waybackPixels, loadWayback, filterByDate, setActive: setWaybackActive } = useWayback()
+const { waybackHistory, isActive: waybackIsActive, loadWayback, filterByDate, setActive: setWaybackActive } = useWayback()
 
 const mapCenter = ref(null)
 const mapZoom = ref(null)

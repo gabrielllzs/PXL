@@ -24,7 +24,7 @@ import { usePixels, refetchViewportTrigger } from '../composables/usePixels'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 import { initRealtimePixels, groupCursors, smoothedCursorPosition, removeSmoothedCursorPosition } from '../composables/realtimePixels'
-import { lngLatToWorldPx, worldPxToLngLat, pixelsToGeoJSON } from '../composables/useWorldConversion'
+import { lngLatToWorldPx, worldPxToLngLat } from '../composables/useWorldConversion'
 import { executeHCaptcha } from '../composables/usecaptcha.js'
 import { playPixelPlaceSound } from '../composables/useAudio.js'
 
@@ -41,7 +41,7 @@ const props = defineProps({
     selectedColor: String,
     paintMode: { type: Boolean, default: false },
     waybackActive: { type: Boolean, default: false },
-    waybackPixels: { type: Array, default: () => [] }
+    waybackTime: { type: Date, default: null }
 })
 
 const emit = defineEmits(['pixelHover', 'verificationRequired', 'pixelPlaced', 'customColorRequiresAuth', 'disablePaintMode'])
@@ -50,9 +50,11 @@ const emit = defineEmits(['pixelHover', 'verificationRequired', 'pixelPlaced', '
 const { map, init, on, unproject, project, zoomIn, zoomOut, centerMap, getBounds, getZoom, getCenter, setCenter } = useMap('map')
 const { save, syncCooldown } = usePixels()
 
-const TILE_SIZE = 256
-const PIXEL_RASTER_SOURCE_ID = 'pixels-raster'
-const PIXEL_RASTER_LAYER_ID = 'pixels-raster-layer'
+const PBF_LAYER_NAME = 'pixels'
+const PIXEL_VECTOR_SOURCE_ID = 'pixels-vector'
+const PIXEL_VECTOR_LAYER_ID = 'pixels-vector-layer'
+const WAYBACK_VECTOR_SOURCE_ID = 'pixels-wayback-vector'
+const WAYBACK_VECTOR_LAYER_ID = 'pixels-wayback-vector-layer'
 const { user, isEmailVerified, group } = useAuth()
 const { showToast } = useToast()
 
@@ -66,6 +68,12 @@ const displayX = ref(null)
 const displayY = ref(null)
 const isSpaceHeld = ref(false)
 const isPainting = ref(false)
+
+// Tile-based rendering: cache-bust timestamp for live tiles, debounced realtime refresh
+const tileTimestamp = ref(Date.now())
+let realtimeRefreshTimeout = null
+let viewportRefreshTimeout = null
+let preloadTimeout = null
 
 // Non-reactive state
 let hoverCanvasRender = null
@@ -120,26 +128,65 @@ function getViewportBounds() {
     }
 }
 
-function refreshRasterTiles() {
+function formatVersion(date) {
+    const d = new Date(date)
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    const hour = String(d.getHours()).padStart(2, '0')
+    const minute = String(d.getMinutes()).padStart(2, '0')
+    const second = String(d.getSeconds()).padStart(2, '0')
+    return `${year}${month}${day}_${hour}${minute}${second}_pt`
+}
+
+function getTileUrl(opts = {}) {
+    const base = typeof window !== 'undefined' ? window.location.origin : ''
+    let version
+    if (opts.waybackTime != null) {
+        version = formatVersion(opts.waybackTime)
+    } else {
+        // For live tiles, use current timestamp or cache-bust timestamp
+        version = formatVersion(opts.cacheBust ? new Date(opts.cacheBust) : new Date())
+    }
+    return `${base}/planet/${version}/{z}/{x}/{y}.pbf`
+}
+
+function refreshVectorTiles() {
     const m = map.value
     if (!m || props.waybackActive) return
-    try {
-        m.removeLayer(PIXEL_RASTER_LAYER_ID)
-        m.removeSource(PIXEL_RASTER_SOURCE_ID)
-    } catch (_) {}
-    m.addSource(PIXEL_RASTER_SOURCE_ID, {
-        type: 'raster',
-        tiles: [getTileUrl()],
-        tileSize: TILE_SIZE,
+    const src = m.getSource(PIXEL_VECTOR_SOURCE_ID)
+    if (src) {
+        // Update tile URL with new timestamp to force refresh
+        // Use a small delay to batch multiple refresh requests
+        tileTimestamp.value = Date.now()
+        // Only refresh if map is fully loaded to avoid popping during initial load
+        if (m.loaded()) {
+            src.setTiles([getTileUrl({ cacheBust: tileTimestamp.value })])
+        }
+        return
+    }
+    tileTimestamp.value = Date.now()
+    m.addSource(PIXEL_VECTOR_SOURCE_ID, {
+        type: 'vector',
+        tiles: [getTileUrl({ cacheBust: tileTimestamp.value })],
         minzoom: MIN_ZOOM
     })
     m.addLayer({
-        id: PIXEL_RASTER_LAYER_ID,
-        type: 'raster',
-        source: PIXEL_RASTER_SOURCE_ID,
+        id: PIXEL_VECTOR_LAYER_ID,
+        type: 'fill',
+        source: PIXEL_VECTOR_SOURCE_ID,
+        'source-layer': PBF_LAYER_NAME,
         minzoom: MIN_ZOOM,
-        paint: { 'raster-opacity': 1 }
+        paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 1 }
     })
+}
+
+function refreshWaybackTiles() {
+    const m = map.value
+    if (!m || !props.waybackActive || !props.waybackTime) return
+    const src = m.getSource(WAYBACK_VECTOR_SOURCE_ID)
+    if (!src) return
+    src.setTiles([getTileUrl({ waybackTime: props.waybackTime })])
 }
 
 onMounted(async () => {
@@ -152,9 +199,31 @@ onMounted(async () => {
     setupCanvas()
     setupPixelLayer(mapInstance)
     setupEvents(mapInstance)
-    initRealtimePixels(updatePixelLayer)
+    initRealtimePixels(debouncedTileRefresh)
 
-    if (props.waybackActive) updatePixelLayer()
+    if (props.waybackActive) refreshWaybackTiles()
+
+    // Preload tiles beyond viewport to prevent popping
+    mapInstance.once('load', () => {
+        // Initial preload after map loads
+        setTimeout(() => preloadTilesAroundViewport(mapInstance), 100)
+    })
+
+    // Preload tiles when map moves/zooms (debounced to avoid excessive calls)
+    let preloadTimeout = null
+    mapInstance.on('moveend', () => {
+        if (preloadTimeout) clearTimeout(preloadTimeout)
+        preloadTimeout = setTimeout(() => {
+            preloadTilesAroundViewport(mapInstance)
+        }, 200)
+    })
+    
+    mapInstance.on('zoomend', () => {
+        if (preloadTimeout) clearTimeout(preloadTimeout)
+        preloadTimeout = setTimeout(() => {
+            preloadTilesAroundViewport(mapInstance)
+        }, 200)
+    })
 
     if (savedPos?.x != null && savedPos?.y != null) {
         isNavigatingFromURL = true
@@ -166,24 +235,39 @@ onMounted(async () => {
     }
 })
 
-// Update pixel layer when wayback data or mode changes
-watch(() => props.waybackPixels, () => {
-    if (props.waybackActive) updatePixelLayer()
-}, { deep: true })
+function preloadTilesAroundViewport(mapInstance) {
+    if (!mapInstance || !mapInstance.loaded()) return
+    
+    // MapLibre automatically loads tiles in a buffer around the viewport
+    // By triggering a repaint, we ensure it loads all buffered tiles
+    // The increased maxTileCacheSize (500) allows more tiles to be cached
+    mapInstance.triggerRepaint()
+}
 
 watch(() => props.waybackActive, (active) => {
     if (active && props.paintMode) emit('disablePaintMode')
     setPixelLayerVisibility(active)
-    if (active) updatePixelLayer()
+    if (active) refreshWaybackTiles()
 })
 
+// Debounce viewport-triggered refreshes to reduce popping
 watch(refetchViewportTrigger, () => {
-    if (props.waybackActive) updatePixelLayer()
-    else refreshRasterTiles()
+    if (viewportRefreshTimeout) clearTimeout(viewportRefreshTimeout)
+    viewportRefreshTimeout = setTimeout(() => {
+        if (props.waybackActive) refreshWaybackTiles()
+        else refreshVectorTiles()
+    }, 500) // Small delay to batch viewport changes
 })
+
+watch(() => props.waybackTime, () => {
+    if (props.waybackActive) refreshWaybackTiles()
+}, { deep: true })
 
 onUnmounted(() => {
     stopPainting()
+    if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout)
+    if (viewportRefreshTimeout) clearTimeout(viewportRefreshTimeout)
+    if (preloadTimeout) clearTimeout(preloadTimeout)
     window.removeEventListener('keydown', handleKeyDown)
     window.removeEventListener('keyup', handleKeyUp)
 })
@@ -210,48 +294,50 @@ function setupCanvas() {
     hoverCanvasRender = c.getContext('2d')
 }
 
-const PIXEL_SOURCE_ID = 'pixels'
-const PIXEL_LAYER_ID = 'pixels-layer'
+const REALTIME_REFRESH_DEBOUNCE_MS = 3000
 
-function getTileUrl() {
-    const base = typeof window !== 'undefined' ? window.location.origin : ''
-    return `${base}/api/tiles/{z}/{x}/{y}.png`
+function debouncedTileRefresh() {
+    if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout)
+    realtimeRefreshTimeout = setTimeout(() => {
+        realtimeRefreshTimeout = null
+        if (!props.waybackActive) refreshVectorTiles()
+    }, REALTIME_REFRESH_DEBOUNCE_MS)
 }
 
 function setupPixelLayer(mapInstance) {
-    if (!mapInstance.getSource(PIXEL_RASTER_SOURCE_ID)) {
-        mapInstance.addSource(PIXEL_RASTER_SOURCE_ID, {
-            type: 'raster',
-            tiles: [getTileUrl()],
-            tileSize: TILE_SIZE,
+    if (!mapInstance.getSource(PIXEL_VECTOR_SOURCE_ID)) {
+        tileTimestamp.value = Date.now()
+        mapInstance.addSource(PIXEL_VECTOR_SOURCE_ID, {
+            type: 'vector',
+            tiles: [getTileUrl({ cacheBust: tileTimestamp.value })],
             minzoom: MIN_ZOOM
         })
     }
-    if (!mapInstance.getLayer(PIXEL_RASTER_LAYER_ID)) {
+    if (!mapInstance.getLayer(PIXEL_VECTOR_LAYER_ID)) {
         mapInstance.addLayer({
-            id: PIXEL_RASTER_LAYER_ID,
-            type: 'raster',
-            source: PIXEL_RASTER_SOURCE_ID,
-            minzoom: MIN_ZOOM,
-            paint: { 'raster-opacity': 1 }
-        })
-    }
-    if (!mapInstance.getSource(PIXEL_SOURCE_ID)) {
-        mapInstance.addSource(PIXEL_SOURCE_ID, {
-            type: 'geojson',
-            data: { type: 'FeatureCollection', features: [] }
-        })
-    }
-    if (!mapInstance.getLayer(PIXEL_LAYER_ID)) {
-        mapInstance.addLayer({
-            id: PIXEL_LAYER_ID,
+            id: PIXEL_VECTOR_LAYER_ID,
             type: 'fill',
-            source: PIXEL_SOURCE_ID,
+            source: PIXEL_VECTOR_SOURCE_ID,
+            'source-layer': PBF_LAYER_NAME,
             minzoom: MIN_ZOOM,
-            paint: {
-                'fill-color': ['get', 'color'],
-                'fill-opacity': 1
-            }
+            paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 1 }
+        })
+    }
+    if (!mapInstance.getSource(WAYBACK_VECTOR_SOURCE_ID)) {
+        mapInstance.addSource(WAYBACK_VECTOR_SOURCE_ID, {
+            type: 'vector',
+            tiles: [getTileUrl(props.waybackTime ? { waybackTime: props.waybackTime } : { cacheBust: Date.now() })],
+            minzoom: MIN_ZOOM
+        })
+    }
+    if (!mapInstance.getLayer(WAYBACK_VECTOR_LAYER_ID)) {
+        mapInstance.addLayer({
+            id: WAYBACK_VECTOR_LAYER_ID,
+            type: 'fill',
+            source: WAYBACK_VECTOR_SOURCE_ID,
+            'source-layer': PBF_LAYER_NAME,
+            minzoom: MIN_ZOOM,
+            paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 1 }
         })
     }
     setPixelLayerVisibility(props.waybackActive)
@@ -260,28 +346,12 @@ function setupPixelLayer(mapInstance) {
 function setPixelLayerVisibility(wayback) {
     const m = map.value
     if (!m) return
-    const rasterVis = wayback ? 'none' : 'visible'
-    const geojsonVis = wayback ? 'visible' : 'none'
+    const liveVis = wayback ? 'none' : 'visible'
+    const waybackVis = wayback ? 'visible' : 'none'
     try {
-        m.setLayoutProperty(PIXEL_RASTER_LAYER_ID, 'visibility', rasterVis)
-        m.setLayoutProperty(PIXEL_LAYER_ID, 'visibility', geojsonVis)
+        m.setLayoutProperty(PIXEL_VECTOR_LAYER_ID, 'visibility', liveVis)
+        m.setLayoutProperty(WAYBACK_VECTOR_LAYER_ID, 'visibility', waybackVis)
     } catch (_) {}
-}
-
-function updatePixelLayer() {
-    if (!props.waybackActive) return
-    const m = map.value
-    if (!m) return
-    const source = m.getSource(PIXEL_SOURCE_ID)
-    if (!source) return
-
-    const b = getViewportBounds()
-    if (!b) return
-
-    const arr = Array.isArray(props.waybackPixels) ? props.waybackPixels : []
-    const pixels = arr.filter((p) => p.x >= b.minX && p.x <= b.maxX && p.y >= b.minY && p.y <= b.maxY)
-    const geojson = pixelsToGeoJSON(pixels, ZOOM)
-    source.setData(geojson)
 }
 
 function savePosition() {
@@ -339,15 +409,8 @@ function handleKeyUp(e) {
 function setupEvents(mapInstance) {
     on('move', savePosition)
     on('zoom', savePosition)
-    on('moveend', () => {
-        if (props.waybackActive) updatePixelLayer()
-    })
-    on('zoomend', () => {
-        if (props.waybackActive) updatePixelLayer()
-    })
     on('resize', () => {
         resizeCanvas()
-        if (props.waybackActive) updatePixelLayer()
     })
 
     const mapCanvas = mapInstance.getCanvas()
@@ -510,7 +573,8 @@ async function placePixel(mouseEvent) {
 
         if (result?.success) {
             captchaSessionVerified = true
-            updatePixelLayer()
+            // Don't refresh tiles immediately - let the debounced realtime refresh handle it
+            // This prevents visual "popping" as tiles reload
             playPixelPlaceSound()
             emit('pixelPlaced', {
                 pixels_available: result.pixels_available,

@@ -23,6 +23,10 @@ Route::get('/feedback', function () { return view('feedback'); });
 
 Route::get('/api/map-data', [PixelController::class, 'index']);
 Route::get('/api/tiles/{z}/{x}/{y}.png', TileController::class)->whereNumber(['z', 'x', 'y']);
+Route::get('/api/tiles/{z}/{x}/{y}.json', [TileController::class, 'json'])->whereNumber(['z', 'x', 'y']);
+Route::get('/api/tiles/{z}/{x}/{y}.pbf', [TileController::class, 'pbf'])->whereNumber(['z', 'x', 'y']);
+Route::get('/api/tiles/{z}/{x}/{y}.mvt', [TileController::class, 'pbf'])->whereNumber(['z', 'x', 'y']);
+Route::get('/planet/{version}/{z}/{x}/{y}.pbf', [TileController::class, 'pbfVersioned'])->whereNumber(['z', 'x', 'y']);
 Route::post('/api/pixel', [PixelController::class, 'store']);
 Route::get('/api/cooldown', [PixelController::class, 'cooldown']);
 Route::post('/api/feedback', [FeedbackController::class, 'store']);
