@@ -55,6 +55,8 @@ const PIXEL_VECTOR_SOURCE_ID = 'pixels-vector'
 const PIXEL_VECTOR_LAYER_ID = 'pixels-vector-layer'
 const WAYBACK_VECTOR_SOURCE_ID = 'pixels-wayback-vector'
 const WAYBACK_VECTOR_LAYER_ID = 'pixels-wayback-vector-layer'
+const OPTIMISTIC_SOURCE_ID = 'optimistic-pixels'
+const OPTIMISTIC_LAYER_ID = 'optimistic-pixels-layer'
 const { user, isEmailVerified, group } = useAuth()
 const { showToast } = useToast()
 
@@ -87,6 +89,7 @@ let lastPaintedX = null
 let lastPaintedY = null
 let urlUpdateTimeout = null
 let isNavigatingFromURL = false
+const optimisticPixels = new Map() // Track optimistic pixels: key = "x,y", value = {x, y, color, timestamp}
 
 async function sendCursorPosition(x, y) {
     if (!group.value?.id) return
@@ -174,6 +177,21 @@ function refreshVectorTiles() {
             src.setTiles([newTileUrl])
             // Force a repaint to ensure tiles reload
             m.triggerRepaint()
+            
+            // Clean up optimistic pixels after tiles have had time to load
+            // This ensures smooth transition from optimistic to real tiles
+            setTimeout(() => {
+                const now = Date.now()
+                for (const [key, pixel] of optimisticPixels.entries()) {
+                    // Remove optimistic pixels older than 3 seconds (tiles should have loaded by then)
+                    if (now - pixel.timestamp > 3000) {
+                        optimisticPixels.delete(key)
+                    }
+                }
+                if (optimisticPixels.size === 0) {
+                    updateOptimisticLayer()
+                }
+            }, 1000)
         } catch (e) {
             // If setTiles fails, fall back to remove/re-add
             console.warn('setTiles failed, using remove/add fallback:', e)
@@ -336,7 +354,7 @@ function setupCanvas() {
     hoverCanvasRender = c.getContext('2d')
 }
 
-const REALTIME_REFRESH_DEBOUNCE_MS = 500 // Reduced from 3000ms for faster updates
+const REALTIME_REFRESH_DEBOUNCE_MS = 1000 // Increased to reduce unnecessary refreshes
 
 function debouncedTileRefresh() {
     if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout)
@@ -346,7 +364,7 @@ function debouncedTileRefresh() {
     }, REALTIME_REFRESH_DEBOUNCE_MS)
 }
 
-// Immediate tile refresh for user's own pixel placements
+// Optimized tile refresh for user's own pixel placements
 function immediateTileRefresh() {
     if (props.waybackActive) return
     // Clear any pending debounced refresh
@@ -354,8 +372,10 @@ function immediateTileRefresh() {
         clearTimeout(realtimeRefreshTimeout)
         realtimeRefreshTimeout = null
     }
-    // Force immediate refresh with new timestamp
-    refreshVectorTiles()
+    // Use a small delay to allow cache invalidation to propagate
+    setTimeout(() => {
+        refreshVectorTiles()
+    }, 150)
 }
 
 function setupPixelLayer(mapInstance) {
@@ -394,6 +414,30 @@ function setupPixelLayer(mapInstance) {
             paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 1 }
         })
     }
+    
+    // Setup optimistic pixel layer for immediate visual feedback
+    if (!mapInstance.getSource(OPTIMISTIC_SOURCE_ID)) {
+        mapInstance.addSource(OPTIMISTIC_SOURCE_ID, {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] }
+        })
+    }
+    if (!mapInstance.getLayer(OPTIMISTIC_LAYER_ID)) {
+        mapInstance.addLayer({
+            id: OPTIMISTIC_LAYER_ID,
+            type: 'fill',
+            source: OPTIMISTIC_SOURCE_ID,
+            paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 1 },
+            minzoom: MIN_ZOOM
+        })
+        // Place optimistic layer above the main pixel layer for visibility
+        try {
+            mapInstance.moveLayer(OPTIMISTIC_LAYER_ID, PIXEL_VECTOR_LAYER_ID)
+        } catch (e) {
+            // Layer might not exist yet, that's okay
+        }
+    }
+    
     setPixelLayerVisibility(props.waybackActive)
 }
 
@@ -599,6 +643,56 @@ function animateHover() {
     animationFrameId = requestAnimationFrame(animateHover)
 }
 
+function addOptimisticPixel(x, y, color) {
+    if (!map.value) return
+    
+    const key = `${x},${y}`
+    optimisticPixels.set(key, { x, y, color, timestamp: Date.now() })
+    updateOptimisticLayer()
+}
+
+function removeOptimisticPixel(x, y) {
+    const key = `${x},${y}`
+    optimisticPixels.delete(key)
+    updateOptimisticLayer()
+}
+
+function updateOptimisticLayer() {
+    if (!map.value) return
+    
+    const source = map.value.getSource(OPTIMISTIC_SOURCE_ID)
+    if (!source) return
+    
+    const features = Array.from(optimisticPixels.values()).map(pixel => {
+        const topLeft = worldPxToLngLat({ x: pixel.x, y: pixel.y }, ZOOM)
+        const topRight = worldPxToLngLat({ x: pixel.x + 1, y: pixel.y }, ZOOM)
+        const bottomRight = worldPxToLngLat({ x: pixel.x + 1, y: pixel.y + 1 }, ZOOM)
+        const bottomLeft = worldPxToLngLat({ x: pixel.x, y: pixel.y + 1 }, ZOOM)
+        
+        return {
+            type: 'Feature',
+            geometry: {
+                type: 'Polygon',
+                coordinates: [[
+                    [topLeft.lng, topLeft.lat],
+                    [topRight.lng, topRight.lat],
+                    [bottomRight.lng, bottomRight.lat],
+                    [bottomLeft.lng, bottomLeft.lat],
+                    [topLeft.lng, topLeft.lat]
+                ]]
+            },
+            properties: {
+                color: pixel.color
+            }
+        }
+    })
+    
+    source.setData({
+        type: 'FeatureCollection',
+        features
+    })
+}
+
 async function placePixel(mouseEvent) {
     if (props.waybackActive) {
         return false
@@ -622,23 +716,42 @@ async function placePixel(mouseEvent) {
     const x = Math.floor(worldPixel.x)
     const y = Math.floor(worldPixel.y)
 
+    // Optimistically render the pixel immediately
+    addOptimisticPixel(x, y, props.selectedColor)
+
     try {
         const result = await save(x, y, props.selectedColor, token)
 
         if (result?.success) {
             captchaSessionVerified = true
-            // Immediately refresh tiles to show the newly placed pixel
-            immediateTileRefresh()
             playPixelPlaceSound()
+            
+            // Debounced tile refresh - tiles will update soon, optimistic pixel will be removed when tiles load
+            // Remove optimistic pixel after a short delay to allow tiles to refresh
+            setTimeout(() => {
+                removeOptimisticPixel(x, y)
+            }, 2000) // Remove after 2 seconds, giving tiles time to refresh
+            
+            // Refresh tiles with a small delay to allow server cache invalidation to propagate
+            setTimeout(() => {
+                immediateTileRefresh()
+            }, 100)
+            
             emit('pixelPlaced', {
                 pixels_available: result.pixels_available,
                 pixel_limit: result.pixel_limit,
                 level: result.level,
             })
             return true
+        } else {
+            // Remove optimistic pixel if placement failed
+            removeOptimisticPixel(x, y)
         }
         return false
     } catch (err) {
+        // Remove optimistic pixel on error
+        removeOptimisticPixel(x, y)
+        
         if (err.type === 'email_not_verified') {
             showToast(err.message || 'Please verify your email', 'error')
             emit('verificationRequired')

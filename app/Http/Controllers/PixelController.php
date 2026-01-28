@@ -265,6 +265,9 @@ class PixelController extends Controller
             $cooldownSeconds = 0;
         }
 
+        // Invalidate cache for affected tiles
+        \App\Http\Controllers\TileController::invalidateTilesForPixel($pixel->x, $pixel->y);
+
         // Trigger PixelPlaced event voor real-time updates
         event(new PixelPlaced($pixel->x, $pixel->y, $pixel->color));
 

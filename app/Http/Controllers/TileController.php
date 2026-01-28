@@ -17,6 +17,72 @@ class TileController extends Controller
     private const WORLD_ZOOM = 10;
 
     /**
+     * Calculate which tiles contain a given pixel coordinate.
+     * Returns array of [z, x, y] tile coordinates for zoom levels 9-12.
+     */
+    private function getTilesForPixel(int $pixelX, int $pixelY): array
+    {
+        $tiles = [];
+        // Invalidate tiles at common zoom levels (9-12)
+        for ($z = 9; $z <= 12; $z++) {
+            $n = 2 ** $z;
+            // Convert pixel to lng/lat first
+            $scale = 256 * (2 ** self::WORLD_ZOOM);
+            $lng = ($pixelX / $scale) * 360 - 180;
+            $latRad = atan(exp(M_PI - 2 * M_PI * ($pixelY / $scale))) - M_PI / 2;
+            $lat = rad2deg($latRad);
+            
+            // Convert to tile coordinates
+            $x = (int) floor(($lng + 180) / 360 * $n);
+            $y = (int) floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / M_PI) / 2 * $n);
+            
+            // Clamp to valid tile range
+            $x = max(0, min($n - 1, $x));
+            $y = max(0, min($n - 1, $y));
+            
+            $tiles[] = [$z, $x, $y];
+        }
+        return $tiles;
+    }
+
+    /**
+     * Invalidate cache for tiles containing a specific pixel.
+     * Since versioned tiles use timestamp-based versions that change every second,
+     * we invalidate the current version and a few recent versions to ensure cache is cleared.
+     */
+    public static function invalidateTilesForPixel(int $x, int $y): void
+    {
+        $instance = new self();
+        $tiles = $instance->getTilesForPixel($x, $y);
+        $now = new \DateTime();
+        
+        foreach ($tiles as [$z, $tileX, $tileY]) {
+            // Invalidate cache for current version and recent versions (last 3 seconds)
+            // This handles the case where version might have changed between pixel placement and cache check
+            for ($i = 0; $i < 3; $i++) {
+                $versionDate = clone $now;
+                $versionDate->modify("-{$i} seconds");
+                $version = $instance->formatVersion($versionDate);
+                Cache::forget("tile:pbf:{$version}:{$z}:{$tileX}:{$tileY}");
+            }
+        }
+    }
+    
+    /**
+     * Format version string for tile URLs (helper for cache invalidation).
+     */
+    private function formatVersion(\DateTime $date): string
+    {
+        $year = $date->format('Y');
+        $month = $date->format('m');
+        $day = $date->format('d');
+        $hour = $date->format('H');
+        $minute = $date->format('i');
+        $second = $date->format('s');
+        return "{$year}{$month}{$day}_{$hour}{$minute}{$second}_pt";
+    }
+
+    /**
      * Standard XYZ tile (z,x,y) to geographic bounds (lat/lng).
      */
     private function tileToLngLatBounds(int $z, int $x, int $y): array
@@ -139,9 +205,12 @@ class TileController extends Controller
     private function resolvePixelsForTile(array $w, ?string $timeParam): \Illuminate\Support\Collection
     {
         if ($timeParam === null || $timeParam === '') {
+            // Optimize query: use where clauses that can leverage composite index
             return Pixel::select('x', 'y', 'color')
-                ->whereBetween('x', [$w['minX'], $w['maxX']])
-                ->whereBetween('y', [$w['minY'], $w['maxY']])
+                ->where('x', '>=', $w['minX'])
+                ->where('x', '<=', $w['maxX'])
+                ->where('y', '>=', $w['minY'])
+                ->where('y', '<=', $w['maxY'])
                 ->where('hidden', false)
                 ->get();
         }
@@ -150,15 +219,21 @@ class TileController extends Controller
             $at = Carbon::parse($timeParam);
         } catch (\Throwable $e) {
             return Pixel::select('x', 'y', 'color')
-                ->whereBetween('x', [$w['minX'], $w['maxX']])
-                ->whereBetween('y', [$w['minY'], $w['maxY']])
+                ->where('x', '>=', $w['minX'])
+                ->where('x', '<=', $w['maxX'])
+                ->where('y', '>=', $w['minY'])
+                ->where('y', '<=', $w['maxY'])
                 ->get();
         }
-        // Optimize wayback query: use a more efficient approach
-        // Get the latest pixel for each (x,y) coordinate in the tile bounds
+        
+        // Optimize wayback query: use window function or subquery for better performance
+        // For databases that support it, we can use a more efficient approach
+        // Otherwise, use the existing method but with better indexing
         $rows = PixelHistory::select('x', 'y', 'color', 'created_at')
-            ->whereBetween('x', [$w['minX'], $w['maxX']])
-            ->whereBetween('y', [$w['minY'], $w['maxY']])
+            ->where('x', '>=', $w['minX'])
+            ->where('x', '<=', $w['maxX'])
+            ->where('y', '>=', $w['minY'])
+            ->where('y', '<=', $w['maxY'])
             ->where('created_at', '<=', $at)
             ->orderByDesc('created_at')
             ->limit(10000) // Safety limit to prevent memory issues on very dense tiles
@@ -214,7 +289,7 @@ class TileController extends Controller
 
         $timeParam = $request->query('time');
         $cacheKey = "tile:pbf:{$z}:{$x}:{$y}:" . ($timeParam ?? 'live');
-        $cacheTtl = $timeParam ? 10 : 5; // 10 seconds for wayback, 5 seconds for live (reduced for faster updates)
+        $cacheTtl = $timeParam ? 10 : 10; // 10 seconds for wayback, 10 seconds for live (increased for better caching)
         
         $pbfData = Cache::remember($cacheKey, $cacheTtl, function () use ($z, $x, $y, $timeParam) {
             $w = $this->tileToWorldBounds($z, $x, $y);
@@ -463,7 +538,7 @@ class TileController extends Controller
         // For versioned tiles (wayback), cache indefinitely since they're immutable
         // For live tiles (current version), use shorter cache
         $isLiveTile = $timeParam === null;
-        $cacheTtl = $isLiveTile ? 5 : 86400 * 365; // 5 seconds for live (reduced for faster updates), 1 year for wayback
+        $cacheTtl = $isLiveTile ? 10 : 86400 * 365; // 10 seconds for live (increased for better caching), 1 year for wayback
         
         $pbfData = Cache::remember($cacheKey, $cacheTtl, function () use ($z, $x, $y, $timeParam) {
             $w = $this->tileToWorldBounds($z, $x, $y);
