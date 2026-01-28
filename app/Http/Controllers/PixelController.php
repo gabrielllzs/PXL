@@ -26,8 +26,24 @@ class PixelController extends Controller
         $this->levelService = $levelService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $minX = $request->has('minX') ? (int) $request->query('minX') : null;
+        $maxX = $request->has('maxX') ? (int) $request->query('maxX') : null;
+        $minY = $request->has('minY') ? (int) $request->query('minY') : null;
+        $maxY = $request->has('maxY') ? (int) $request->query('maxY') : null;
+
+        $useBounds = $minX !== null && $maxX !== null && $minY !== null && $maxY !== null;
+        if ($useBounds) {
+            $extent = 10000;
+            [$minX, $maxX] = [max(-$extent, min($minX, $maxX)), min($extent, max($minX, $maxX))];
+            [$minY, $maxY] = [max(-$extent, min($minY, $maxY)), min($extent, max($minY, $maxY))];
+            return Pixel::select('x', 'y', 'color')
+                ->whereBetween('x', [$minX, $maxX])
+                ->whereBetween('y', [$minY, $maxY])
+                ->get();
+        }
+
         return Pixel::select('x', 'y', 'color')->get();
     }
 

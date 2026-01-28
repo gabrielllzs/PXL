@@ -1,12 +1,12 @@
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import axios from 'axios'
 import FingerprintJS from '@fingerprintjs/fingerprintjs'
 import { useAuth } from './useAuth'
 import { useToast } from './useToast'
+import { loadAll, addOrUpdate, getVisible, evictOutside } from './usePixelChunks'
 
 let visitorId = null
 
-export const stored = reactive([])
 const cooldown = reactive({ active: false, remaining: 0 })
 let cooldownTimer = null
 
@@ -36,17 +36,26 @@ function startCooldown(seconds) {
     }, 1000)
 }
 
+export const refetchViewportTrigger = ref(0)
+
 export function usePixels() {
     const { isAuthenticated } = useAuth()
     const { showToast } = useToast()
-    
-    async function load() {
+
+    async function loadViewport(minX, maxX, minY, maxY) {
         try {
-            const { data } = await axios.get('/api/map-data')
-            stored.splice(0, stored.length, ...data)
+            const { data } = await axios.get('/api/map-data', {
+                params: { minX, maxX, minY, maxY }
+            })
+            const arr = Array.isArray(data) ? data : []
+            for (const p of arr) addOrUpdate(p.x, p.y, p.color ?? '#000000')
         } catch (err) {
-            console.error('Failed to load pixels:', err)
+            console.error('Failed to load viewport pixels:', err)
         }
+    }
+
+    function load() {
+        refetchViewportTrigger.value++
     }
 
     async function save(x, y, color, captchaToken) {
@@ -57,13 +66,7 @@ export function usePixels() {
         try {
             const response = await axios.post('/api/pixel', { x, y, color, visitorId, captchaToken })
             
-            // Update local store
-            const existing = stored.find(p => p.x === x && p.y === y)
-            if (existing) {
-                existing.color = color
-            } else {
-                stored.push({ x, y, color })
-            }
+            addOrUpdate(x, y, color)
             
             if (!isAuthenticated()) {
                 startCooldown(response.data?.cooldownDuration || 10)
@@ -132,5 +135,14 @@ export function usePixels() {
         }
     }
 
-    return { stored, load, save, cooldown, syncCooldown }
+    return {
+        load,
+        loadViewport,
+        save,
+        cooldown,
+        syncCooldown,
+        getVisible,
+        addOrUpdate,
+        evictOutside
+    }
 }

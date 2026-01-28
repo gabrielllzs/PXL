@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PixelController;
+use App\Http\Controllers\TileController;
 use App\Http\Controllers\HandleAuthController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,7 @@ Route::get('/feedback', function () { return view('feedback'); });
 
 
 Route::get('/api/map-data', [PixelController::class, 'index']);
+Route::get('/api/tiles/{z}/{x}/{y}.png', TileController::class)->whereNumber(['z', 'x', 'y']);
 Route::post('/api/pixel', [PixelController::class, 'store']);
 Route::get('/api/cooldown', [PixelController::class, 'cooldown']);
 Route::post('/api/feedback', [FeedbackController::class, 'store']);

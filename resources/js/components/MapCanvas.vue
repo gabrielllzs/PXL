@@ -1,7 +1,6 @@
 <template>
     <div id="mapContainer">
         <div id="map"></div>
-        <canvas ref="canvas" id="pixel-map"></canvas>
         <canvas ref="hoverCanvas" id="hover-preview"></canvas>
         <div v-if="isLoading" class="loading-overlay">
             Loading World...
@@ -21,11 +20,11 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import axios from 'axios'
 import ZoomControls from '@/components/ui/ZoomControls.vue'
 import { useMap } from '../composables/useMap'
-import { usePixels } from '../composables/usePixels'
+import { usePixels, refetchViewportTrigger } from '../composables/usePixels'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 import { initRealtimePixels, groupCursors, smoothedCursorPosition, removeSmoothedCursorPosition } from '../composables/realtimePixels'
-import { lngLatToWorldPx, worldPxToLngLat } from '../composables/useWorldConversion'
+import { lngLatToWorldPx, worldPxToLngLat, pixelsToGeoJSON } from '../composables/useWorldConversion'
 import { executeHCaptcha } from '../composables/usecaptcha.js'
 import { playPixelPlaceSound } from '../composables/useAudio.js'
 
@@ -36,6 +35,7 @@ const CURSOR_SEND_INTERVAL = 250
 const PAINT_INTERVAL = 100
 const CURSOR_TIMEOUT = 3000
 const MAP_POSITION_KEY = 'mapCanvas:position'
+const VIEWPORT_MARGIN = 64
 
 const props = defineProps({
     selectedColor: String,
@@ -48,13 +48,16 @@ const emit = defineEmits(['pixelHover', 'verificationRequired', 'pixelPlaced', '
 
 // Composables
 const { map, init, on, unproject, project, zoomIn, zoomOut, centerMap, getBounds, getZoom, getCenter, setCenter } = useMap('map')
-const { stored, load, save, syncCooldown } = usePixels()
+const { save, syncCooldown } = usePixels()
+
+const TILE_SIZE = 256
+const PIXEL_RASTER_SOURCE_ID = 'pixels-raster'
+const PIXEL_RASTER_LAYER_ID = 'pixels-raster-layer'
 const { user, isEmailVerified, group } = useAuth()
 const { showToast } = useToast()
 
 // Refs
 const isLoading = ref(true)
-const canvas = ref(null)
 const hoverCanvas = ref(null)
 const animationPulse = ref(0)
 const cursorX = ref(null)
@@ -65,7 +68,6 @@ const isSpaceHeld = ref(false)
 const isPainting = ref(false)
 
 // Non-reactive state
-let canvasRender = null
 let hoverCanvasRender = null
 let animationFrameId = null
 let captchaSessionVerified = false
@@ -105,16 +107,54 @@ function getSavedPosition() {
     }
 }
 
+function getViewportBounds() {
+    const bounds = getBounds()
+    if (!bounds) return null
+    const nw = lngLatToWorldPx(bounds.getNorthWest(), ZOOM)
+    const se = lngLatToWorldPx(bounds.getSouthEast(), ZOOM)
+    return {
+        minX: Math.floor(nw.x) - VIEWPORT_MARGIN,
+        maxX: Math.ceil(se.x) + VIEWPORT_MARGIN,
+        minY: Math.floor(nw.y) - VIEWPORT_MARGIN,
+        maxY: Math.ceil(se.y) + VIEWPORT_MARGIN
+    }
+}
+
+function refreshRasterTiles() {
+    const m = map.value
+    if (!m || props.waybackActive) return
+    try {
+        m.removeLayer(PIXEL_RASTER_LAYER_ID)
+        m.removeSource(PIXEL_RASTER_SOURCE_ID)
+    } catch (_) {}
+    m.addSource(PIXEL_RASTER_SOURCE_ID, {
+        type: 'raster',
+        tiles: [getTileUrl()],
+        tileSize: TILE_SIZE,
+        minzoom: MIN_ZOOM
+    })
+    m.addLayer({
+        id: PIXEL_RASTER_LAYER_ID,
+        type: 'raster',
+        source: PIXEL_RASTER_SOURCE_ID,
+        minzoom: MIN_ZOOM,
+        paint: { 'raster-opacity': 1 }
+    })
+}
+
 onMounted(async () => {
     isLoading.value = true
     const savedPos = getSavedPosition()
 
-    const [mapInstance] = await Promise.all([init(), load(), syncCooldown()])
+    const [mapInstance] = await Promise.all([init(), syncCooldown()])
 
     isLoading.value = false
     setupCanvas()
+    setupPixelLayer(mapInstance)
     setupEvents(mapInstance)
-    initRealtimePixels(drawPixels)
+    initRealtimePixels(updatePixelLayer)
+
+    if (props.waybackActive) updatePixelLayer()
 
     if (savedPos?.x != null && savedPos?.y != null) {
         isNavigatingFromURL = true
@@ -124,22 +164,22 @@ onMounted(async () => {
             setTimeout(() => { isNavigatingFromURL = false }, 1000)
         })
     }
-
-    drawPixels()
 })
 
-// Watch wayback pixels to redraw when they change
+// Update pixel layer when wayback data or mode changes
 watch(() => props.waybackPixels, () => {
-    if (props.waybackActive) {
-        drawPixels()
-    }
-})
+    if (props.waybackActive) updatePixelLayer()
+}, { deep: true })
 
 watch(() => props.waybackActive, (active) => {
-    if (active && props.paintMode) {
-        emit('disablePaintMode')
-    }
-    drawPixels()
+    if (active && props.paintMode) emit('disablePaintMode')
+    setPixelLayerVisibility(active)
+    if (active) updatePixelLayer()
+})
+
+watch(refetchViewportTrigger, () => {
+    if (props.waybackActive) updatePixelLayer()
+    else refreshRasterTiles()
 })
 
 onUnmounted(() => {
@@ -160,17 +200,88 @@ function setupCanvas() {
     const container = document.getElementById('map')
     const { clientWidth: w, clientHeight: h } = container
 
-    // Setup both canvases with shared dimensions
-    ;[canvas.value, hoverCanvas.value].forEach((c, i) => {
-        c.width = w
-        c.height = h
-        c.style.position = 'absolute'
-        c.style.pointerEvents = 'none'
-        if (i === 1) c.style.zIndex = '1'
-    })
+    const c = hoverCanvas.value
+    c.width = w
+    c.height = h
+    c.style.position = 'absolute'
+    c.style.pointerEvents = 'none'
+    c.style.zIndex = '1'
 
-    canvasRender = canvas.value.getContext('2d')
-    hoverCanvasRender = hoverCanvas.value.getContext('2d')
+    hoverCanvasRender = c.getContext('2d')
+}
+
+const PIXEL_SOURCE_ID = 'pixels'
+const PIXEL_LAYER_ID = 'pixels-layer'
+
+function getTileUrl() {
+    const base = typeof window !== 'undefined' ? window.location.origin : ''
+    return `${base}/api/tiles/{z}/{x}/{y}.png`
+}
+
+function setupPixelLayer(mapInstance) {
+    if (!mapInstance.getSource(PIXEL_RASTER_SOURCE_ID)) {
+        mapInstance.addSource(PIXEL_RASTER_SOURCE_ID, {
+            type: 'raster',
+            tiles: [getTileUrl()],
+            tileSize: TILE_SIZE,
+            minzoom: MIN_ZOOM
+        })
+    }
+    if (!mapInstance.getLayer(PIXEL_RASTER_LAYER_ID)) {
+        mapInstance.addLayer({
+            id: PIXEL_RASTER_LAYER_ID,
+            type: 'raster',
+            source: PIXEL_RASTER_SOURCE_ID,
+            minzoom: MIN_ZOOM,
+            paint: { 'raster-opacity': 1 }
+        })
+    }
+    if (!mapInstance.getSource(PIXEL_SOURCE_ID)) {
+        mapInstance.addSource(PIXEL_SOURCE_ID, {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] }
+        })
+    }
+    if (!mapInstance.getLayer(PIXEL_LAYER_ID)) {
+        mapInstance.addLayer({
+            id: PIXEL_LAYER_ID,
+            type: 'fill',
+            source: PIXEL_SOURCE_ID,
+            minzoom: MIN_ZOOM,
+            paint: {
+                'fill-color': ['get', 'color'],
+                'fill-opacity': 1
+            }
+        })
+    }
+    setPixelLayerVisibility(props.waybackActive)
+}
+
+function setPixelLayerVisibility(wayback) {
+    const m = map.value
+    if (!m) return
+    const rasterVis = wayback ? 'none' : 'visible'
+    const geojsonVis = wayback ? 'visible' : 'none'
+    try {
+        m.setLayoutProperty(PIXEL_RASTER_LAYER_ID, 'visibility', rasterVis)
+        m.setLayoutProperty(PIXEL_LAYER_ID, 'visibility', geojsonVis)
+    } catch (_) {}
+}
+
+function updatePixelLayer() {
+    if (!props.waybackActive) return
+    const m = map.value
+    if (!m) return
+    const source = m.getSource(PIXEL_SOURCE_ID)
+    if (!source) return
+
+    const b = getViewportBounds()
+    if (!b) return
+
+    const arr = Array.isArray(props.waybackPixels) ? props.waybackPixels : []
+    const pixels = arr.filter((p) => p.x >= b.minX && p.x <= b.maxX && p.y >= b.minY && p.y <= b.maxY)
+    const geojson = pixelsToGeoJSON(pixels, ZOOM)
+    source.setData(geojson)
 }
 
 function savePosition() {
@@ -226,9 +337,18 @@ function handleKeyUp(e) {
 }
 
 function setupEvents(mapInstance) {
-    on('move', () => { drawPixels(); savePosition() })
-    on('zoom', () => { drawPixels(); savePosition() })
-    on('resize', resizeCanvas)
+    on('move', savePosition)
+    on('zoom', savePosition)
+    on('moveend', () => {
+        if (props.waybackActive) updatePixelLayer()
+    })
+    on('zoomend', () => {
+        if (props.waybackActive) updatePixelLayer()
+    })
+    on('resize', () => {
+        resizeCanvas()
+        if (props.waybackActive) updatePixelLayer()
+    })
 
     const mapCanvas = mapInstance.getCanvas()
     mapCanvas.addEventListener('click', handleClick)
@@ -243,11 +363,8 @@ function resizeCanvas() {
     const container = document.getElementById('map')
     const { clientWidth: w, clientHeight: h } = container
 
-    canvas.value.width = w
-    canvas.value.height = h
     hoverCanvas.value.width = w
     hoverCanvas.value.height = h
-    drawPixels()
 }
 
 function getCellScreenBounds(x, y) {
@@ -277,34 +394,6 @@ function getCellScreenBounds(x, y) {
         screenX: screenX1,
         screenY: screenY1
     };
-}
-
-function drawPixels() {
-    if (!canvasRender || !canvas.value) return
-
-    canvasRender.clearRect(0, 0, canvas.value.width, canvas.value.height)
-
-    if (getZoom() < MIN_ZOOM) return
-
-    const bounds = getBounds()
-    if (!bounds) return
-
-    // Get visible world pixel coordinates
-    const nw = lngLatToWorldPx(bounds.getNorthWest(), ZOOM)
-    const se = lngLatToWorldPx(bounds.getSouthEast(), ZOOM)
-    const minX = Math.floor(nw.x), maxX = Math.ceil(se.x)
-    const minY = Math.floor(nw.y), maxY = Math.ceil(se.y)
-
-    // Use wayback pixels if active, otherwise use stored
-    const pixelsToDraw = props.waybackActive ? props.waybackPixels : stored
-
-    for (const pixel of pixelsToDraw) {
-        if (pixel.x >= minX && pixel.x <= maxX && pixel.y >= minY && pixel.y <= maxY) {
-            const { screenX, screenY, width, height } = getCellScreenBounds(pixel.x, pixel.y)
-            canvasRender.fillStyle = pixel.color
-            canvasRender.fillRect(screenX, screenY, width, height)
-        }
-    }
 }
 
 function drawGroupCursors() {
@@ -421,7 +510,7 @@ async function placePixel(mouseEvent) {
 
         if (result?.success) {
             captchaSessionVerified = true
-            drawPixels()
+            updatePixelLayer()
             playPixelPlaceSound()
             emit('pixelPlaced', {
                 pixels_available: result.pixels_available,
@@ -515,7 +604,7 @@ function handleMouseOut() {
     height: 100%;
 }
 
-#pixel-map, #hover-preview {
+#hover-preview {
     top: 0;
     left: 0;
     width: 100%;
