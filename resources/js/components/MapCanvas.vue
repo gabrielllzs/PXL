@@ -179,19 +179,19 @@ function refreshVectorTiles() {
             m.triggerRepaint()
             
             // Clean up optimistic pixels after tiles have had time to load
-            // This ensures smooth transition from optimistic to real tiles
+            // For transatlantic latency, keep optimistic pixels longer (8 seconds)
             setTimeout(() => {
                 const now = Date.now()
                 for (const [key, pixel] of optimisticPixels.entries()) {
-                    // Remove optimistic pixels older than 3 seconds (tiles should have loaded by then)
-                    if (now - pixel.timestamp > 3000) {
+                    // Remove optimistic pixels older than 8 seconds (accounting for network latency)
+                    if (now - pixel.timestamp > 8000) {
                         optimisticPixels.delete(key)
                     }
                 }
-                if (optimisticPixels.size === 0) {
+                if (optimisticPixels.size > 0) {
                     updateOptimisticLayer()
                 }
-            }, 1000)
+            }, 2000)
         } catch (e) {
             // If setTiles fails, fall back to remove/re-add
             console.warn('setTiles failed, using remove/add fallback:', e)
@@ -265,6 +265,19 @@ onMounted(async () => {
 
     // Preload tiles beyond viewport to prevent popping
     mapInstance.once('load', () => {
+        // Ensure optimistic layer is on top after map loads
+        try {
+            if (mapInstance.getLayer(OPTIMISTIC_LAYER_ID)) {
+                if (mapInstance.getLayer(PIXEL_VECTOR_LAYER_ID)) {
+                    mapInstance.moveLayer(OPTIMISTIC_LAYER_ID, PIXEL_VECTOR_LAYER_ID)
+                }
+                if (mapInstance.getLayer(WAYBACK_VECTOR_LAYER_ID)) {
+                    mapInstance.moveLayer(OPTIMISTIC_LAYER_ID, WAYBACK_VECTOR_LAYER_ID)
+                }
+            }
+        } catch (e) {
+            // Ignore errors
+        }
         // Initial preload after map loads
         setTimeout(() => preloadTilesAroundViewport(mapInstance), 100)
     })
@@ -354,7 +367,7 @@ function setupCanvas() {
     hoverCanvasRender = c.getContext('2d')
 }
 
-const REALTIME_REFRESH_DEBOUNCE_MS = 1000 // Increased to reduce unnecessary refreshes
+const REALTIME_REFRESH_DEBOUNCE_MS = 2000 // Increased to reduce unnecessary refreshes and server load
 
 function debouncedTileRefresh() {
     if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout)
@@ -365,6 +378,7 @@ function debouncedTileRefresh() {
 }
 
 // Optimized tile refresh for user's own pixel placements
+// With transatlantic latency, we don't need to refresh immediately since optimistic rendering shows the pixel
 function immediateTileRefresh() {
     if (props.waybackActive) return
     // Clear any pending debounced refresh
@@ -372,10 +386,11 @@ function immediateTileRefresh() {
         clearTimeout(realtimeRefreshTimeout)
         realtimeRefreshTimeout = null
     }
-    // Use a small delay to allow cache invalidation to propagate
+    // Use a longer delay to allow cache invalidation to propagate across the network
+    // The optimistic pixel will show in the meantime, so users won't notice the delay
     setTimeout(() => {
         refreshVectorTiles()
-    }, 150)
+    }, 500) // Increased delay for transatlantic latency
 }
 
 function setupPixelLayer(mapInstance) {
@@ -423,18 +438,39 @@ function setupPixelLayer(mapInstance) {
         })
     }
     if (!mapInstance.getLayer(OPTIMISTIC_LAYER_ID)) {
-        mapInstance.addLayer({
-            id: OPTIMISTIC_LAYER_ID,
-            type: 'fill',
-            source: OPTIMISTIC_SOURCE_ID,
-            paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 1 },
-            minzoom: MIN_ZOOM
-        })
-        // Place optimistic layer above the main pixel layer for visibility
-        try {
-            mapInstance.moveLayer(OPTIMISTIC_LAYER_ID, PIXEL_VECTOR_LAYER_ID)
-        } catch (e) {
-            // Layer might not exist yet, that's okay
+        // Add optimistic layer after main pixel layer is set up
+        const addOptimisticLayer = () => {
+            if (mapInstance.getLayer(OPTIMISTIC_LAYER_ID)) return
+            
+            mapInstance.addLayer({
+                id: OPTIMISTIC_LAYER_ID,
+                type: 'fill',
+                source: OPTIMISTIC_SOURCE_ID,
+                paint: { 
+                    'fill-color': ['get', 'color'], 
+                    'fill-opacity': 1 
+                },
+                minzoom: MIN_ZOOM
+            })
+            
+            // Ensure optimistic layer is always on top of pixel layers
+            try {
+                if (mapInstance.getLayer(PIXEL_VECTOR_LAYER_ID)) {
+                    mapInstance.moveLayer(OPTIMISTIC_LAYER_ID, PIXEL_VECTOR_LAYER_ID)
+                }
+                if (mapInstance.getLayer(WAYBACK_VECTOR_LAYER_ID)) {
+                    mapInstance.moveLayer(OPTIMISTIC_LAYER_ID, WAYBACK_VECTOR_LAYER_ID)
+                }
+            } catch (e) {
+                // Layers might not exist yet, that's okay
+            }
+        }
+        
+        // Try to add immediately, or wait for map to be ready
+        if (mapInstance.loaded()) {
+            addOptimisticLayer()
+        } else {
+            mapInstance.once('load', addOptimisticLayer)
         }
     }
     
@@ -716,7 +752,7 @@ async function placePixel(mouseEvent) {
     const x = Math.floor(worldPixel.x)
     const y = Math.floor(worldPixel.y)
 
-    // Optimistically render the pixel immediately
+    // Optimistically render the pixel immediately - this shows instantly regardless of network latency
     addOptimisticPixel(x, y, props.selectedColor)
 
     try {
@@ -726,16 +762,17 @@ async function placePixel(mouseEvent) {
             captchaSessionVerified = true
             playPixelPlaceSound()
             
-            // Debounced tile refresh - tiles will update soon, optimistic pixel will be removed when tiles load
-            // Remove optimistic pixel after a short delay to allow tiles to refresh
+            // For transatlantic latency (USA to Belgium), keep optimistic pixel longer
+            // Remove after 8 seconds to account for network latency + tile generation + cache propagation
             setTimeout(() => {
                 removeOptimisticPixel(x, y)
-            }, 2000) // Remove after 2 seconds, giving tiles time to refresh
+            }, 8000) // Increased from 2s to 8s for transatlantic latency
             
-            // Refresh tiles with a small delay to allow server cache invalidation to propagate
+            // Refresh tiles with a delay to allow server cache invalidation to propagate
+            // Don't refresh too aggressively - let the optimistic pixel show while tiles load
             setTimeout(() => {
                 immediateTileRefresh()
-            }, 100)
+            }, 300) // Slightly longer delay to reduce server load
             
             emit('pixelPlaced', {
                 pixels_available: result.pixels_available,
