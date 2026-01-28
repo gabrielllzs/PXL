@@ -214,7 +214,7 @@ class TileController extends Controller
 
         $timeParam = $request->query('time');
         $cacheKey = "tile:pbf:{$z}:{$x}:{$y}:" . ($timeParam ?? 'live');
-        $cacheTtl = $timeParam ? 10 : 60; // 10 seconds for wayback, 60 for live
+        $cacheTtl = $timeParam ? 10 : 5; // 10 seconds for wayback, 5 seconds for live (reduced for faster updates)
         
         $pbfData = Cache::remember($cacheKey, $cacheTtl, function () use ($z, $x, $y, $timeParam) {
             $w = $this->tileToWorldBounds($z, $x, $y);
@@ -230,7 +230,7 @@ class TileController extends Controller
             return $response->getContent();
         });
 
-        $cacheControl = $timeParam ? 'public, max-age=10' : 'public, max-age=60';
+        $cacheControl = $timeParam ? 'public, max-age=10' : 'public, max-age=5, must-revalidate';
         return response($pbfData, 200, [
             'Content-Type' => 'application/vnd.mapbox-vector-tile',
             'Cache-Control' => $cacheControl,
@@ -463,7 +463,7 @@ class TileController extends Controller
         // For versioned tiles (wayback), cache indefinitely since they're immutable
         // For live tiles (current version), use shorter cache
         $isLiveTile = $timeParam === null;
-        $cacheTtl = $isLiveTile ? 60 : 86400 * 365; // 60 seconds for live, 1 year for wayback
+        $cacheTtl = $isLiveTile ? 5 : 86400 * 365; // 5 seconds for live (reduced for faster updates), 1 year for wayback
         
         $pbfData = Cache::remember($cacheKey, $cacheTtl, function () use ($z, $x, $y, $timeParam) {
             $w = $this->tileToWorldBounds($z, $x, $y);
@@ -484,7 +484,7 @@ class TileController extends Controller
         // Create response from cached data
         return response($pbfData, 200, [
             'Content-Type' => 'application/vnd.mapbox-vector-tile',
-            'Cache-Control' => $isLiveTile ? 'public, max-age=60' : 'public, max-age=315360000',
+            'Cache-Control' => $isLiveTile ? 'public, max-age=5, must-revalidate' : 'public, max-age=315360000',
             'Access-Control-Allow-Origin' => '*',
         ]);
     }

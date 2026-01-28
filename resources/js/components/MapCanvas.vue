@@ -154,17 +154,57 @@ function getTileUrl(opts = {}) {
 function refreshVectorTiles() {
     const m = map.value
     if (!m || props.waybackActive) return
+    
+    // Only refresh if map is fully loaded to avoid popping during initial load
+    if (!m.loaded()) {
+        // If map isn't loaded yet, wait for it
+        m.once('load', () => refreshVectorTiles())
+        return
+    }
+    
     const src = m.getSource(PIXEL_VECTOR_SOURCE_ID)
     if (src) {
         // Update tile URL with new timestamp to force refresh
-        // Use a small delay to batch multiple refresh requests
         tileTimestamp.value = Date.now()
-        // Only refresh if map is fully loaded to avoid popping during initial load
-        if (m.loaded()) {
-            src.setTiles([getTileUrl({ cacheBust: tileTimestamp.value })])
+        const newTileUrl = getTileUrl({ cacheBust: tileTimestamp.value })
+        
+        // Use setTiles to update the source - this is more efficient than remove/add
+        // and properly invalidates the tile cache
+        try {
+            src.setTiles([newTileUrl])
+            // Force a repaint to ensure tiles reload
+            m.triggerRepaint()
+        } catch (e) {
+            // If setTiles fails, fall back to remove/re-add
+            console.warn('setTiles failed, using remove/add fallback:', e)
+            try {
+                if (m.getLayer(PIXEL_VECTOR_LAYER_ID)) {
+                    m.removeLayer(PIXEL_VECTOR_LAYER_ID)
+                }
+                m.removeSource(PIXEL_VECTOR_SOURCE_ID)
+            } catch (err) {
+                // Ignore errors if layer/source doesn't exist
+            }
+            // Re-add source with new timestamp
+            m.addSource(PIXEL_VECTOR_SOURCE_ID, {
+                type: 'vector',
+                tiles: [newTileUrl],
+                minzoom: MIN_ZOOM
+            })
+            // Re-add layer
+            m.addLayer({
+                id: PIXEL_VECTOR_LAYER_ID,
+                type: 'fill',
+                source: PIXEL_VECTOR_SOURCE_ID,
+                'source-layer': PBF_LAYER_NAME,
+                minzoom: MIN_ZOOM,
+                paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 1 }
+            })
         }
         return
     }
+    
+    // Source doesn't exist yet, create it
     tileTimestamp.value = Date.now()
     m.addSource(PIXEL_VECTOR_SOURCE_ID, {
         type: 'vector',
@@ -199,6 +239,8 @@ onMounted(async () => {
     setupCanvas()
     setupPixelLayer(mapInstance)
     setupEvents(mapInstance)
+    // Use debounced refresh for realtime updates from other users
+    // Use immediate refresh for own pixel placements (handled in placePixel)
     initRealtimePixels(debouncedTileRefresh)
 
     if (props.waybackActive) refreshWaybackTiles()
@@ -294,7 +336,7 @@ function setupCanvas() {
     hoverCanvasRender = c.getContext('2d')
 }
 
-const REALTIME_REFRESH_DEBOUNCE_MS = 3000
+const REALTIME_REFRESH_DEBOUNCE_MS = 500 // Reduced from 3000ms for faster updates
 
 function debouncedTileRefresh() {
     if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout)
@@ -302,6 +344,18 @@ function debouncedTileRefresh() {
         realtimeRefreshTimeout = null
         if (!props.waybackActive) refreshVectorTiles()
     }, REALTIME_REFRESH_DEBOUNCE_MS)
+}
+
+// Immediate tile refresh for user's own pixel placements
+function immediateTileRefresh() {
+    if (props.waybackActive) return
+    // Clear any pending debounced refresh
+    if (realtimeRefreshTimeout) {
+        clearTimeout(realtimeRefreshTimeout)
+        realtimeRefreshTimeout = null
+    }
+    // Force immediate refresh with new timestamp
+    refreshVectorTiles()
 }
 
 function setupPixelLayer(mapInstance) {
@@ -573,8 +627,8 @@ async function placePixel(mouseEvent) {
 
         if (result?.success) {
             captchaSessionVerified = true
-            // Don't refresh tiles immediately - let the debounced realtime refresh handle it
-            // This prevents visual "popping" as tiles reload
+            // Immediately refresh tiles to show the newly placed pixel
+            immediateTileRefresh()
             playPixelPlaceSound()
             emit('pixelPlaced', {
                 pixels_available: result.pixels_available,
